@@ -126,14 +126,20 @@ tr:hover td{background:#fafaf7}
 .toast.ok{background:#1b5e20}
 .toast.err{background:#b71c1c}
 @media(max-width:650px){
-  .sidebar{position:fixed;top:0;left:0;bottom:0;z-index:200;transform:translateX(-100%);transition:transform .22s ease;box-shadow:2px 0 18px rgba(0,0,0,.3)}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;z-index:200;transform:translateX(-100%);transition:transform .22s ease;box-shadow:2px 0 18px rgba(0,0,0,.3);overflow-y:auto;-webkit-overflow-scrolling:touch}
   .sidebar.open{transform:translateX(0)}
-  .main{padding:66px 12px 20px}
-  .g4,.g3{grid-template-columns:1fr 1fr}
+  .sb-nav{overflow-y:auto;min-height:0}
+  .main{padding:66px 12px 20px;overflow-x:hidden}
+  .g4,.g3,.g2{grid-template-columns:1fr}
   .mobile-topbar{display:flex;align-items:center;gap:10px;position:fixed;top:0;left:0;right:0;height:52px;background:var(--grnd);z-index:150;padding:0 14px;box-shadow:0 1px 6px rgba(0,0,0,.15)}
   .mobile-menu-btn{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;line-height:1}
   .mobile-topbar-title{color:#fff;font-size:14px;font-weight:700}
   .sb-overlay.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:190}
+  /* Campos de entrada: largura fluida, nunca maior que a tela (histórico/tabelas mantêm rolagem lateral via .tscroll) */
+  .fg input,.fg select,.fg textarea{width:100% !important;max-width:100% !important;box-sizing:border-box}
+  /* Logo decorativo do cabeçalho: esconder no mobile (já há marca no topbar) e liberar o espaço reservado */
+  .logo-header{display:none}
+  .sh{padding-right:12px}
 }
 
 /* ── LOGO HEADER ── */
