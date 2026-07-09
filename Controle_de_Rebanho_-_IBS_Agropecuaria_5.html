@@ -481,6 +481,20 @@ tr:hover td{background:#fafaf7}
           </div>
         </div>
 
+        <!-- Vínculo automático (Chrome/Edge): reconecta ao arquivo com 1 clique, sem navegar pelas pastas -->
+        <div id="reconnect-box" style="display:none;background:var(--blubg);border:1px solid #90caf9;border-radius:var(--rsm);padding:14px 16px;margin-bottom:14px;text-align:left">
+          <div style="font-size:11px;font-weight:700;color:var(--blut);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">&#128279; Arquivo vinculado</div>
+          <div id="reconnect-name" style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px;word-break:break-all"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="reconectarArquivo()">
+              &#128279; Reconectar automaticamente
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="esquecerArquivoVinculado()" title="Remover vínculo e escolher outro arquivo manualmente">
+              Esquecer
+            </button>
+          </div>
+        </div>
+
         <!-- Ultimo arquivo (aparece se localStorage tiver o nome) -->
         <div id="last-file-box" style="display:none;background:var(--grnbg);border:1px solid #a5d6a7;border-radius:var(--rsm);padding:14px 16px;margin-bottom:14px;text-align:left">
           <div style="font-size:11px;font-weight:700;color:var(--grnt);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">&#128197; Último arquivo utilizado</div>
@@ -1513,6 +1527,124 @@ var delTarget = null;
 var fileName = 'REBANHO_BASE_DADOS.xlsx';
 var _fileHandle = null; // FileSystemFileHandle do arquivo aberto (permite "Sobrescrever")
 
+// ─── VÍNCULO AUTOMÁTICO DE ARQUIVO (IndexedDB) ────────────────────────────
+// Guarda o FileSystemFileHandle entre sessões para tentar reconectar sozinho
+// da próxima vez que o app for aberto (só funciona em Chrome/Edge no computador;
+// Safari/iOS não suportam File System Access API — nesses casos o app cai no
+// fluxo normal de selecionar o arquivo manualmente, sem qualquer regressão).
+var _IDB_NAME = 'rebanho_filehandle_db';
+var _IDB_STORE = 'handles';
+var _IDB_KEY = 'lastFile';
+
+function _idbOpen(){
+  return new Promise(function(resolve, reject){
+    if(!window.indexedDB){ reject(new Error('IndexedDB indisponível')); return; }
+    var req = indexedDB.open(_IDB_NAME, 1);
+    req.onupgradeneeded = function(){ req.result.createObjectStore(_IDB_STORE); };
+    req.onsuccess = function(){ resolve(req.result); };
+    req.onerror = function(){ reject(req.error); };
+  });
+}
+function idbSaveHandle(handle){
+  _idbOpen().then(function(db){
+    var tx = db.transaction(_IDB_STORE, 'readwrite');
+    tx.objectStore(_IDB_STORE).put(handle, _IDB_KEY);
+  }).catch(function(){ /* navegador sem suporte - ignora silenciosamente */ });
+}
+function idbGetHandle(){
+  return _idbOpen().then(function(db){
+    return new Promise(function(resolve, reject){
+      var tx = db.transaction(_IDB_STORE, 'readonly');
+      var req = tx.objectStore(_IDB_STORE).get(_IDB_KEY);
+      req.onsuccess = function(){ resolve(req.result || null); };
+      req.onerror = function(){ reject(req.error); };
+    });
+  });
+}
+function idbClearHandle(){
+  _idbOpen().then(function(db){
+    var tx = db.transaction(_IDB_STORE, 'readwrite');
+    tx.objectStore(_IDB_STORE).delete(_IDB_KEY);
+  }).catch(function(){});
+}
+
+// Tenta reconectar automaticamente ao último arquivo vinculado, ao abrir o app.
+// - Se a permissão ainda estiver concedida (comum dentro do mesmo navegador/perfil),
+//   o arquivo é carregado sozinho, sem nenhum clique.
+// - Se o navegador exigir confirmação (política de segurança: precisa de um gesto
+//   do usuário para reconceder acesso a arquivos), mostra um botão de 1 clique.
+function _hasPendingRecoverySnapshot(){
+  // Mesma condição usada em checkAutoSaveRecovery(): existe uma sessão não salva com dados reais.
+  try {
+    var raw = localStorage.getItem(_autoSaveKey);
+    if(!raw) return false;
+    var snap = JSON.parse(raw);
+    if(!snap || !snap.ts || !snap.DB) return false;
+    var totalAnimais = (snap.DB.id || []).length;
+    var totalProt    = (snap.DB_protocolos || []).length;
+    var totalBaixas  = (snap.DB_baixas || []).length;
+    var totalFin     = (snap.DB_financeiro || []).length + (snap.DB_receitas || []).length;
+    return !(totalAnimais === 0 && totalProt === 0 && totalBaixas === 0 && totalFin === 0);
+  } catch(e){ return false; }
+}
+
+function tentarReconectarArquivo(){
+  if(!window.showOpenFilePicker) return; // Safari/iOS/Firefox: sem File System Access API
+  // Se há uma sessão não salva pendente, prioriza a escolha de recuperar/descartar antes de
+  // reconectar automaticamente a outro arquivo (evita perder dados não salvos por engano).
+  if(_hasPendingRecoverySnapshot()) return;
+  idbGetHandle().then(function(handle){
+    if(!handle) return;
+    var perm = handle.queryPermission ? handle.queryPermission({mode:'readwrite'}) : Promise.resolve('granted');
+    Promise.resolve(perm).then(function(state){
+      if(state === 'granted'){
+        return handle.getFile().then(function(file){
+          _fileHandle = handle;
+          processFile(file);
+          toast('Arquivo reconectado automaticamente: '+file.name,'ok');
+        });
+      } else {
+        mostrarBotaoReconectar(handle);
+      }
+    });
+  }).catch(function(){ /* handle inexistente, invalido ou arquivo movido/apagado - ignora */ });
+}
+
+function mostrarBotaoReconectar(handle){
+  var box = document.getElementById('reconnect-box');
+  var name = document.getElementById('reconnect-name');
+  if(!box || !name) return;
+  name.textContent = handle.name || 'arquivo vinculado';
+  box.style.display = 'block';
+  box.dataset.pending = '1';
+  window._pendingReconnectHandle = handle;
+  // Evita mostrar os dois avisos juntos (o vínculo automático substitui o antigo aviso de "último arquivo")
+  var lastBox = document.getElementById('last-file-box'); if(lastBox) lastBox.style.display = 'none';
+}
+
+function reconectarArquivo(){
+  var handle = window._pendingReconnectHandle;
+  if(!handle) return;
+  handle.requestPermission({mode:'readwrite'}).then(function(state){
+    if(state !== 'granted'){ toast('Permissão negada para reconectar','err'); return; }
+    return handle.getFile().then(function(file){
+      _fileHandle = handle;
+      processFile(file);
+      toast('Reconectado: '+file.name,'ok');
+      var box = document.getElementById('reconnect-box'); if(box) box.style.display='none';
+    });
+  }).catch(function(err){
+    toast('Não foi possível reconectar: '+err.message,'err');
+  });
+}
+
+function esquecerArquivoVinculado(){
+  idbClearHandle();
+  window._pendingReconnectHandle = null;
+  var box = document.getElementById('reconnect-box'); if(box) box.style.display='none';
+  toast('Vínculo automático removido. Selecione o arquivo manualmente na próxima vez.','ok');
+}
+
 function startFresh(){
   fileName = 'REBANHO_BASE_DADOS.xlsx';
   _fileHandle = null; // sem arquivo de origem, "Sobrescrever" fica indisponivel ate salvar
@@ -1539,7 +1671,7 @@ document.getElementById('dropzone').addEventListener('drop', function(e){
   if(item && typeof item.getAsFileSystemHandle === 'function'){
     item.getAsFileSystemHandle().then(function(handle){
       if(handle && handle.kind === 'file'){
-        return handle.getFile().then(function(file){ _fileHandle = handle; processFile(file); });
+        return handle.getFile().then(function(file){ _fileHandle = handle; idbSaveHandle(handle); processFile(file); });
       }
       _fileHandle = null;
       var f = e.dataTransfer.files[0]; if(f) processFile(f);
@@ -1562,7 +1694,7 @@ function abrirArquivo(fallbackInputId){
       multiple:false
     }).then(function(handles){
       var handle = handles[0];
-      return handle.getFile().then(function(file){ _fileHandle = handle; processFile(file); });
+      return handle.getFile().then(function(file){ _fileHandle = handle; idbSaveHandle(handle); processFile(file); });
     }).catch(function(err){
       if(err.name!=='AbortError') toast('Erro ao abrir arquivo: '+err.message,'err');
     });
@@ -2518,6 +2650,7 @@ function salvarComoNovaVersao(){
     }).then(function(handle){
       // A partir daqui, este novo arquivo passa a ser o vinculado — "Sobrescrever" ja aponta pra ele.
       _fileHandle = handle;
+      idbSaveHandle(handle);
       fileName = handle.name || _vName;
       updateInfo();
       toast('Salvo: '+fileName,'ok');
@@ -5364,6 +5497,7 @@ function dismissRecovery(){
   if(banner) banner.style.display = 'none';
   autoClear();
   toast('Sessão anterior descartada.','ok');
+  tentarReconectarArquivo(); // agora que a decisão foi tomada, oferece reconectar ao arquivo vinculado
 }
 
 function search(tbId,q){
@@ -7284,6 +7418,7 @@ function clearLotesFilters(){
 
 // ── Verificar recovery após todas as variáveis globais serem inicializadas ──
 checkAutoSaveRecovery();
+tentarReconectarArquivo();
 
 // ── PWA: registra o service worker para permitir instalação/uso offline ──
 // (silenciosamente ignorado se o arquivo for aberto localmente via file:// ou sem HTTPS,
