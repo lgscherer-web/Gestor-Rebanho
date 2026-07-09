@@ -191,6 +191,9 @@ tr:hover td{background:#fafaf7}
 .fc-tag-prenha{background:var(--grnbg);color:var(--grnt)}
 .fc-tag-vazia{background:var(--redbg);color:var(--red)}
 .fc-tag-na{background:var(--surf2);color:var(--tx3)}
+.fc-tag-amamentando{background:var(--blubg);color:var(--blut)}
+.fc-tag-abortou{background:var(--ambbg);color:var(--amb)}
+.fc-tag-natimorto{background:var(--redbg);color:var(--red)}
 .fc-nf{text-align:center;padding:40px;color:var(--tx2);font-size:14px}
 .fc-hint{text-align:center;padding:48px 20px;color:var(--tx3)}
 .fc-hint-ic{font-size:40px;margin-bottom:12px}
@@ -398,6 +401,16 @@ tr:hover td{background:#fafaf7}
     <div class="modal-act">
       <button class="btn btn-ghost" onclick="closeConfirm()">Cancelar</button>
       <button class="btn btn-danger" id="mc-ok-btn" onclick="doConfirm()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-estado">
+  <div class="modal" style="max-width:460px">
+    <h3 id="me-title">Atualizar Estado</h3>
+    <div id="me-content"></div>
+    <div class="modal-act">
+      <button class="btn btn-ghost" onclick="closeEstadoModal()">Fechar</button>
     </div>
   </div>
 </div>
@@ -626,6 +639,7 @@ tr:hover td{background:#fafaf7}
             <div class="fg"><label>Mae (brinco)</label><input id="reg-mae" placeholder="Ex: 16"></div>
             <div class="fg"><label>Pai (nome / codigo)</label><input id="reg-pai" placeholder="Ex: Yako"></div>
             <div class="fg"><label>Avô materno</label><input id="reg-avo" placeholder="Ex: Francesco"></div>
+            <div class="fg"><label>Nº de Partos</label><input type="number" id="reg-partos" placeholder="0" min="0" step="1"></div>
           </div>
 
           <div class="grid gfull" style="margin-bottom:14px">
@@ -647,9 +661,6 @@ tr:hover td{background:#fafaf7}
           <div class="tbar">
             <span style="font-size:13px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:.5px">&#218;ltimos Registros</span>
             <div style="display:flex;align-items:center;gap:10px">
-              <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2);font-weight:400;cursor:pointer">
-                <input type="checkbox" id="reg-mostrar-baixados" onchange="renderReg()"> Mostrar baixados
-              </label>
               <span class="tcnt" id="reg-cnt"></span>
             </div>
           </div>
@@ -657,7 +668,7 @@ tr:hover td{background:#fafaf7}
             <table>
               <thead><tr>
                 <th>Brinco</th><th>Categoria</th><th>Raça</th><th>Gênero</th>
-                <th>Nascimento</th><th>Idade</th><th>Peso</th><th>Mãe</th><th>Pai</th><th>Avô</th><th>Cond.Atual</th><th>Prev.Reprod.</th><th>Obs.</th>
+                <th>Nascimento</th><th>Idade</th><th>Peso</th><th>Mãe</th><th>Pai</th><th>Avô</th><th>Cond.Atual</th><th>Nº Partos</th><th>Obs.</th>
                 <th style="width:90px">Acoes</th>
               </tr></thead>
               <tbody id="reg-tbody"></tbody>
@@ -804,6 +815,7 @@ tr:hover td{background:#fafaf7}
               <span style="font-size:10px;color:var(--tx3)">E = Emprenhou &nbsp; P = Pariu &nbsp; D = Desmamou</span>
             </div>
           </div>
+          <div id="hist-ano-tabs-bar" class="ano-tabs-bar" style="display:none"></div>
           <div id="hist-lista"><div class="empty"><div class="empty-ic">&#128200;</div>Nenhum histórico disponível.</div></div>
         </div>
       </div><!-- /tab-rep-historico -->
@@ -1149,9 +1161,6 @@ tr:hover td{background:#fafaf7}
           <div class="tbar">
             <span style="font-size:13px;font-weight:600">Registros do rebanho por lote</span>
             <div style="display:flex;align-items:center;gap:10px">
-              <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2);font-weight:400;cursor:pointer">
-                <input type="checkbox" id="lotes-mostrar-baixados" onchange="renderLotes()"> Mostrar baixados
-              </label>
               <span class="tcnt" id="lotes-total">0 animais</span>
             </div>
           </div>
@@ -1750,7 +1759,7 @@ function parseWB(wb){
     var rows=XLSX.utils.sheet_to_json(shDg,{header:1,defval:'',raw:true});
     for(var i=3;i<rows.length;i++){
       var r=rows[i]; var b=cl(r[0]); if(!b) continue;
-      DB.dg.push({brinco:b,nasc:xlsxDateToStr(r[1]),mae:cl(r[3]),pai:cl(r[4]),avo:cl(r[5]),obs:cl(r[6]),condAtual:cl(r[7]),previsaoRepro:cl(r[8])});
+      DB.dg.push({brinco:b,nasc:xlsxDateToStr(r[1]),mae:cl(r[3]),pai:cl(r[4]),avo:cl(r[5]),obs:cl(r[6]),condAtual:cl(r[7]),previsaoRepro:cl(r[8]),numPartos:parseInt(cl(r[9]))||0});
     }
   }
   if(shPes){
@@ -1821,10 +1830,25 @@ function parseWB(wb){
       if(tipo==='touro'){
         DB_repr.push({tipo:'touro',brinco:cl(r[1]),nome:cl(r[2]),raca:cl(r[3]),nasc:cl(r[4]),proc:cl(r[5]),mae:cl(r[6]),pai:cl(r[7]),avo:cl(r[8]),obs:cl(r[9])});
       } else {
-        DB_repr.push({tipo:'semen',semen_nome:cl(r[1]),semen_apelido:cl(r[2]),semen_raca:cl(r[3]),semen_proc:cl(r[4]),semen_doses:cl(r[5]),semen_mae:cl(r[6]),semen_pai:cl(r[7]),obs:cl(r[9])});
+        DB_repr.push({tipo:'semen',semen_nome:cl(r[1]),semen_apelido:cl(r[2]),semen_raca:cl(r[3]),semen_doses:cl(r[4]),semen_proc:cl(r[5]),semen_mae:cl(r[6]),semen_pai:cl(r[7]),obs:cl(r[9])});
       }
     }
   }
+  // Auto-correção: arquivos salvos com a versão antiga (bug de importação já corrigido)
+  // podem ter gravado as colunas Doses/Procedência já trocadas dentro do próprio arquivo.
+  // Detecta pelo padrão: campo de doses contém texto (não numérico) e o de procedência é
+  // puramente numérico — nesse caso, os valores certamente estão invertidos — e corrige.
+  DB_repr.forEach(function(r){
+    if(r.tipo !== 'semen') return;
+    var dosesVal = (r.semen_doses||'').toString().trim();
+    var procVal  = (r.semen_proc||'').toString().trim();
+    var dosesPareceTexto = dosesVal !== '' && /[a-zA-Z]/.test(dosesVal);
+    var procPareceNumero = procVal !== '' && /^\d+([.,]\d+)?$/.test(procVal);
+    if(dosesPareceTexto && procPareceNumero){
+      r.semen_doses = procVal;
+      r.semen_proc  = dosesVal;
+    }
+  });
   // Estoque
   DB_estoque=[];
   var shEst = findSh(wb,['stoque','Estoque','estoque']);
@@ -1964,8 +1988,22 @@ function parseWB(wb){
       var r=rows[i]; var b=cl(r[2]); if(!b) continue;
       DB_dg_reg.push({
         protId:parseInt(cl(r[0]))||0, brinco:b,
-        dataDG:xlsxDateToStr(r[3]), resultado:cl(r[4]), obs:cl(r[5])
+        dataDG:xlsxDateToStr(r[3]), resultado:cl(r[4]), obs:cl(r[5]),
+        partoResultado:cl(r[6]), partoData:xlsxDateToStr(r[7]),
+        terneiroBrinco:cl(r[8]), terneiroGenero:cl(r[9]), partoObs:cl(r[10])
       });
+    }
+  }
+
+  // Intercorrências (Ficha do Animal)
+  fcInter={};
+  var shInter = findSh(wb,['Intercorrencias','Intercorrências']);
+  if(shInter){
+    var rowsInter=XLSX.utils.sheet_to_json(shInter,{header:1,defval:'',raw:true});
+    for(var ii=3;ii<rowsInter.length;ii++){
+      var ri=rowsInter[ii]; var bi=cl(ri[0]); if(!bi) continue;
+      if(!fcInter[bi]) fcInter[bi]=[];
+      fcInter[bi].push({data:xlsxDateToStr(ri[1]), desc:cl(ri[2])});
     }
   }
 }
@@ -2127,11 +2165,11 @@ function acts(sec,idx){
 
 function renderReg(){
   var tb=document.getElementById('reg-tbody');
-  var chkBaixados = document.getElementById('reg-mostrar-baixados');
-  var incluirBaixados = chkBaixados && chkBaixados.checked;
-  var lista = incluirBaixados ? DB.id : animaisAtivos();
+  // Animais baixados têm todos os seus dados removidos (purgarDadosAnimal) no momento da saída,
+  // então DB.id só contém animais ativos — o brinco fica automaticamente disponível para novo cadastro.
+  var lista = animaisAtivos();
   var total=lista.length;
-  document.getElementById('reg-cnt').textContent=total+' registro(s)'+(!incluirBaixados && DB_baixas.length ? ' — '+DB_baixas.length+' baixado(s) oculto(s)':'');
+  document.getElementById('reg-cnt').textContent=total+' registro(s)';
   paginateTable('reg-tbody', true);
   if(!total){ tb.innerHTML='<tr><td colspan="14"><div class="empty"><div class="empty-ic">&#128203;</div><p>Nenhum animal cadastrado. Preencha o formulário acima.</p></div></td></tr>'; return; }
   tb.innerHTML=lista.map(function(r){
@@ -2140,9 +2178,8 @@ function renderReg(){
     // Ultimo peso do animal
     var pesoArr=DB.pes.filter(function(p){return p.brinco===r.brinco;}).sort(function(a,b){return (toDate(b.data)||new Date(0))-(toDate(a.data)||new Date(0));});
     var ultPeso=pesoArr.length?pesoArr[0].peso+' kg':'-';
-    var baixa = baixaDoAnimal(r.brinco);
-    var brincoCell = '<strong>'+r.brinco+'</strong>'+(baixa?' <span class="fc-ev-badge fc-badge-int" title="'+baixa.tipo+' em '+fmtD(baixa.data)+'" style="margin-left:4px">baixado</span>':'');
-    return '<tr'+(baixa?' style="opacity:.55"':'')+'>'
+    var brincoCell = '<strong>'+r.brinco+'</strong>';
+    return '<tr>'
       +'<td>'+brincoCell+'</td>'
       +'<td>'+(r.cat||'-')+'</td>'
       +'<td>'+(r.raca||'-')+'</td>'
@@ -2154,7 +2191,7 @@ function renderReg(){
       +'<td>'+(dg.pai||'-')+'</td>'
       +'<td>'+(dg.avo||'-')+'</td>'
       +'<td style="max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(dg.condAtual||'-')+'</td>'
-      +'<td style="max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(dg.previsaoRepro||'-')+'</td>'
+      +'<td class="tc">'+(r.gen==='F'?String(dg.numPartos||0):'-')+'</td>'
       +'<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(dg.obs||'')+'">'+(dg.obs?dg.obs.substring(0,20)+(dg.obs.length>20?'…':''):'-')+'</td>'
       +'<td>'+acts('reg',i)+'</td>'
       +'</tr>';
@@ -2261,12 +2298,14 @@ function saveReg(){
 
   var idRec = { brinco:b, raca:g('reg-raca'), cat:g('reg-cat'), gen:g('reg-gen') };
   var existDg = DB.dg.find(function(d){ return d.brinco===b; })||{};
+  var partosVal = parseInt(g('reg-partos'));
   var dgRec = {
     brinco:b, nasc:nascRaw,
     mae:g('reg-mae'), pai:g('reg-pai'), avo:g('reg-avo'),
     obs:g('reg-obs').trim(),
     condAtual:existDg.condAtual||'',
-    previsaoRepro:existDg.previsaoRepro||''
+    previsaoRepro:existDg.previsaoRepro||'',
+    numPartos:isNaN(partosVal)?(existDg.numPartos||0):Math.max(0,partosVal)
   };
 
   if(idxId !== ''){
@@ -2366,6 +2405,7 @@ function editRow(sec,idx){
     var dg=DB.dg.find(function(d){return d.brinco===r.brinco;})||{};
     s('reg-brinco',r.brinco);s('reg-raca',r.raca);s('reg-cat',r.cat);s('reg-gen',r.gen);
     s('reg-nasc',dg.nasc||'');s('reg-mae',dg.mae||'');s('reg-pai',dg.pai||'');s('reg-avo',dg.avo||'');s('reg-obs',dg.obs||'');
+    s('reg-partos',dg.numPartos||0);
     s('reg-idx-id',idx);
     var dgIdx=DB.dg.findIndex(function(d){return d.brinco===r.brinco;});
     s('reg-idx-dg',dgIdx>=0?dgIdx:'');
@@ -2396,7 +2436,7 @@ function editRow(sec,idx){
 
 function cancelEdit(sec){
   if(sec==='reg'){
-    ['reg-brinco','reg-raca','reg-cat','reg-gen','reg-nasc','reg-mae','reg-pai','reg-avo','reg-obs'].forEach(function(i){s(i,'');});
+    ['reg-brinco','reg-raca','reg-cat','reg-gen','reg-nasc','reg-mae','reg-pai','reg-avo','reg-obs','reg-partos'].forEach(function(i){s(i,'');});
     s('reg-idx-id','');s('reg-idx-dg','');
     document.getElementById('reg-form-title').textContent='Novo animal';
     document.getElementById('reg-save-btn').textContent='+ Adicionar animal';
@@ -2469,7 +2509,7 @@ function _buildWorkbook(){
   var idD=[['IDENTIFICACAO DO ANIMAL'],['Cadastro unico por animal. O Brinco e o identificador primario.'],['Brinco','Raça dominante','Categoria','Genero']].concat(DB.id.map(function(r){return[r.brinco,r.raca,r.cat,r.gen];}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(idD),'Identificacao');
   // Dados Gerais
-  var dgD=[['DADOS GERAIS'],['Vinculado pelo Brinco.'],['Brinco','Data de Nascimento','Idade (anos)','Mãe (Brinco)','Pai','Avô materno','Observações','Condicao Atual','Previsao Reprodutiva']].concat(DB.dg.map(function(r,i){var row=i+4;return[r.brinco,r.nasc?exDate(r.nasc):null,{f:'IF(B'+row+'="","",ROUND((TODAY()-B'+row+')/365.25,1))'},r.mae,r.pai,r.avo,r.obs||'',r.condAtual||'',r.previsaoRepro||''];}));
+  var dgD=[['DADOS GERAIS'],['Vinculado pelo Brinco.'],['Brinco','Data de Nascimento','Idade (anos)','Mãe (Brinco)','Pai','Avô materno','Observações','Condicao Atual','Previsao Reprodutiva','Nº de Partos']].concat(DB.dg.map(function(r,i){var row=i+4;return[r.brinco,r.nasc?exDate(r.nasc):null,{f:'IF(B'+row+'="","",ROUND((TODAY()-B'+row+')/365.25,1))'},r.mae,r.pai,r.avo,r.obs||'',r.condAtual||'',r.previsaoRepro||'',r.numPartos||0];}));
   var wsDg=XLSX.utils.aoa_to_sheet(dgD);
   DB.dg.forEach(function(r,i){var c=wsDg[XLSX.utils.encode_cell({r:3+i,c:1})];if(c&&r.nasc)c.z='dd/mm/yyyy';});
   XLSX.utils.book_append_sheet(wb,wsDg,'Dados Gerais');
@@ -2606,20 +2646,41 @@ function _buildWorkbook(){
   // Diagnóstico de gestação (novo módulo)
   if(DB_dg_reg.length){
     var dgRegD=[['DIAGNOSTICO DE GESTACAO'],['Resultados de diagnóstico de prenhez por protocolo.'],
-      ['ID Protocolo','Nome Protocolo','Brinco','Data DG','Resultado','Observações']]
+      ['ID Protocolo','Nome Protocolo','Brinco','Data DG','Resultado','Observações','Resultado Parto','Data Parto','Brinco Terneiro','Genero Terneiro','Obs Parto']]
       .concat(DB_dg_reg.map(function(r){
         var prot=DB_protocolos.find(function(p){return p.id===r.protId;})||{};
         return[r.protId,prot.nome||'',r.brinco,
           r.dataDG?exDate(r.dataDG):null,
-          r.resultado||'',r.obs||''
+          r.resultado||'',r.obs||'',
+          r.partoResultado||'',
+          r.partoData?exDate(r.partoData):null,
+          r.terneiroBrinco||'',r.terneiroGenero||'',r.partoObs||''
         ];
       }));
     var wsDgReg=XLSX.utils.aoa_to_sheet(dgRegD);
     DB_dg_reg.forEach(function(r,i){
       var c=wsDgReg[XLSX.utils.encode_cell({r:3+i,c:3})];
       if(c&&r.dataDG) c.z='dd/mm/yyyy';
+      var c2=wsDgReg[XLSX.utils.encode_cell({r:3+i,c:7})];
+      if(c2&&r.partoData) c2.z='dd/mm/yyyy';
     });
     XLSX.utils.book_append_sheet(wb,wsDgReg,'DG Animais');
+  }
+
+  // Intercorrências (Ficha do Animal) — inclui registros automáticos de mudança de condição
+  var interLinhas = [];
+  Object.keys(fcInter).forEach(function(b){
+    (fcInter[b]||[]).forEach(function(it){ interLinhas.push([b,it.data?exDate(it.data):null,it.desc||'']); });
+  });
+  if(interLinhas.length){
+    var interD=[['INTERCORRÊNCIAS'],['Anotações da Ficha do Animal, incluindo registros automáticos de mudança de condição.'],['Brinco','Data','Descrição']]
+      .concat(interLinhas);
+    var wsInter=XLSX.utils.aoa_to_sheet(interD);
+    interLinhas.forEach(function(r,i){
+      var c=wsInter[XLSX.utils.encode_cell({r:3+i,c:1})];
+      if(c&&r[1]) c.z='dd/mm/yyyy';
+    });
+    XLSX.utils.book_append_sheet(wb,wsInter,'Intercorrencias');
   }
 
   // Calendario de Prevencoes Sanitarias
@@ -3981,9 +4042,8 @@ function cancelarRepr(){
 
 function renderLotes(){
   var tb=document.getElementById('tbl-lotes'); if(!tb) return;
-  var chkBaixados = document.getElementById('lotes-mostrar-baixados');
-  var incluirBaixados = chkBaixados && chkBaixados.checked;
-  var base = incluirBaixados ? DB.id : animaisAtivos();
+  // Animais baixados têm todos os seus dados removidos ao dar baixa — DB.id só contém ativos.
+  var base = animaisAtivos();
   // build category filter buttons
   var cats={};
   base.forEach(function(r){ cats[r.cat||'Sem categoria']=(cats[r.cat||'Sem categoria']||0)+1; });
@@ -4004,9 +4064,8 @@ function renderLotes(){
       // ultimo peso
       var pArr=DB.pes.filter(function(p){return p.brinco===r.brinco;}).sort(function(a,b){return (toDate(b.data)||new Date(0))-(toDate(a.data)||new Date(0));});
       var ultPeso=pArr.length?pArr[0].peso+' kg':'-';
-      var baixa = baixaDoAnimal(r.brinco);
-      var brincoCell = '<strong>'+r.brinco+'</strong>'+(baixa?' <span class="fc-ev-badge fc-badge-int" title="'+baixa.tipo+' em '+fmtD(baixa.data)+'" style="margin-left:4px">baixado</span>':'');
-      return '<tr'+(baixa?' style="opacity:.55"':'')+'>'
+      var brincoCell = '<strong>'+r.brinco+'</strong>';
+      return '<tr>'
         +'<td>'+brincoCell+'</td>'
         +'<td>'+(r.cat||'-')+'</td>'
         +'<td>'+(r.raca||'-')+'</td>'
@@ -4308,9 +4367,13 @@ function salvarBaixa(){
     }
   }
 
+  // Remove todos os dados do animal das demais abas — libera o brinco para novo cadastro.
+  purgarDadosAnimal(b);
+
   toast('Saída registrada: '+b+' ('+tipo+')','ok');
   cancelarBaixa();
   markDirty(); renderBaixas(); renderDash(); renderReg(); renderLotes(); renderFinanceiro(); renderFinDashboard();
+  renderPes(); renderSan(); renderMi(); renderHistorico(); renderDiagnostico(); renderAgenda(); renderRepDash();
 }
 
 function cancelarBaixa(){
@@ -4361,6 +4424,8 @@ function salvarBaixaLote(){
       valor: tipo==='Venda' ? valorPorAnimal : '',
       _baixaTag: tag
     });
+    // Remove todos os dados do animal das demais abas — libera o brinco para novo cadastro.
+    purgarDadosAnimal(b);
   });
 
   if(tipo==='Venda'){
@@ -4371,6 +4436,7 @@ function salvarBaixaLote(){
   toast(n+' saída(s) registrada(s) em lote ('+tipo+')','ok');
   cancelarBaixaLote();
   markDirty(); renderBaixas(); renderDash(); renderReg(); renderLotes(); renderFinanceiro(); renderFinDashboard();
+  renderPes(); renderSan(); renderMi(); renderHistorico(); renderDiagnostico(); renderAgenda(); renderRepDash();
 }
 
 function cancelarBaixaLote(){
@@ -5100,6 +5166,191 @@ function closeConfirm(){
 }
 document.getElementById('modal-confirm').addEventListener('click',function(e){if(e.target===this)closeConfirm();});
 
+// ─── MODAL DE ATUALIZAÇÃO DE ESTADO (Ficha do Animal) ───────────────────
+document.getElementById('modal-estado').addEventListener('click',function(e){if(e.target===this)closeEstadoModal();});
+
+function closeEstadoModal(){
+  document.getElementById('modal-estado').classList.remove('on');
+}
+
+// Encontra o registro de DG "prenhe" ainda em aberto (sem resultado de parto registrado)
+// mais recente de um animal — é esse registro que será atualizado quando a vaca parir/abortar.
+function dgPrenheAtiva(brinco){
+  var candidatos = DB_dg_reg.filter(function(r){
+    return r.brinco===brinco && (r.resultado||'').toLowerCase()==='prenhe' && !r.partoResultado;
+  });
+  if(!candidatos.length) return null;
+  candidatos.sort(function(a,b){
+    var da=toDate(a.dataDG), db=toDate(b.dataDG);
+    if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+    return db-da;
+  });
+  return candidatos[0];
+}
+
+function fcAbrirEstado(brinco){
+  document.getElementById('me-title').textContent = 'Atualizar Estado — Brinco '+brinco;
+  var ativa = dgPrenheAtiva(brinco);
+  if(ativa) fcRenderPartoForm(brinco, ativa);
+  else fcRenderEstadoManual(brinco);
+  document.getElementById('modal-estado').classList.add('on');
+}
+
+var _selStyle = 'height:36px;padding:0 10px;font-size:13px;border:1px solid var(--bord);border-radius:var(--rsm);background:var(--surf);color:var(--tx);font-family:inherit';
+
+function fcRenderPartoForm(brinco, ativa){
+  var prot = DB_protocolos.find(function(p){ return p.id===ativa.protId; });
+  document.getElementById('me-content').innerHTML =
+    '<div style="font-size:12px;color:var(--tx2);margin-bottom:12px">Vaca prenhe'
+      +(prot?' — protocolo <strong>'+prot.nome+'</strong>':'')
+      +(ativa.dataDG?' (DG '+fmtD(ativa.dataDG)+')':'')
+      +'. Registre o desfecho da gestação:</div>'
+    +'<div class="fc-form-row">'
+      +'<div class="fc-fg"><label>Resultado</label>'
+        +'<select id="me-parto-resultado" style="'+_selStyle+'" onchange="fcToggleTerneiroFields()">'
+          +'<option value="pariu">Nasceu vivo</option>'
+          +'<option value="abortou">Abortou</option>'
+          +'<option value="natimorto">Natimorto</option>'
+        +'</select></div>'
+      +'<div class="fc-fg"><label>Data</label><input id="me-parto-data" placeholder="dd/mm/aaaa" maxlength="10" oninput="maskDate(this)" value="'+todayBR()+'"></div>'
+    +'</div>'
+    +'<div id="me-terneiro-fields" class="fc-form-row">'
+      +'<div class="fc-fg"><label>Brinco do Terneiro</label><input id="me-parto-brinco" placeholder="Ex: 1234"></div>'
+      +'<div class="fc-fg"><label>Gênero</label><select id="me-parto-genero" style="'+_selStyle+'"><option value="">-</option><option>F</option><option>M</option></select></div>'
+    +'</div>'
+    +'<div class="fc-fg" style="margin-bottom:4px"><label>Observação</label><input id="me-parto-obs" placeholder="Opcional"></div>'
+    +'<button class="fc-add-btn" style="width:100%;justify-content:center;margin-top:12px" onclick="fcConfirmarParto(\''+brinco+'\')">Confirmar</button>';
+}
+
+function fcToggleTerneiroFields(){
+  var sel = document.getElementById('me-parto-resultado');
+  var box = document.getElementById('me-terneiro-fields');
+  if(!sel || !box) return;
+  box.style.display = sel.value==='pariu' ? 'flex' : 'none';
+}
+
+function fcConfirmarParto(brinco){
+  var resultado = g('me-parto-resultado');
+  var dataStr = g('me-parto-data').trim();
+  var ternBrinco = g('me-parto-brinco').trim();
+  var ternGen = g('me-parto-genero');
+  var obs = (document.getElementById('me-parto-obs')||{}).value||'';
+  obs = obs.trim();
+
+  if(!dataStr){ toast('Informe a data do parto/desfecho','err'); return; }
+  if(!validDate(dataStr)){ toast('Use o formato dd/mm/aaaa para a data','err'); return; }
+  if(toDate(dataStr) > new Date()){ toast('Data não pode ser futura','err'); return; }
+
+  if(resultado==='pariu'){
+    var bMsg = brincoErrMsg(ternBrinco);
+    if(bMsg){ toast('Brinco do terneiro: '+bMsg,'err'); return; }
+    if(brincoExiste(ternBrinco)){ toast('Brinco '+ternBrinco+' já está cadastrado','err'); return; }
+    if(!ternGen){ toast('Selecione o gênero do terneiro','err'); return; }
+  }
+
+  var ativa = dgPrenheAtiva(brinco);
+  if(!ativa){ toast('Nenhum diagnóstico de prenhez ativo encontrado para este animal','err'); closeEstadoModal(); return; }
+
+  ativa.partoResultado = resultado;
+  ativa.partoData = dataStr;
+  ativa.partoObs = obs;
+  if(resultado==='pariu'){
+    ativa.terneiroBrinco = ternBrinco;
+    ativa.terneiroGenero = ternGen;
+  }
+
+  var dgAnimal = DB.dg.find(function(r){ return r.brinco===brinco; });
+  if(dgAnimal){
+    if(resultado==='pariu') dgAnimal.condAtual='Amamentando';
+    else if(resultado==='abortou') dgAnimal.condAtual='Abortou';
+    else if(resultado==='natimorto') dgAnimal.condAtual='Natimorto';
+    fcLogEstado(brinco, 'Condição atualizada para '+dgAnimal.condAtual+' (registro de parto/desfecho)', dataStr);
+  }
+
+  // Nascimento (vivo ou natimorto) conta como parição: incrementa o nº de partos da vaca e
+  // avança sua categoria reprodutiva (Novilha → Primípara → Matriz). Aborto não é parição.
+  if(resultado==='pariu' || resultado==='natimorto'){
+    if(dgAnimal) dgAnimal.numPartos = (dgAnimal.numPartos||0) + 1;
+    var vacaIdRec = DB.id.find(function(r){ return r.brinco===brinco; });
+    if(vacaIdRec){
+      var catAntes = vacaIdRec.cat;
+      if(vacaIdRec.cat==='Novilha') vacaIdRec.cat='Primipara';
+      else if(vacaIdRec.cat==='Primipara') vacaIdRec.cat='Matriz';
+      // Matriz (ou outras categorias) permanece inalterada
+      if(vacaIdRec.cat!==catAntes) fcLogEstado(brinco, 'Categoria atualizada de '+catAntes+' para '+vacaIdRec.cat+' (parição)', dataStr);
+    }
+  }
+  // Compatibilidade com o modelo legado (DB.rep), quando existir
+  var repRecX = DB.rep.find(function(r){ return r.brinco===brinco; });
+  if(repRecX){
+    if(resultado==='pariu'){ repRecX.par='Sim'; repRecX.cond='Amamentando'; }
+    else if(resultado==='abortou'){ repRecX.par='Nao'; repRecX.cond='Abortou'; }
+    else if(resultado==='natimorto'){ repRecX.par='Sim'; repRecX.cond='Natimorto'; }
+  }
+
+  // Natimorto: não cria registro de animal, por decisão do usuário.
+  // Nasceu vivo: cria o novo registro do terneiro buscando dados nas outras abas.
+  if(resultado==='pariu'){
+    var iatfRec = DB_iatf_reg.find(function(r){ return r.protId===ativa.protId && r.brinco===brinco; });
+    var vacaId = DB.id.find(function(r){ return r.brinco===brinco; })||{};
+    var vacaDg = DB.dg.find(function(r){ return r.brinco===brinco; })||{};
+    var idRecTern = {
+      brinco: ternBrinco,
+      raca: vacaId.raca||'',
+      cat: ternGen==='M' ? 'Terneiro' : 'Terneira',
+      gen: ternGen
+    };
+    var dgRecTern = {
+      brinco: ternBrinco, nasc: dataStr,
+      mae: brinco, pai: iatfRec ? (iatfRec.touro||'') : '', avo: vacaDg.pai||'',
+      obs: obs, condAtual:'', previsaoRepro:'', numPartos:0
+    };
+    DB.id.push(idRecTern);
+    DB.dg.push(dgRecTern);
+  }
+
+  markDirty();
+  toast(resultado==='pariu' ? 'Nascimento registrado! Novo animal '+ternBrinco+' criado.' : 'Estado atualizado.', 'ok');
+  closeEstadoModal();
+  fcRender(brinco); renderReg(); renderHistorico(); renderDiagnostico(); renderAgenda(); renderRepDash();
+}
+
+function fcRenderEstadoManual(brinco){
+  document.getElementById('me-content').innerHTML =
+    '<div style="font-size:12px;color:var(--tx2);margin-bottom:12px">Selecione o novo estado do animal <strong>'+brinco+'</strong>:</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+      +'<button class="btn btn-ghost" onclick="fcSetCondManual(\''+brinco+'\',\'Vazia\')">Vazia</button>'
+      +'<button class="btn btn-ghost" onclick="fcSetCondManual(\''+brinco+'\',\'Amamentando\')">Amamentando</button>'
+      +'<button class="btn btn-ghost" onclick="fcSetCondManual(\''+brinco+'\',\'Abortou\')">Abortou</button>'
+      +'<button class="btn btn-ghost" onclick="fcSetCondManual(\''+brinco+'\',\'Natimorto\')">Natimorto</button>'
+      +'<button class="btn btn-danger" onclick="fcSetDescarte(\''+brinco+'\')">Descarte</button>'
+    +'</div>';
+}
+
+function fcSetCondManual(brinco, cond){
+  var dgAnimal = DB.dg.find(function(r){ return r.brinco===brinco; });
+  if(!dgAnimal){ toast('Animal não encontrado','err'); return; }
+  dgAnimal.condAtual = cond;
+  var repRecX = DB.rep.find(function(r){ return r.brinco===brinco; });
+  if(repRecX) repRecX.cond = cond;
+  fcLogEstado(brinco, 'Condição atualizada manualmente para '+cond);
+  markDirty();
+  toast('Estado atualizado para '+cond+'!','ok');
+  closeEstadoModal();
+  fcRender(brinco); renderReg(); renderHistorico(); renderDiagnostico(); renderAgenda(); renderRepDash();
+}
+
+function fcSetDescarte(brinco){
+  var idRecX = DB.id.find(function(r){ return r.brinco===brinco; });
+  if(!idRecX){ toast('Animal não encontrado','err'); return; }
+  idRecX.cat = 'Descarte';
+  fcLogEstado(brinco, 'Categoria atualizada para Descarte');
+  markDirty();
+  toast('Animal '+brinco+' marcado para Descarte!','ok');
+  closeEstadoModal();
+  fcRender(brinco); renderReg(); renderHistorico(); renderDiagnostico(); renderAgenda(); renderRepDash();
+}
+
 // Check for unsaved session on page load — chamado após todas as vars globais serem declaradas
 
 // ─── PAGINACAO ────────────────────────────────────────────────────────
@@ -5234,14 +5485,67 @@ function brincoExiste(b){
 }
 
 // ── Efetivo ativo (exclui animais com saida/baixa registrada) ────────
+// Quando um animal recebe baixa, purgarDadosAnimal() remove seu registro de DB.id (e todos os
+// demais dados relacionados) — portanto a simples presença em DB.id já garante que o brinco
+// está ativo, mesmo que esse mesmo número já tenha pertencido a outro animal baixado no passado
+// (o histórico antigo permanece só em DB_baixas, sem vínculo com o cadastro atual).
 function animalAtivo(brinco){
-  return !DB_baixas.some(function(b){ return b.brinco===brinco; });
+  return !!DB.id.find(function(r){ return r.brinco===brinco; });
 }
 function animaisAtivos(){
   return DB.id.filter(function(r){ return animalAtivo(r.brinco); });
 }
 function baixaDoAnimal(brinco){
   return DB_baixas.find(function(b){ return b.brinco===brinco; });
+}
+
+// Contador usado para gerar um identificador anônimo único por animal baixado (ver
+// brincoAnon/purgarDadosAnimal abaixo) — nunca reaproveitado, mesmo que o brinco original
+// volte a ser usado por outro animal no futuro.
+var _anonSeq = 1;
+
+// Um brinco "anônimo" (ex.: "baixado-7") identifica um registro de reprodução mantido só para
+// preservar as estatísticas (totais de protocolo, taxa de prenhez, desempenho por touro/sêmen)
+// depois que o animal foi baixado — o número real não fica mais visível nessas telas.
+function brincoAnon(b){
+  return typeof b === 'string' && b.indexOf('baixado-')===0;
+}
+// Rótulo de exibição: mostra "Baixado" no lugar do identificador anônimo, ou o brinco normal.
+function brincoLbl(b){
+  return brincoAnon(b) ? 'Baixado' : b;
+}
+
+// Remove o animal do cadastro (Identificação/Pesagens/Sanidade/Manejo Individual) e apaga o
+// número do brinco das telas de Reprodução — mas mantém os registros de reprodução (IATF/Monta,
+// DG e o legado DB.rep) para não alterar as estatísticas (totais, taxa de prenhez, desempenho
+// por touro/sêmen). O brinco original fica registrado apenas na observação de cada registro
+// mantido, seguido da palavra "baixado". O único cadastro que permanece plenamente identificado
+// é o de Saída do Rebanho (DB_baixas) — histórico independente, sem relação com as demais abas.
+// Isso também libera o número do brinco para uso imediato em um novo cadastro.
+function purgarDadosAnimal(brinco){
+  DB.id  = DB.id.filter(function(r){ return r.brinco!==brinco; });
+  DB.dg  = DB.dg.filter(function(r){ return r.brinco!==brinco; });
+  DB.pes = DB.pes.filter(function(r){ return r.brinco!==brinco; });
+  DB.san = DB.san.filter(function(r){ return r.brinco!==brinco; });
+  DB_mi  = DB_mi.filter(function(r){ return r.brinco!==brinco; });
+  delete fcInter[brinco];
+
+  // Seção de Reprodução: mantém os registros (não apaga), mas anonimiza o brinco — um único
+  // identificador anônimo por animal, para preservar o pareamento IATF/Monta ↔ DG e o tamanho
+  // das listas de animais por protocolo (estatísticas continuam corretas).
+  var anon = 'baixado-'+(_anonSeq++);
+  var nota = 'Brinco '+brinco+' baixado';
+  function anonimizar(r){
+    r.brinco = anon;
+    r.obs = r.obs ? (r.obs+' | '+nota) : nota;
+  }
+  DB.rep.forEach(function(r){ if(r.brinco===brinco) anonimizar(r); });
+  DB_iatf_reg.forEach(function(r){ if(r.brinco===brinco) anonimizar(r); });
+  DB_dg_reg.forEach(function(r){ if(r.brinco===brinco) anonimizar(r); });
+  DB_protocolos.forEach(function(p){
+    if(!p.brincos || !p.brincos.length) return;
+    p.brincos = p.brincos.map(function(x){ return x===brinco ? anon : x; });
+  });
 }
 
 // ── Verificação de duplicata de manejo individual ────────────────────
@@ -5689,7 +5993,7 @@ document.getElementById('modal-del').addEventListener('click',function(e){if(e.t
    ════════════════════════════════════════════ */
 var fcChart = null;
 var fcAcSel = -1;
-// intercorrencias stored per brinco in memory (not persisted in xlsx in this version)
+// intercorrencias stored per brinco — persistidas na planilha na aba "Intercorrencias"
 var fcInter = {}; // { brinco: [{data, desc}] }
 
 function fcBrincos(){
@@ -5734,7 +6038,13 @@ function fcBuscar(){
   if(!v) return;
   var idRec=DB.id.find(function(r){return r.brinco===v;});
   if(!idRec){
-    document.getElementById('fc-result').innerHTML='<div class="fc-nf">Brinco <strong>'+v+'</strong> não encontrado. Verifique o cadastro em Identificação.</div>';
+    // Se o brinco tem histórico de saída, seus dados já foram removidos ao dar baixa
+    // (purgarDadosAnimal) — o número está livre para um novo cadastro.
+    var baixaHist = DB_baixas.filter(function(r){return r.brinco===v;})
+      .sort(function(a,b){ var da=toDate(a.data),db=toDate(b.data); if(!da&&!db)return 0; if(!da)return 1; if(!db)return -1; return db-da; })[0];
+    document.getElementById('fc-result').innerHTML = baixaHist
+      ? '<div class="fc-nf">Brinco <strong>'+v+'</strong> teve saída registrada em '+fmtD(baixaHist.data)+' ('+baixaHist.tipo+'). Os dados de manejo foram removidos ao dar baixa — consulte o histórico completo na aba <strong>Saída do Rebanho</strong>. Este número já está disponível para um novo cadastro.</div>'
+      : '<div class="fc-nf">Brinco <strong>'+v+'</strong> não encontrado. Verifique o cadastro em Identificação.</div>';
     return;
   }
   fcRender(v);
@@ -5785,6 +6095,11 @@ function fcRender(brinco){
   var tagSub = dataUnificada
     ? ('DG '+fmtD(dataUnificada)+(origemUnificada==='IATF'?' &middot; IATF':''))
     : '';
+  // Estados manuais (definidos via botão "Atualizar Estado") têm prioridade sobre a
+  // derivação automática por data de DG — refletem a condição real e mais recente do animal.
+  if(dgRec.condAtual==='Amamentando'){ tagCls='fc-tag-amamentando'; tagLbl='Amamentando'; tagSub=''; }
+  else if(dgRec.condAtual==='Abortou'){ tagCls='fc-tag-abortou'; tagLbl='Abortou'; tagSub=''; }
+  else if(dgRec.condAtual==='Natimorto'){ tagCls='fc-tag-natimorto'; tagLbl='Natimorto (bezerro)'; tagSub=''; }
 
   // ── Baixa (saida do rebanho) ──
   var baixaAnimal = baixaDoAnimal(brinco);
@@ -5804,6 +6119,7 @@ function fcRender(brinco){
     ['Mãe (brinco)', dgRec.mae||'—'],
   ];
   if(dgRec.avo) fields.push(['Avô', dgRec.avo]);
+  if(idRec.gen==='F') fields.push(['Nº de Partos', String(dgRec.numPartos||0)]);
   if(repRec.proto) fields.push(['Protocolo reprod.', repRec.proto]);
   if(repRec.ama==='Sim') fields.push(['Terneiro', (repRec.terngen||'')+(repRec.ternbrinco?' brinco '+repRec.ternbrinco:'')]);
 
@@ -6069,7 +6385,10 @@ function fcRender(brinco){
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">'
           +'<span class="fc-tag '+tagCls+'">'+tagLbl+'</span>'
           +(tagSub?'<span style="font-size:10px;color:var(--tx3)">'+tagSub+'</span>':'')
-          +(baixaAnimal?'':'<button class="btn btn-ghost btn-sm" style="margin-top:4px;font-size:11px;padding:2px 8px" onclick="irParaBaixa(\''+brinco+'\')">&#128683; Dar baixa</button>')
+          +(baixaAnimal?'':'<div style="display:flex;gap:6px;margin-top:4px">'
+            +'<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="fcAbrirEstado(\''+brinco+'\')">&#128260; Atualizar estado</button>'
+            +'<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="irParaBaixa(\''+brinco+'\')">&#128683; Dar baixa</button>'
+          +'</div>')
         +'</div>'
       +'</div>'
       +(baixaAnimal
@@ -6169,6 +6488,15 @@ function fcSwTab(btn, id){
   document.getElementById('fct-'+id).classList.add('active');
 }
 
+// Registra automaticamente uma intercorrência no histórico do animal sempre que sua condição
+// (condAtual, categoria de descarte etc.) é atualizada por qualquer tela do sistema — mantém um
+// rastro completo de mudanças de estado na Ficha do Animal (aba Intercorrências + Histórico completo).
+function fcLogEstado(brinco, desc, data){
+  if(!brinco) return;
+  if(!fcInter[brinco]) fcInter[brinco]=[];
+  fcInter[brinco].push({data: data||todayBR(), desc: desc});
+}
+
 function fcAddInt(brinco){
   var data=document.getElementById('fc-int-data').value.trim();
   var desc=document.getElementById('fc-int-desc').value.trim();
@@ -6217,6 +6545,7 @@ var dgAnoFiltro     = 'todos';  // filtro de ano no DG
 var iatfEditIdx     = null;     // índice do registro de IATF em edição (DB_iatf_reg)
 var dgEditKey       = null;     // chave 'protId-brinco' do registro de DG em edição
 var dashAnoFiltro   = 'todos';  // filtro de ano no Dashboard Reprodutivo
+var histAnoFiltro   = 'todos';  // filtro de ano no Histórico Reprodutivo
 var DB_iatf_reg   = [];  // [{protId, brinco, data, touro, inseminador, semen, obs}]
 var DB_dg_reg     = [];  // [{protId, brinco, dataDG, resultado, obs}]
 var agBrincosSel  = [];
@@ -6328,6 +6657,8 @@ function iatfSetAno(ano){ iatfAnoFiltro=ano; renderIatfReg(); }
 function dgSetAno(ano){ dgAnoFiltro=ano; renderDiagnostico(); }
 // Seleciona ano no Dashboard Reprodutivo
 function dashSetAno(ano){ dashAnoFiltro=ano; renderRepDash(); }
+// Seleciona ano no Histórico Reprodutivo
+function histSetAno(ano){ histAnoFiltro=ano; renderHistorico(); }
 
 // Toggle de um grupo de ano (acordeão)
 function toggleAnoGrupo(el){
@@ -6351,6 +6682,18 @@ function agruparPorAno(lista){
     if(!grupos[a]) grupos[a] = [];
     grupos[a].push(p);
   });
+  // Ordena os protocolos de cada ano por data de início (D0 / Data Início), crescente —
+  // em vez da ordem de inclusão. Vale para Agenda, Registro de IATF e Monta, e Diagnóstico.
+  Object.keys(grupos).forEach(function(a){
+    grupos[a].sort(function(x,z){
+      var dx = toDate(protDataInicio(x));
+      var dz = toDate(protDataInicio(z));
+      if(dx && dz) return dx - dz;
+      if(dx) return -1;
+      if(dz) return 1;
+      return 0;
+    });
+  });
   // Ordena anos desc
   return Object.keys(grupos).sort(function(a,b){ return b.localeCompare(a); })
     .map(function(a){ return {ano:a, protocolos:grupos[a]}; });
@@ -6361,6 +6704,14 @@ function agruparPorAno(lista){
 function protDataBase(p){
   if(!p) return '';
   return p.tipo==='natural' ? (p.dataFim||p.dataInicio||'') : (p.d10||p.d0||'');
+}
+
+// Data de início de um protocolo (D0 para IATF, Data Início para Monta Natural) — usada para
+// ordenar a apresentação dos protocolos/monta (Agenda, Registro de IATF e Monta, Diagnóstico)
+// e os quadros EPD do Histórico, sempre em ordem cronológica crescente.
+function protDataInicio(p){
+  if(!p) return '';
+  return p.tipo==='natural' ? (p.dataInicio||p.dataFim||'') : (p.d0||p.d10||'');
 }
 
 // Data estimada de DG de um protocolo: usa dg_est se definido, senão base+30 dias
@@ -6768,7 +7119,8 @@ function renderAgenda(){
         title = isNatural ? 'Aguardando Monta' : 'Aguardando IATF';
       }
       var id = DB.id.find(function(r){ return r.brinco===b; })||{};
-      return '<span class="'+cls+'" title="'+b+(id.cat?' · '+id.cat:'')+'  —  '+title+'" style="cursor:default">'+b+'</span>';
+      var lbl = brincoLbl(b);
+      return '<span class="'+cls+'" title="'+lbl+(id.cat?' · '+id.cat:'')+'  —  '+title+'" style="cursor:default">'+lbl+'</span>';
     }).join('');
     // Donut visual simples
     var pctBar = dgFeitos>0
@@ -6875,7 +7227,8 @@ function renderIatfReg(){
     var protHtml = g.protocolos.map(function(p){
       var isNatural = p.tipo === 'natural';
       var pendentes = (p.brincos||[]).filter(function(b){
-        return !DB_iatf_reg.find(function(r){ return r.protId===p.id && r.brinco===b; });
+        // Animais baixados (brinco anonimizado) não podem ser selecionados para um novo registro.
+        return !brincoAnon(b) && !DB_iatf_reg.find(function(r){ return r.protId===p.id && r.brinco===b; });
       });
       var feitas = DB_iatf_reg.filter(function(r){ return r.protId===p.id; });
       var dataPadrao = isNatural ? fmtD(p.dataFim||p.dataInicio) : fmtD(p.d10);
@@ -6920,11 +7273,12 @@ function renderIatfReg(){
           +'</tr></thead><tbody>'
           +feitas.map(function(r){
             var origIdx=DB_iatf_reg.indexOf(r);
+            var lbl=brincoLbl(r.brinco);
             if(origIdx===iatfEditIdx){
               var eid='iatfedit-'+origIdx;
               if(isNatural){
                 return '<tr>'
-                  +'<td><strong>'+r.brinco+'</strong></td>'
+                  +'<td><strong>'+lbl+'</strong></td>'
                   +'<td><input type="text" id="'+eid+'-data" value="'+(r.data||'')+'" maxlength="10" oninput="maskDate(this)" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100px;outline:none"></td>'
                   +'<td><input type="text" id="'+eid+'-touro" value="'+(r.touro||'').replace(/"/g,'&quot;')+'" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:110px;outline:none"></td>'
                   +'<td><input type="text" id="'+eid+'-obs" value="'+(r.obs||'').replace(/"/g,'&quot;')+'" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100%;outline:none"></td>'
@@ -6934,7 +7288,7 @@ function renderIatfReg(){
                   +'</td></tr>';
               }
               return '<tr>'
-                +'<td><strong>'+r.brinco+'</strong></td>'
+                +'<td><strong>'+lbl+'</strong></td>'
                 +'<td><input type="text" id="'+eid+'-data" value="'+(r.data||'')+'" maxlength="10" oninput="maskDate(this)" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100px;outline:none"></td>'
                 +'<td><input type="text" id="'+eid+'-touro" value="'+(r.touro||'').replace(/"/g,'&quot;')+'" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:110px;outline:none"></td>'
                 +'<td><input type="text" id="'+eid+'-ins" value="'+(r.inseminador||'').replace(/"/g,'&quot;')+'" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100px;outline:none"></td>'
@@ -6946,11 +7300,11 @@ function renderIatfReg(){
                 +'</td></tr>';
             }
             if(isNatural){
-              return '<tr><td><strong>'+r.brinco+'</strong></td><td>'+fmtD(r.data)+'</td><td>'+(r.touro||'-')+'</td><td>'+(r.obs||'-')+'</td>'
+              return '<tr><td><strong>'+lbl+'</strong></td><td>'+fmtD(r.data)+'</td><td>'+(r.touro||'-')+'</td><td>'+(r.obs||'-')+'</td>'
                 +'<td class="tc" style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="iatfRegEditar('+origIdx+')" title="Editar">&#9998;</button> '
                 +'<button class="btn btn-danger btn-sm" onclick="iatfRegExcluir('+origIdx+')" title="Excluir">&#128465;</button></td></tr>';
             }
-            return '<tr><td><strong>'+r.brinco+'</strong></td><td>'+fmtD(r.data)+'</td><td>'+(r.touro||'-')+'</td><td>'+(r.inseminador||'-')+'</td><td>'+(r.semen||'-')+'</td><td>'+(r.obs||'-')+'</td>'
+            return '<tr><td><strong>'+lbl+'</strong></td><td>'+fmtD(r.data)+'</td><td>'+(r.touro||'-')+'</td><td>'+(r.inseminador||'-')+'</td><td>'+(r.semen||'-')+'</td><td>'+(r.obs||'-')+'</td>'
               +'<td class="tc" style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="iatfRegEditar('+origIdx+')" title="Editar">&#9998;</button> '
               +'<button class="btn btn-danger btn-sm" onclick="iatfRegExcluir('+origIdx+')" title="Excluir">&#128465;</button></td></tr>';
           }).join('')
@@ -6993,7 +7347,10 @@ function iatfRegSalvar(pid){
   DB_iatf_reg.push({ protId:pid, brinco:brinco, data:data, touro:touro, inseminador:ins, semen:semen, obs:obs });
   // Atualiza condição do animal para "Protocolado"
   var dg = DB.dg.find(function(d){ return d.brinco===brinco; });
-  if(dg) dg.condAtual = 'Protocolado';
+  if(dg){
+    dg.condAtual = 'Protocolado';
+    fcLogEstado(brinco, 'Condição atualizada para Protocolado — '+(isNatural?'Monta Natural':'IATF')+(prot?' ('+prot.nome+')':''), data);
+  }
   markDirty(); toast((isNatural?'Monta registrada':'IATF registrada')+' para animal '+brinco,'ok');
   renderIatfReg();
 }
@@ -7089,14 +7446,19 @@ function renderDiagnostico(){
       var dgEstDate = fmtD(protDgEstDate(p));
       var dgFeitosCnt = DB_dg_reg.filter(function(r){return r.protId===p.id;}).length;
       var prenhasCnt  = DB_dg_reg.filter(function(r){return r.protId===p.id&&(r.resultado||'').toLowerCase()==='prenhe';}).length;
-      var rows = animaisIatf.map(function(b){
+      var rows = animaisIatf.filter(function(b){
+        // Animal baixado sem DG registrado antes da saída: não oferece formulário de novo registro.
+        if(brincoAnon(b)) return !!DB_dg_reg.find(function(r){return r.protId===p.id&&r.brinco===b;});
+        return true;
+      }).map(function(b){
         var existing=DB_dg_reg.find(function(r){return r.protId===p.id&&r.brinco===b;});
+        var lbl=brincoLbl(b);
         var idGen='dg-'+p.id+'-'+b.replace(/[^a-z0-9]/gi,'_');
         if(existing){
           var editKey = p.id+'-'+b;
           if(editKey===dgEditKey){
             return '<tr>'
-              +'<td><strong>'+b+'</strong></td>'
+              +'<td><strong>'+lbl+'</strong></td>'
               +'<td><input type="text" id="'+idGen+'-edata" value="'+(existing.dataDG||'')+'" maxlength="10" oninput="maskDate(this)" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:110px;outline:none"></td>'
               +'<td><select id="'+idGen+'-eres" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);outline:none">'
                 +'<option value=""'+(!existing.resultado?' selected':'')+'>—</option>'
@@ -7110,7 +7472,7 @@ function renderDiagnostico(){
               +'</td></tr>';
           }
           var cls=(existing.resultado||'').toLowerCase()==='prenhe'?'bdg-prenha':'bdg-vazia';
-          return '<tr><td><strong>'+b+'</strong></td>'
+          return '<tr><td><strong>'+lbl+'</strong></td>'
             +'<td>'+fmtD(existing.dataDG)+'</td>'
             +'<td><span class="bdg '+cls+'">'+existing.resultado+'</span></td>'
             +'<td>'+(existing.obs||'-')+'</td>'
@@ -7175,6 +7537,7 @@ function dgSalvarById(pid, brinco){
   if(dg2){
     dg2.condAtual = resVal.toLowerCase()==='prenhe' ? 'Prenhe' : 'Vazia';
     if(resVal.toLowerCase()==='prenhe') dg2.previsaoRepro = 'Prenhe';
+    fcLogEstado(brinco, 'Condição atualizada para '+dg2.condAtual+' (Diagnóstico de Gestação)', dataVal);
   }
   var repEntry = DB.rep.find(function(r){ return r.brinco===brinco; });
   if(repEntry) repEntry.cond = resVal.toLowerCase()==='prenhe' ? 'Prenhe' : 'Vazia';
@@ -7195,6 +7558,7 @@ function dgSalvar(pid, brinco){
   if(dg){
     dg.condAtual = res.toLowerCase()==='prenhe' ? 'Prenhe' : 'Vazia';
     if(res.toLowerCase()==='prenhe') dg.previsaoRepro = 'Prenhe';
+    fcLogEstado(brinco, 'Condição atualizada para '+dg.condAtual+' (Diagnóstico de Gestação)', data);
   }
   // Atualiza DB.rep também se existir
   var repEntry = DB.rep.find(function(r){ return r.brinco===brinco; });
@@ -7241,6 +7605,7 @@ function dgSalvarEdicao(pid, brinco){
   if(dg2){
     dg2.condAtual = resVal.toLowerCase()==='prenhe' ? 'Prenhe' : 'Vazia';
     if(resVal.toLowerCase()==='prenhe') dg2.previsaoRepro = 'Prenhe';
+    fcLogEstado(brinco, 'Condição atualizada para '+dg2.condAtual+' (edição de DG)', dataVal);
   }
   var repEntry = DB.rep.find(function(x){ return x.brinco===brinco; });
   if(repEntry) repEntry.cond = resVal.toLowerCase()==='prenhe' ? 'Prenhe' : 'Vazia';
@@ -7257,14 +7622,17 @@ function renderHistorico(){
   filtro = filtro.trim().toLowerCase();
 
   // Agrupa dados por brinco → lista de quadros (1 quadro por protocolo/período de entoura,
-  // ou por registro legado individual). Animais com mais de um protocolo/período no mesmo
-  // ano reprodutivo recebem quadros SEPARADOS (não são mesclados), exibidos lado a lado.
-  // Estrutura: animais[brinco] = [ {anoRepro, chave, ordem, emprenhou, pariu, desmamou}, ... ]
+  // ou por registro legado individual). Animais com mais de um protocolo/período — mesmo que
+  // no mesmo ano reprodutivo — recebem quadros SEPARADOS, NUNCA mesclados ou apagados: um
+  // resultado prenhe em um protocolo novo não sobrescreve o quadro de um protocolo anterior.
+  // Cada quadro é identificado pelo nome do protocolo de origem, preservando o histórico
+  // completo para apoiar a tomada de decisões.
+  // Estrutura: animais[brinco] = [ {anoRepro, nome, chave, ordem, emprenhou, pariu, desmamou}, ... ]
   var animais = {};
 
-  function novoQuadro(brinco, anoRepro, chave, ordem){
+  function novoQuadro(brinco, anoRepro, nome, chave, ordem){
     if(!animais[brinco]) animais[brinco] = [];
-    var q = {anoRepro:anoRepro, chave:chave, ordem:ordem, emprenhou:null, pariu:null, desmamou:null};
+    var q = {anoRepro:anoRepro, nome:nome, chave:chave, ordem:ordem, emprenhou:null, pariu:null, desmamou:null};
     animais[brinco].push(q);
     return q;
   }
@@ -7285,7 +7653,8 @@ function renderHistorico(){
       anoRepro = anoReproFromD0(r.dtdiag) || r.dtdiag.split('/')[2];
       dt = toDate(r.dtdiag);
     }
-    var entry = novoQuadro(r.brinco, anoRepro, 'legado-'+idx, dt ? dt.getTime() : -idx);
+    var nome = r.proto || 'Registro manual';
+    var entry = novoQuadro(r.brinco, anoRepro, nome, 'legado-'+idx, dt ? dt.getTime() : -idx);
     if((r.emp||'').toLowerCase()==='sim')      entry.emprenhou = true;
     else if((r.emp||'').toLowerCase()==='nao') entry.emprenhou = false;
     if((r.par||'').toLowerCase()==='sim')      entry.pariu = true;
@@ -7298,42 +7667,76 @@ function renderHistorico(){
   // Cada registro de DG indica emprenhou; pariu/desmamou ainda não disponíveis neste módulo
   DB_dg_reg.forEach(function(r){
     if(!r.brinco) return;
-    // Acha o protocolo para obter o ano reprodutivo e a data (para ordenação)
+    // Acha o protocolo para obter o nome, o ano reprodutivo e a data (para ordenação)
     var prot = DB_protocolos.find(function(p){ return p.id === r.protId; });
     var anoRepro = prot ? (prot.ano || anoReproFromD0(prot.d0) || '—') : '—';
+    var nome = prot ? prot.nome : ('Protocolo #'+r.protId);
     var chave = 'prot-'+r.protId;
-    var dt = toDate(protDataBase(prot));
-    var entry = achaQuadro(r.brinco, chave) || novoQuadro(r.brinco, anoRepro, chave, dt ? dt.getTime() : (r.protId||0));
+    var dt = toDate(protDataInicio(prot));
+    var entry = achaQuadro(r.brinco, chave) || novoQuadro(r.brinco, anoRepro, nome, chave, dt ? dt.getTime() : (r.protId||0));
     var prenhou = (r.resultado||'').toLowerCase()==='prenhe';
-    // Só sobrescreve emprenhou se ainda não havia dado mais preciso
+    // Só sobrescreve emprenhou se ainda não havia dado mais preciso (nunca apaga outros quadros)
     if(entry.emprenhou === null) entry.emprenhou = prenhou;
+    // Resultado do parto (registrado via botão "Atualizar Estado" na Ficha do Animal)
+    if(r.partoResultado==='pariu'){ entry.pariu = true; }
+    else if(r.partoResultado==='abortou'){ entry.pariu = false; }
+    else if(r.partoResultado==='natimorto'){ entry.pariu = true; entry.desmamou = false; }
   });
 
-  // ── IATF sem DG: cria quadro do protocolo aguardando resultado (emprenhou=null) ──
+  // ── IATF/Monta sem DG: cria quadro do protocolo aguardando resultado (emprenhou=null) ──
   DB_iatf_reg.forEach(function(r){
     if(!r.brinco) return;
     var prot = DB_protocolos.find(function(p){ return p.id === r.protId; });
     var anoRepro = prot ? (prot.ano || anoReproFromD0(prot.d0) || '—') : '—';
+    var nome = prot ? prot.nome : ('Protocolo #'+r.protId);
     var chave = 'prot-'+r.protId;
     // Só cria quadro se este protocolo ainda não tiver um (ex.: via DG)
     if(!achaQuadro(r.brinco, chave)){
-      var dt = toDate(protDataBase(prot));
-      novoQuadro(r.brinco, anoRepro, chave, dt ? dt.getTime() : (r.protId||0));
+      var dt = toDate(protDataInicio(prot));
+      novoQuadro(r.brinco, anoRepro, nome, chave, dt ? dt.getTime() : (r.protId||0));
       // emprenhou permanece null = aguardando DG
     }
   });
 
-  var keys = Object.keys(animais).filter(function(b){
-    return !filtro || b.toLowerCase().indexOf(filtro)!==-1;
-  }).sort(function(a,b){
-    var na=parseInt(a), nb=parseInt(b);
-    return (!isNaN(na)&&!isNaN(nb)) ? na-nb : a.localeCompare(b);
+  // ── Agrupa por Ano Reprodutivo (mesmo padrão visual da tela de Diagnóstico) ──
+  // porAno[anoRepro][brinco] = [quadros daquele animal específico naquele ano]
+  var porAno = {};
+  Object.keys(animais).forEach(function(b){
+    if(filtro && b.toLowerCase().indexOf(filtro)===-1) return;
+    animais[b].forEach(function(q){
+      var a = q.anoRepro || '—';
+      if(!porAno[a]) porAno[a] = {};
+      if(!porAno[a][b]) porAno[a][b] = [];
+      porAno[a][b].push(q);
+    });
   });
 
-  if(!keys.length){
+  var anos = Object.keys(porAno).sort(function(x,z){ return z.localeCompare(x); });
+
+  // ── Barra de anos ──
+  (function(){
+    var bar = document.getElementById('hist-ano-tabs-bar');
+    if(!bar) return;
+    if(!anos.length){ bar.style.display='none'; return; }
+    bar.style.display='flex';
+    var html='<button class="ano-tab all'+(histAnoFiltro==='todos'?' active':'')+'" onclick="histSetAno(this.dataset.ano)" data-ano="todos">Todos</button>';
+    html+=anos.map(function(a){
+      var n = Object.keys(porAno[a]).length;
+      return '<button class="ano-tab'+(histAnoFiltro===a?' active':'')+'" onclick="histSetAno(this.dataset.ano)" data-ano="'+a+'">'+a+' <small>('+n+')</small></button>';
+    }).join('');
+    bar.innerHTML = html;
+  })();
+
+  if(!anos.length){
     lista.innerHTML = '<div class="empty"><div class="empty-ic">&#128200;</div>'
       +(DB_protocolos.length||DB.rep.length ? 'Nenhum animal encontrado com esse filtro.' : 'Nenhum histórico disponível. Crie protocolos e registre diagnósticos na aba Reprodução.')
       +'</div>';
+    return;
+  }
+
+  var anosFiltrados = histAnoFiltro==='todos' ? anos : anos.filter(function(a){ return a===histAnoFiltro; });
+  if(!anosFiltrados.length){
+    lista.innerHTML = '<div class="empty"><div class="empty-ic">&#128200;</div>Nenhum animal encontrado com esse filtro.</div>';
     return;
   }
 
@@ -7346,23 +7749,26 @@ function renderHistorico(){
     return '<span class="bola '+cls+'" title="'+title+'">'+sym+'</span>';
   }
 
-  // Cabeçalho da tabela (fixo, uma vez)
-  lista.innerHTML =
-    '<div style="display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surf2);border-radius:var(--rsm) var(--rsm) 0 0;border-bottom:2px solid var(--bord);font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;flex-wrap:wrap">'
-      +'<span style="min-width:60px">Brinco</span>'
-      +'<span style="min-width:120px">Cat. / Raça</span>'
-      +'<span style="flex:1">Histórico por Período Reprodutivo</span>'
-    +'</div>'
-    + keys.map(function(b){
-      var id = DB.id.find(function(r){ return r.brinco===b; })||{};
-      // Ordena quadros do mais recente para o mais antigo. Quando o mesmo animal tem mais de
-      // um protocolo/período no mesmo ano reprodutivo, cada um vira um quadro distinto,
-      // exibido lado a lado nesta mesma linha, em ordem cronológica.
-      var quadros = animais[b].slice().sort(function(x,z){ return z.ordem - x.ordem; });
+  var anoMaisRecente = anos[0]||'';
 
-      var anosHtml = quadros.map(function(a){
-        return '<div class="hist-ano" title="Período Reprodutivo '+a.anoRepro+'">'
-          +'<div style="font-size:9px;font-weight:700;color:var(--tx2);text-align:center;margin-bottom:4px;white-space:nowrap">'+a.anoRepro+'</div>'
+  lista.innerHTML = anosFiltrados.map(function(ano){
+    var isOpen = (histAnoFiltro !== 'todos') || (ano === anoMaisRecente);
+    var animaisDoAno = porAno[ano];
+    var keys = Object.keys(animaisDoAno).sort(function(a,b){
+      var na=parseInt(a), nb=parseInt(b);
+      return (!isNaN(na)&&!isNaN(nb)) ? na-nb : a.localeCompare(b);
+    });
+
+    var linhasHtml = keys.map(function(b){
+      var id = DB.id.find(function(r){ return r.brinco===b; })||{};
+      // Ordena quadros em ordem crescente de data (mais antigo à esquerda, mais recente à
+      // direita), dentro do próprio ano. Cada protocolo/período vira um quadro distinto,
+      // identificado pelo seu nome, lado a lado.
+      var quadros = animaisDoAno[b].slice().sort(function(x,z){ return x.ordem - z.ordem; });
+
+      var quadrosHtml = quadros.map(function(a){
+        return '<div class="hist-ano" title="Protocolo: '+a.nome+' &#183; Ano Reprodutivo '+a.anoRepro+'">'
+          +'<div style="font-size:9px;font-weight:700;color:var(--tx2);text-align:center;margin-bottom:4px;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis">'+a.nome+'</div>'
           +'<div class="hist-bolas">'
             +bola(a.emprenhou, 'Emprenhou')
             +bola(a.pariu,     'Pariu')
@@ -7377,11 +7783,33 @@ function renderHistorico(){
       }).join('');
 
       return '<div class="hist-row">'
-        +'<div class="hist-brinco">'+b+'</div>'
+        +'<div class="hist-brinco">'+brincoLbl(b)+'</div>'
         +'<div style="font-size:11px;color:var(--tx2);min-width:120px">'+(id.cat||'—')+(id.raca?' &middot; '+id.raca:'')+'</div>'
-        +'<div class="hist-anos">'+anosHtml+'</div>'
+        +'<div class="hist-anos">'+quadrosHtml+'</div>'
       +'</div>';
     }).join('');
+
+    return '<div class="ano-grupo'+(isOpen?' open':'')+'">'
+      +'<div class="ano-grupo-header" onclick="toggleAnoGrupo(this)">'
+        +'<div class="ano-grupo-title">'
+          +'<span class="ano-grupo-badge">'+keys.length+'</span>'
+          +'&#127968; Ano Reprodutivo '+ano
+        +'</div>'
+        +'<div class="ano-grupo-stats">'
+          +'<span>'+keys.length+' animal(is)</span>'
+        +'</div>'
+        +'<span class="ano-grupo-arrow">&#9660;</span>'
+      +'</div>'
+      +'<div class="ano-grupo-body">'
+        +'<div style="display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surf2);border-bottom:2px solid var(--bord);font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;flex-wrap:wrap">'
+          +'<span style="min-width:60px">Brinco</span>'
+          +'<span style="min-width:120px">Cat. / Raça</span>'
+          +'<span style="flex:1">Protocolos do Ano (E = Emprenhou &nbsp; P = Pariu &nbsp; D = Desmamou)</span>'
+        +'</div>'
+        +linhasHtml
+      +'</div>'
+    +'</div>';
+  }).join('');
 }
 
 // ─── DASHBOARD DE REPRODUÇÃO ─────────────────────────────────────────────────
