@@ -429,7 +429,7 @@ tr:hover td{background:#fafaf7}
       <button class="nb" onclick="goTab('baixas')" id="nb-baixas"><span class="ic">&#128683;</span>Saída do Rebanho</button>
       <div class="sb-sec">Reprodução</div>
       <button class="nb" onclick="goRepTab('agenda')" id="nb-rep-agenda"><span class="ic">&#128197;</span>Agenda</button>
-      <button class="nb" onclick="goRepTab('reg-iatf')" id="nb-rep-reg-iatf"><span class="ic">&#128297;</span>Registro de IATF</button>
+      <button class="nb" onclick="goRepTab('reg-iatf')" id="nb-rep-reg-iatf"><span class="ic">&#128297;</span>Registro de IATF e Monta</button>
       <button class="nb" onclick="goRepTab('diagnostico')" id="nb-rep-diagnostico"><span class="ic">&#128269;</span>Diagnóstico</button>
       <button class="nb" onclick="goRepTab('historico')" id="nb-rep-historico"><span class="ic">&#128200;</span>Histórico</button>
       <button class="nb" onclick="goRepTab('dash-rep')" id="nb-rep-dash-rep"><span class="ic">&#128293;</span>Dashboard Reprod.</button>
@@ -706,9 +706,15 @@ tr:hover td{background:#fafaf7}
         </div>
         <div class="fcard">
           <div class="fcard-title" id="agenda-form-title">Novo Protocolo</div>
+          <!-- Seletor de tipo de protocolo -->
+          <div style="display:flex;gap:8px;margin-bottom:18px">
+            <button type="button" class="btn btn-sm" id="ag-tipo-iatf-btn" onclick="agSetTipo('iatf')" style="background:var(--grnbg);border:1px solid #a5d6a7;color:var(--grnt);font-weight:600">&#129404; Protocolo IATF</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="ag-tipo-natural-btn" onclick="agSetTipo('natural')">&#128004; Monta Natural</button>
+          </div>
           <div class="grid g3">
             <div class="fg"><label>Nome do Protocolo *</label><input type="text" id="ag-nome" placeholder="Ex: IATF-Jun/2026 Lote 1"><div class="field-err-msg"></div></div>
-            <div class="fg"><label>D0 (Data Início) *</label><input type="text" id="ag-d0" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);agCalcDates();agSugerirAno()"><div class="field-err-msg"></div></div>
+            <div class="fg ag-campo-iatf"><label>D0 (Data Início) *</label><input type="text" id="ag-d0" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);agCalcDates();agSugerirAno()"><div class="field-err-msg"></div></div>
+            <div class="fg ag-campo-natural" style="display:none"><label>Data Início *</label><input type="text" id="ag-nat-inicio" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);agSugerirAno()"><div class="field-err-msg"></div></div>
             <div class="fg">
               <label>Ano Reprodutivo *
                 <span style="font-size:10px;font-weight:400;color:var(--tx3)">(ex: 2025/2026)</span>
@@ -718,9 +724,10 @@ tr:hover td{background:#fafaf7}
                 <div id="ag-ano-sugestoes" style="display:flex;gap:4px;flex-wrap:wrap"></div>
               </div>
             </div>
-            <div class="fg"><label>D8 (calculado)</label><input type="text" id="ag-d8" readonly style="background:var(--surf2);color:var(--tx2)"></div>
-            <div class="fg"><label>D10 / IATF (calculado)</label><input type="text" id="ag-d10" readonly style="background:var(--surf2);color:var(--tx2)"></div>
-            <div class="fg"><label>Data DG (estimada)</label><input type="text" id="ag-dg" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"><div class="field-err-msg"></div></div>
+            <div class="fg ag-campo-iatf"><label>D8 (calculado)</label><input type="text" id="ag-d8" readonly style="background:var(--surf2);color:var(--tx2)"></div>
+            <div class="fg ag-campo-iatf"><label>D10 / IATF (calculado)</label><input type="text" id="ag-d10" readonly style="background:var(--surf2);color:var(--tx2)"></div>
+            <div class="fg ag-campo-iatf"><label>Data DG (estimada)</label><input type="text" id="ag-dg" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"><div class="field-err-msg"></div></div>
+            <div class="fg ag-campo-natural" style="display:none"><label>Data Fim *</label><input type="text" id="ag-nat-fim" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"><div class="field-err-msg"></div></div>
           </div>
           <div class="sub-label">Animais a protocolar</div>
           <!-- Seletor individual por brinco -->
@@ -759,10 +766,10 @@ tr:hover td{background:#fafaf7}
         <div id="ag-lista"></div>
       </div><!-- /tab-rep-agenda -->
 
-      <!-- REPRODUCAO: REGISTRO DE IATF -->
+      <!-- REPRODUCAO: REGISTRO DE IATF E MONTA -->
       <div id="tab-rep-reg-iatf" style="display:none">
         <div class="sh" style="padding-right:0;margin-bottom:22px">
-          <div class="sh-title">&#128297; Registro de IATF <small>Inseminação Artificial em Tempo Fixo</small></div>
+          <div class="sh-title">&#128297; Registro de IATF e Monta <small>Inseminação Artificial e Monta Natural</small></div>
         </div>
         <div id="iatfreg-ano-tabs-bar" class="ano-tabs-bar" style="display:none"></div>
         <div id="iatf-reg-content">
@@ -833,7 +840,7 @@ tr:hover td{background:#fafaf7}
             <div class="tbar"><span style="font-size:13px;font-weight:600">Desempenho por Touro/Sêmen</span></div>
             <div class="tscroll">
               <table>
-                <thead><tr><th>Reprodutor</th><th>Inseminações</th><th>DG Real.</th><th>Prenhas</th><th>Taxa (%)</th></tr></thead>
+                <thead><tr><th>Reprodutor</th><th>IATF/Coberturas</th><th>DG Real.</th><th>Prenhas</th><th>Taxa (%)</th></tr></thead>
                 <tbody id="tbl-rep-dash-touro"><tr><td colspan="5"><div class="empty">Sem dados</div></td></tr></tbody>
               </table>
             </div>
@@ -862,7 +869,7 @@ tr:hover td{background:#fafaf7}
           <div class="tscroll">
             <table>
               <thead><tr>
-                <th>Protocolo</th><th>D0</th><th>IATF (D10)</th><th>Reprodutor</th><th>Animais</th><th>IATF Reg.</th><th>DG Real.</th><th>Prenhas</th><th>Vazias</th><th>Taxa (%)</th>
+                <th>Protocolo</th><th>Início / D0</th><th>Fim / IATF (D10)</th><th>Reprodutor</th><th>Animais</th><th>Cobertura Reg.</th><th>DG Real.</th><th>Prenhas</th><th>Vazias</th><th>Taxa (%)</th>
               </tr></thead>
               <tbody id="tbl-rep-dash"></tbody>
             </table>
@@ -1908,7 +1915,7 @@ function parseWB(wb){
     }
   }
 
-  // Protocolos IATF (módulo Reprodução)
+  // Protocolos IATF / Monta Natural (módulo Reprodução)
   DB_protocolos=[];
   _protNextId=1;
   var shProt = findSh(wb,['rotocolos IATF','Protocolos IATF','ProtocolosIATF']);
@@ -1919,10 +1926,15 @@ function parseWB(wb){
       var pid=parseInt(cl(r[0]))||(_protNextId);
       if(pid>=_protNextId) _protNextId=pid+1;
       var bArr=cl(r[6])?cl(r[6]).split(';').map(function(s){return s.trim();}).filter(Boolean):[];
+      var tipoVal = cl(r[8]) || 'iatf';
+      var d0Val=xlsxDateToStr(r[2]), d8Val=xlsxDateToStr(r[3]), d10Val=xlsxDateToStr(r[4]), dgVal=xlsxDateToStr(r[5]);
+      var anoVal = cl(r[9]);
+      var inicioVal = xlsxDateToStr(r[10]), fimVal = xlsxDateToStr(r[11]);
+      if(!anoVal) anoVal = tipoVal==='natural' ? (anoReproFromD0(inicioVal)||'') : (anoReproFromD0(d0Val)||'');
       DB_protocolos.push({
-        id:pid, nome:nome,
-        d0:xlsxDateToStr(r[2]), d8:xlsxDateToStr(r[3]),
-        d10:xlsxDateToStr(r[4]), dg_est:xlsxDateToStr(r[5]),
+        id:pid, nome:nome, tipo:tipoVal, ano:anoVal,
+        d0:d0Val, d8:d8Val, d10:d10Val, dg_est:dgVal,
+        dataInicio:inicioVal, dataFim:fimVal,
         brincos:bArr, repr:'', obs:cl(r[7])
       });
     }
@@ -2543,10 +2555,10 @@ function _buildWorkbook(){
   DB_iatf.forEach(function(r,i){var c=wsIatf[XLSX.utils.encode_cell({r:3+i,c:1})];if(c&&r.data)c.z='dd/mm/yyyy';});
   XLSX.utils.book_append_sheet(wb,wsIatf,'IATF');
 
-  // Protocolos IATF (novo módulo Reprodução)
+  // Protocolos IATF / Monta Natural (novo módulo Reprodução)
   if(DB_protocolos.length){
-    var protD=[['PROTOCOLOS IATF'],['Protocolos criados na seção Agenda da Reprodução.'],
-      ['ID','Nome','D0','D8','D10/IATF','DG Estimado','Animais (sep ;)','Observações']]
+    var protD=[['PROTOCOLOS REPRODUTIVOS'],['Protocolos criados na seção Agenda da Reprodução (IATF ou Monta Natural).'],
+      ['ID','Nome','D0','D8','D10/IATF','DG Estimado','Animais (sep ;)','Observações','Tipo','Ano Reprodutivo','Data Início (Monta Natural)','Data Fim (Monta Natural)']]
       .concat(DB_protocolos.map(function(p){
         return[p.id,p.nome,
           p.d0?exDate(p.d0):null,
@@ -2554,11 +2566,15 @@ function _buildWorkbook(){
           p.d10?exDate(p.d10):null,
           p.dg_est?exDate(p.dg_est):null,
           (p.brincos||[]).join(';'),
-          p.obs||''
+          p.obs||'',
+          p.tipo||'iatf',
+          p.ano||'',
+          p.dataInicio?exDate(p.dataInicio):null,
+          p.dataFim?exDate(p.dataFim):null
         ];
       }));
     var wsProtocolos=XLSX.utils.aoa_to_sheet(protD);
-    var dateCols=[2,3,4,5];
+    var dateCols=[2,3,4,5,10,11];
     DB_protocolos.forEach(function(p,i){
       dateCols.forEach(function(col){
         var c=wsProtocolos[XLSX.utils.encode_cell({r:3+i,c:col})];
@@ -5850,16 +5866,18 @@ function fcRender(brinco){
     if(slRep.tipos.indexOf('Reprodução')===-1) slRep.tipos.push('Reprodução');
   }
 
-  // Reprodução — módulo novo: IATF (uma entrada por protocolo em que foi inseminada)
+  // Reprodução — módulo novo: IATF/Monta (uma entrada por protocolo em que foi coberta)
   iatfHistAnimal.forEach(function(r){
     if(!r.data) return;
     var sl = _getSlot(r.data);
     var prot = DB_protocolos.find(function(p){ return p.id===r.protId; });
-    var notaIatf = 'IATF'+(prot?' — '+prot.nome:'')+': '+(r.touro||r.semen||'—')
+    var isNaturalReg = prot && prot.tipo === 'natural';
+    var rotulo = isNaturalReg ? 'Monta Natural' : 'IATF';
+    var notaIatf = rotulo+(prot?' — '+prot.nome:'')+': '+(r.touro||r.semen||'—')
       +(r.inseminador?' &bull; Inseminador: '+r.inseminador:'')
       +(r.obs?' — '+r.obs:'');
     sl.notas.push(notaIatf);
-    if(sl.tipos.indexOf('IATF')===-1) sl.tipos.push('IATF');
+    if(sl.tipos.indexOf(rotulo)===-1) sl.tipos.push(rotulo);
   });
 
   // Reprodução — módulo novo: DG (uma entrada por protocolo diagnosticado)
@@ -5897,6 +5915,7 @@ function fcRender(brinco){
     'Intercorrência':{cls:'fc-badge-int',     lbl:'Intercorrência'},
     'Reprodução':   {cls:'fc-badge-repro',    lbl:'Reprodução'},
     'IATF':         {cls:'fc-badge-iatf',     lbl:'IATF'},
+    'Monta Natural':{cls:'fc-badge-iatf',     lbl:'Monta Natural'},
     'DG-Prenhe':    {cls:'fc-badge-dg-prenha',lbl:'DG: Prenhe'},
     'DG-Vazia':     {cls:'fc-badge-dg-vazia', lbl:'DG: Vazia'},
     'DG':           {cls:'fc-badge-repro',    lbl:'DG'}
@@ -6188,10 +6207,15 @@ document.addEventListener('click',function(e){
 // ══════════════════════════════════════════════════════════════════════════════
 
 // Data structures
-var DB_protocolos = [];  // [{id, nome, ano, d0, d8, d10, dg_est, repr, brincos:[], obs}]
+// [{id, nome, tipo:'iatf'|'natural', ano, d0, d8, d10, dg_est, dataInicio, dataFim, repr, brincos:[], obs}]
+// tipo==='iatf': usa d0/d8/d10/dg_est. tipo==='natural': usa dataInicio/dataFim (sem D0/D8/D10/IATF individual).
+var DB_protocolos = [];
+var agTipoProtocolo = 'iatf';   // tipo selecionado no formulário da Agenda: 'iatf' ou 'natural'
 var agAnoFiltro     = 'todos';  // filtro de ano na Agenda
 var iatfAnoFiltro   = 'todos';  // filtro de ano no Reg.IATF
 var dgAnoFiltro     = 'todos';  // filtro de ano no DG
+var iatfEditIdx     = null;     // índice do registro de IATF em edição (DB_iatf_reg)
+var dgEditKey       = null;     // chave 'protId-brinco' do registro de DG em edição
 var dashAnoFiltro   = 'todos';  // filtro de ano no Dashboard Reprodutivo
 var DB_iatf_reg   = [];  // [{protId, brinco, data, touro, inseminador, semen, obs}]
 var DB_dg_reg     = [];  // [{protId, brinco, dataDG, resultado, obs}]
@@ -6234,9 +6258,11 @@ function anoReproFromD0(d0){
   return (y-1)+'/'+y;
 }
 
-// Sugere ano reprodutivo ao preencher D0
+// Sugere ano reprodutivo ao preencher D0 (IATF) ou Data Início (Monta Natural)
 function agSugerirAno(){
-  var d0 = document.getElementById('ag-d0').value;
+  var d0 = agTipoProtocolo==='natural'
+    ? (document.getElementById('ag-nat-inicio')||{}).value
+    : document.getElementById('ag-d0').value;
   var sug = document.getElementById('ag-ano-sugestoes');
   if(!sug) return;
   if(!validDate(d0)){ sug.innerHTML=''; return; }
@@ -6247,6 +6273,26 @@ function agSugerirAno(){
   // Preenche automaticamente se o campo estiver vazio
   var anoEl = document.getElementById('ag-ano');
   if(anoEl && !anoEl.value) anoEl.value = anoSug;
+}
+
+// Alterna entre os modos de entrada da Agenda: Protocolo IATF x Monta Natural
+function agSetTipo(tipo){
+  agTipoProtocolo = tipo;
+  var isIatf = tipo === 'iatf';
+  document.querySelectorAll('.ag-campo-iatf').forEach(function(el){ el.style.display = isIatf ? '' : 'none'; });
+  document.querySelectorAll('.ag-campo-natural').forEach(function(el){ el.style.display = isIatf ? 'none' : ''; });
+  var btnIatf = document.getElementById('ag-tipo-iatf-btn');
+  var btnNat  = document.getElementById('ag-tipo-natural-btn');
+  if(btnIatf){
+    btnIatf.style.cssText = isIatf ? 'background:var(--grnbg);border:1px solid #a5d6a7;color:var(--grnt);font-weight:600' : '';
+    btnIatf.className = isIatf ? 'btn btn-sm' : 'btn btn-ghost btn-sm';
+  }
+  if(btnNat){
+    btnNat.style.cssText = !isIatf ? 'background:var(--blubg);border:1px solid #90caf9;color:var(--blut);font-weight:600' : '';
+    btnNat.className = !isIatf ? 'btn btn-sm' : 'btn btn-ghost btn-sm';
+  }
+  // Recalcula sugestão de ano com base no campo de data agora visível
+  agSugerirAno();
 }
 
 // Retorna lista de anos únicos dos protocolos, ordenada descendente
@@ -6308,6 +6354,21 @@ function agruparPorAno(lista){
   // Ordena anos desc
   return Object.keys(grupos).sort(function(a,b){ return b.localeCompare(a); })
     .map(function(a){ return {ano:a, protocolos:grupos[a]}; });
+}
+
+// Data-base de um protocolo (D10/D0 para IATF, Data Fim/Início para Monta Natural) — usada para
+// ordenação cronológica e como fallback ao estimar a data de DG.
+function protDataBase(p){
+  if(!p) return '';
+  return p.tipo==='natural' ? (p.dataFim||p.dataInicio||'') : (p.d10||p.d0||'');
+}
+
+// Data estimada de DG de um protocolo: usa dg_est se definido, senão base+30 dias
+function protDgEstDate(p){
+  if(!p) return '';
+  if(p.dg_est) return p.dg_est;
+  var base = protDataBase(p);
+  return base ? addDays(base, 30) : '';
 }
 
 function agCalcDates(){
@@ -6459,14 +6520,14 @@ function agRemoverChip(b){
 
 function agSalvar(){
   var nome    = document.getElementById('ag-nome').value.trim();
-  var d0      = document.getElementById('ag-d0').value.trim();
-  var dg      = document.getElementById('ag-dg').value.trim();
   var obs     = document.getElementById('ag-obs').value.trim();
   var editIdx = document.getElementById('ag-edit-idx').value;
   var skipIdx = editIdx !== '' ? parseInt(editIdx) : -1;
   var anoEl   = document.getElementById('ag-ano');
   var ano     = anoEl ? anoEl.value.trim() : '';
   var erros   = 0;
+  var tipo    = agTipoProtocolo;
+  var isNatural = tipo === 'natural';
 
   // ── Nome: obrigatório + sem duplicata ──
   if(!nome){ fieldErr('ag-nome', 'Nome do protocolo é obrigatório'); erros++; }
@@ -6475,16 +6536,32 @@ function agSalvar(){
     erros++;
   }
 
-  // ── D0: obrigatório + formato ──
-  if(!d0){ fieldErr('ag-d0', 'Data D0 é obrigatória'); erros++; }
-  else if(!validDate(d0)){ fieldErr('ag-d0', 'Use o formato dd/mm/aaaa'); erros++; }
+  var d0, dg, d8, d10, dataInicio, dataFim;
 
-  // ── DG estimada: formato + deve ser após D0 ──
-  if(dg){
-    if(!validDate(dg)){ fieldErr('ag-dg', 'Use o formato dd/mm/aaaa'); erros++; }
-    else if(validDate(d0) && toDate(dg) <= toDate(d0)){
-      fieldErr('ag-dg', 'Data DG deve ser posterior ao D0');
+  if(isNatural){
+    // ── Monta Natural: Data Início / Data Fim ──
+    dataInicio = document.getElementById('ag-nat-inicio').value.trim();
+    dataFim    = document.getElementById('ag-nat-fim').value.trim();
+    if(!dataInicio){ fieldErr('ag-nat-inicio', 'Data Início é obrigatória'); erros++; }
+    else if(!validDate(dataInicio)){ fieldErr('ag-nat-inicio', 'Use o formato dd/mm/aaaa'); erros++; }
+    if(!dataFim){ fieldErr('ag-nat-fim', 'Data Fim é obrigatória'); erros++; }
+    else if(!validDate(dataFim)){ fieldErr('ag-nat-fim', 'Use o formato dd/mm/aaaa'); erros++; }
+    else if(validDate(dataInicio) && toDate(dataFim) < toDate(dataInicio)){
+      fieldErr('ag-nat-fim', 'Data Fim deve ser posterior à Data Início');
       erros++;
+    }
+  } else {
+    // ── Protocolo IATF: D0 + DG estimada ──
+    d0 = document.getElementById('ag-d0').value.trim();
+    dg = document.getElementById('ag-dg').value.trim();
+    if(!d0){ fieldErr('ag-d0', 'Data D0 é obrigatória'); erros++; }
+    else if(!validDate(d0)){ fieldErr('ag-d0', 'Use o formato dd/mm/aaaa'); erros++; }
+    if(dg){
+      if(!validDate(dg)){ fieldErr('ag-dg', 'Use o formato dd/mm/aaaa'); erros++; }
+      else if(validDate(d0) && toDate(dg) <= toDate(d0)){
+        fieldErr('ag-dg', 'Data DG deve ser posterior ao D0');
+        erros++;
+      }
     }
   }
 
@@ -6494,28 +6571,44 @@ function agSalvar(){
 
   if(erros) return;
 
-  if(!ano && validDate(d0)) ano = anoReproFromD0(d0);
-  var d8  = addDays(d0, 8);
-  var d10 = addDays(d0, 10);
+  if(isNatural){
+    if(!ano && validDate(dataInicio)) ano = anoReproFromD0(dataInicio);
+  } else {
+    if(!ano && validDate(d0)) ano = anoReproFromD0(d0);
+    d8  = addDays(d0, 8);
+    d10 = addDays(d0, 10);
+  }
 
   if(editIdx !== ''){
     var existente = DB_protocolos[+editIdx];
     if(!existente){ toast('Protocolo não encontrado','err'); return; }
     existente.nome    = nome;
+    existente.tipo    = tipo;
     existente.ano     = ano;
-    existente.d0      = d0;
-    existente.d8      = d8;
-    existente.d10     = d10;
-    existente.dg_est  = dg;
     existente.brincos = brincos;
     existente.obs     = obs;
+    if(isNatural){
+      existente.dataInicio = dataInicio;
+      existente.dataFim    = dataFim;
+      existente.d0 = existente.d8 = existente.d10 = existente.dg_est = '';
+    } else {
+      existente.d0 = d0; existente.d8 = d8; existente.d10 = d10; existente.dg_est = dg;
+      existente.dataInicio = existente.dataFim = '';
+    }
     toast('Protocolo "'+nome+'" atualizado!','ok');
   } else {
-    DB_protocolos.push({
+    var novo = {
       id: _protNextId++,
-      nome: nome, ano: ano, d0: d0, d8: d8, d10: d10,
-      dg_est: dg, repr: '', brincos: brincos, obs: obs
-    });
+      nome: nome, tipo: tipo, ano: ano, repr: '', brincos: brincos, obs: obs
+    };
+    if(isNatural){
+      novo.dataInicio = dataInicio; novo.dataFim = dataFim;
+      novo.d0 = ''; novo.d8 = ''; novo.d10 = ''; novo.dg_est = '';
+    } else {
+      novo.d0 = d0; novo.d8 = d8; novo.d10 = d10; novo.dg_est = dg;
+      novo.dataInicio = ''; novo.dataFim = '';
+    }
+    DB_protocolos.push(novo);
     toast('Protocolo "'+nome+'" criado com '+brincos.length+' animal(is)!','ok');
   }
 
@@ -6526,7 +6619,7 @@ function agSalvar(){
 
 function agCancelar(){
   // Limpa todos os campos do formulário
-  ['ag-nome','ag-d0','ag-d8','ag-d10','ag-dg','ag-obs','ag-ano'].forEach(function(id){
+  ['ag-nome','ag-d0','ag-d8','ag-d10','ag-dg','ag-obs','ag-ano','ag-nat-inicio','ag-nat-fim'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
   var sug = document.getElementById('ag-ano-sugestoes');
@@ -6539,6 +6632,8 @@ function agCancelar(){
   agBrincosSel=[];
   agSelCats=[];
   agLoteExcluidos=[];
+  // Volta ao tipo padrão (IATF)
+  agSetTipo('iatf');
   // Atualiza UI
   agPopulateLoteCats();
   agRenderChips();
@@ -6548,13 +6643,21 @@ function agCancelar(){
 function agEditar(idx){
   var p = DB_protocolos[idx];
   if(!p) return;
+  var tipo = p.tipo || 'iatf';
+  agSetTipo(tipo);
   document.getElementById('ag-nome').value = p.nome||'';
-  document.getElementById('ag-d0').value   = p.d0||'';
   var anoEdit = document.getElementById('ag-ano');
-  if(anoEdit) anoEdit.value = p.ano||anoReproFromD0(p.d0)||'';
-  document.getElementById('ag-d8').value   = p.d8||'';
-  document.getElementById('ag-d10').value  = p.d10||'';
-  document.getElementById('ag-dg').value   = p.dg_est||'';
+  if(tipo==='natural'){
+    document.getElementById('ag-nat-inicio').value = p.dataInicio||'';
+    document.getElementById('ag-nat-fim').value    = p.dataFim||'';
+    if(anoEdit) anoEdit.value = p.ano||anoReproFromD0(p.dataInicio)||'';
+  } else {
+    document.getElementById('ag-d0').value   = p.d0||'';
+    document.getElementById('ag-d8').value   = p.d8||'';
+    document.getElementById('ag-d10').value  = p.d10||'';
+    document.getElementById('ag-dg').value   = p.dg_est||'';
+    if(anoEdit) anoEdit.value = p.ano||anoReproFromD0(p.d0)||'';
+  }
   document.getElementById('ag-obs').value  = p.obs||'';
   document.getElementById('ag-edit-idx').value = idx;
   document.getElementById('ag-save-btn').textContent='Salvar Alterações';
@@ -6644,6 +6747,7 @@ function renderAgenda(){
         +g.protocolos.map(function(p){
           // Find index in full DB_protocolos array
           var i = DB_protocolos.indexOf(p);
+    var isNatural = p.tipo === 'natural';
     var iatfFeitas = DB_iatf_reg.filter(function(r){ return r.protId===p.id; }).length;
     var dgFeitos   = DB_dg_reg.filter(function(r){ return r.protId===p.id; }).length;
     var prenhas    = DB_dg_reg.filter(function(r){ return r.protId===p.id && (r.resultado||'').toLowerCase()==='prenhe'; }).length;
@@ -6659,9 +6763,9 @@ function renderAgenda(){
       } else if(dgDeste && (dgDeste.resultado||'').toLowerCase()==='vazia'){
         cls += ' status-vazia'; title = 'Vazia';
       } else if(iatfDeste){
-        cls += ' status-protocolado'; title = 'Protocolado';
+        cls += ' status-protocolado'; title = isNatural ? 'Coberta' : 'Protocolado';
       } else {
-        title = 'Aguardando IATF';
+        title = isNatural ? 'Aguardando Monta' : 'Aguardando IATF';
       }
       var id = DB.id.find(function(r){ return r.brinco===b; })||{};
       return '<span class="'+cls+'" title="'+b+(id.cat?' · '+id.cat:'')+'  —  '+title+'" style="cursor:default">'+b+'</span>';
@@ -6677,9 +6781,9 @@ function renderAgenda(){
       // Cabeçalho
       +'<div class="protocolo-card-header">'
         +'<div>'
-          +'<div class="protocolo-card-title">'+p.nome+'</div>'
+          +'<div class="protocolo-card-title">'+p.nome+(isNatural?' <span style="font-size:10px;font-weight:700;color:var(--blut);background:var(--blubg);padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle">&#128004; MONTA NATURAL</span>':'')+'</div>'
           +'<div style="font-size:11px;color:var(--tx3);margin-top:3px">'
-            +p.brincos.length+' animais protocolados'
+            +p.brincos.length+' animais '+(isNatural?'no lote':'protocolados')
           +'</div>'
         +'</div>'
         +'<div style="display:flex;gap:6px;align-items:center">'
@@ -6689,16 +6793,24 @@ function renderAgenda(){
         +'</div>'
       +'</div>'
       // Bloco de datas
-      +'<div style="display:grid;grid-template-columns:repeat(4,auto);gap:8px;margin-bottom:12px;justify-content:start">'
-        +'<div class="date-pill d0"><span class="date-pill-label">&#9679; D0<span class="date-pill-sub">(Início)</span>:</span><span class="date-pill-val">'+fmtD(p.d0)+'</span></div>'
-        +'<div class="date-pill d8"><span class="date-pill-label">&#9679; D8:</span><span class="date-pill-val">'+fmtD(p.d8)+'</span></div>'
-        +'<div class="date-pill d10"><span class="date-pill-label">&#9679; D10<span class="date-pill-sub">(IATF)</span>:</span><span class="date-pill-val">'+fmtD(p.d10)+'</span></div>'
-        +(p.dg_est?'<div class="date-pill" style="border-left:3px solid var(--pur)"><span class="date-pill-label">&#9679; DG Estimado:</span><span class="date-pill-val">'+fmtD(p.dg_est)+'</span></div>':'')
-      +'</div>'
+      +(isNatural
+        ? '<div style="display:grid;grid-template-columns:repeat(2,auto);gap:8px;margin-bottom:12px;justify-content:start">'
+            +'<div class="date-pill d0"><span class="date-pill-label">&#9679; Início:</span><span class="date-pill-val">'+fmtD(p.dataInicio)+'</span></div>'
+            +'<div class="date-pill d10"><span class="date-pill-label">&#9679; Fim:</span><span class="date-pill-val">'+fmtD(p.dataFim)+'</span></div>'
+          +'</div>'
+        : '<div style="display:grid;grid-template-columns:repeat(4,auto);gap:8px;margin-bottom:12px;justify-content:start">'
+            +'<div class="date-pill d0"><span class="date-pill-label">&#9679; D0<span class="date-pill-sub">(Início)</span>:</span><span class="date-pill-val">'+fmtD(p.d0)+'</span></div>'
+            +'<div class="date-pill d8"><span class="date-pill-label">&#9679; D8:</span><span class="date-pill-val">'+fmtD(p.d8)+'</span></div>'
+            +'<div class="date-pill d10"><span class="date-pill-label">&#9679; D10<span class="date-pill-sub">(IATF)</span>:</span><span class="date-pill-val">'+fmtD(p.d10)+'</span></div>'
+            +(p.dg_est?'<div class="date-pill" style="border-left:3px solid var(--pur)"><span class="date-pill-label">&#9679; DG Estimado:</span><span class="date-pill-val">'+fmtD(p.dg_est)+'</span></div>':'')
+          +'</div>')
       // Progresso
       +'<div style="display:flex;gap:20px;font-size:12px;color:var(--tx2);margin-bottom:8px;flex-wrap:wrap">'
-        +'<span>&#128297; <strong>'+iatfFeitas+'</strong>/'+p.brincos.length+' IATFs</span>'
-        +'<span>&#128269; <strong>'+dgFeitos+'</strong>/'+iatfFeitas+' DGs</span>'
+        +(isNatural
+          ? '<span>&#128004; <strong>'+iatfFeitas+'</strong>/'+p.brincos.length+' Cobertas</span>'
+            +'<span>&#128269; <strong>'+dgFeitos+'</strong>/'+iatfFeitas+' DGs</span>'
+          : '<span>&#128297; <strong>'+iatfFeitas+'</strong>/'+p.brincos.length+' IATFs</span>'
+            +'<span>&#128269; <strong>'+dgFeitos+'</strong>/'+iatfFeitas+' DGs</span>')
         +(dgFeitos>0?'<span style="color:var(--grn)">&#10003; <strong>'+prenhas+'</strong> prenhas</span>':'')
         +(dgFeitos>0?'<span style="color:var(--red)">&#10007; <strong>'+(dgFeitos-prenhas)+'</strong> vazias</span>':'')
       +'</div>'
@@ -6710,7 +6822,7 @@ function renderAgenda(){
       +'<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:10px;color:var(--tx3);margin-bottom:4px">'
         +'<span><span class="san-chip sel status-prenha" style="pointer-events:none;font-size:9px;padding:1px 6px">•</span> Prenhe</span>'
         +'<span><span class="san-chip sel status-vazia" style="pointer-events:none;font-size:9px;padding:1px 6px">•</span> Vazia</span>'
-        +'<span><span class="san-chip sel status-protocolado" style="pointer-events:none;font-size:9px;padding:1px 6px">•</span> IATF realizada</span>'
+        +'<span><span class="san-chip sel status-protocolado" style="pointer-events:none;font-size:9px;padding:1px 6px">•</span> '+(isNatural?'Coberta':'IATF realizada')+'</span>'
         +'<span><span class="san-chip" style="pointer-events:none;font-size:9px;padding:1px 6px">•</span> Aguardando</span>'
       +'</div>'
       +(p.obs?'<div style="font-size:11px;color:var(--tx2);margin-top:8px;padding:8px 12px;background:var(--blubg);border-radius:var(--rsm);border-left:3px solid #90caf9">'+p.obs+'</div>':'')
@@ -6741,6 +6853,7 @@ function renderIatfReg(){
     bar.innerHTML=html;
   })();
 
+  // Mostra protocolos de IATF e de Monta Natural
   var filtrados = protocolosFiltrados(iatfAnoFiltro);
   if(!filtrados.length){
     wrap.innerHTML='<div class="empty"><div class="empty-ic">&#128297;</div><p>'+(DB_protocolos.length?'Nenhum protocolo neste ano.':'Crie um protocolo na Agenda primeiro.')+'</p></div>';
@@ -6760,14 +6873,19 @@ function renderIatfReg(){
     });
 
     var protHtml = g.protocolos.map(function(p){
+      var isNatural = p.tipo === 'natural';
       var pendentes = (p.brincos||[]).filter(function(b){
         return !DB_iatf_reg.find(function(r){ return r.protId===p.id && r.brinco===b; });
       });
       var feitas = DB_iatf_reg.filter(function(r){ return r.protId===p.id; });
+      var dataPadrao = isNatural ? fmtD(p.dataFim||p.dataInicio) : fmtD(p.d10);
+      var touroOpts = isNatural
+        ? DB_repr.filter(function(r){ return r.tipo==='touro'; })
+        : DB_repr.filter(function(r){ return r.nome!==p.repr && r.semen_nome!==p.repr; });
       return '<div class="fcard" style="margin-bottom:14px">'
         +'<div class="fcard-title" style="display:flex;align-items:center;justify-content:space-between">'
-          +'<span>&#128297; '+p.nome+'</span>'
-          +'<span style="font-size:11px;font-weight:400;color:var(--tx2)">D10: '+fmtD(p.d10)+' &nbsp;|&nbsp; '+feitas.length+'/'+p.brincos.length+' IATF(s)</span>'
+          +'<span>'+(isNatural?'&#128004;':'&#128297;')+' '+p.nome+(isNatural?' <span style="font-size:9px;font-weight:700;color:var(--blut);background:var(--blubg);padding:1px 6px;border-radius:8px;margin-left:6px">MONTA NATURAL</span>':'')+'</span>'
+          +'<span style="font-size:11px;font-weight:400;color:var(--tx2)">'+(isNatural?('Fim: '+fmtD(p.dataFim)):('D10: '+fmtD(p.d10)))+' &nbsp;|&nbsp; '+feitas.length+'/'+p.brincos.length+(isNatural?' Monta(s)':' IATF(s)')+'</span>'
         +'</div>'
         +'<div class="grid g3" style="margin-bottom:10px">'
           +'<div class="fg"><label>Animal *</label>'
@@ -6776,34 +6894,67 @@ function renderIatfReg(){
               +pendentes.map(function(b){ return '<option value="'+b+'">'+b+'</option>'; }).join('')
             +'</select>'
           +'</div>'
-          +'<div class="fg"><label>Data IATF</label>'
-            +'<input type="text" id="iatfreg-data-'+p.id+'" value="'+fmtD(p.d10)+'" maxlength="10" oninput="maskDate(this)" placeholder="DD/MM/AAAA">'
+          +'<div class="fg"><label>Data'+(isNatural?' da Monta':' IATF')+'</label>'
+            +'<input type="text" id="iatfreg-data-'+p.id+'" value="'+dataPadrao+'" maxlength="10" oninput="maskDate(this)" placeholder="DD/MM/AAAA">'
           +'</div>'
-          +'<div class="fg"><label>Touro / Sêmen</label>'
+          +'<div class="fg"><label>Touro'+(isNatural?' *':' / Sêmen')+'</label>'
             +'<select id="iatfreg-touro-'+p.id+'">'
               +'<option value="">— selecione —</option>'
-              +DB_repr.filter(function(r){return r.nome!==p.repr&&r.semen_nome!==p.repr;}).map(function(r){
+              +touroOpts.map(function(r){
                 var lbl=r.tipo==='touro'?(r.nome||r.brinco||'Touro'):(r.semen_nome||r.semen_apelido||'Sêmen');
                 return '<option value="'+lbl+'">'+lbl+'</option>';
               }).join('')
             +'</select>'
           +'</div>'
-          +'<div class="fg"><label>Inseminador</label><input type="text" id="iatfreg-ins-'+p.id+'" placeholder="Nome do inseminador"></div>'
-          +'<div class="fg"><label>Sêmen / Lote</label><input type="text" id="iatfreg-semen-'+p.id+'" placeholder="Ex: P123 / Lote 05/2026"></div>'
+          +(isNatural?'':'<div class="fg"><label>Inseminador</label><input type="text" id="iatfreg-ins-'+p.id+'" placeholder="Nome do inseminador"></div>')
+          +(isNatural?'':'<div class="fg"><label>Sêmen / Lote</label><input type="text" id="iatfreg-semen-'+p.id+'" placeholder="Ex: P123 / Lote 05/2026"></div>')
           +'<div class="fg"><label>Observações</label><input type="text" id="iatfreg-obs-'+p.id+'" placeholder="Anotações"></div>'
         +'</div>'
         +'<div style="display:flex;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--bord)">'
-          +'<button class="btn btn-primary btn-sm" onclick="iatfRegSalvar('+p.id+')">&#10003; Registrar IATF</button>'
+          +'<button class="btn btn-primary btn-sm" onclick="iatfRegSalvar('+p.id+')">&#10003; Registrar '+(isNatural?'Monta':'IATF')+'</button>'
         +'</div>'
         +(feitas.length?'<div class="tscroll" style="margin-top:10px"><table><thead><tr>'
-          +'<th>Animal</th><th>Data</th><th>Touro/Sêmen</th><th>Inseminador</th><th>Sêmen/Lote</th><th>Obs.</th><th class="tc">Ação</th>'
+          +(isNatural
+            ? '<th>Animal</th><th>Data</th><th>Touro</th><th>Obs.</th><th class="tc">Ação</th>'
+            : '<th>Animal</th><th>Data</th><th>Touro/Sêmen</th><th>Inseminador</th><th>Sêmen/Lote</th><th>Obs.</th><th class="tc">Ação</th>')
           +'</tr></thead><tbody>'
           +feitas.map(function(r){
             var origIdx=DB_iatf_reg.indexOf(r);
+            if(origIdx===iatfEditIdx){
+              var eid='iatfedit-'+origIdx;
+              if(isNatural){
+                return '<tr>'
+                  +'<td><strong>'+r.brinco+'</strong></td>'
+                  +'<td><input type="text" id="'+eid+'-data" value="'+(r.data||'')+'" maxlength="10" oninput="maskDate(this)" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100px;outline:none"></td>'
+                  +'<td><input type="text" id="'+eid+'-touro" value="'+(r.touro||'').replace(/"/g,'&quot;')+'" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:110px;outline:none"></td>'
+                  +'<td><input type="text" id="'+eid+'-obs" value="'+(r.obs||'').replace(/"/g,'&quot;')+'" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100%;outline:none"></td>'
+                  +'<td class="tc" style="white-space:nowrap">'
+                    +'<button class="btn btn-primary btn-sm" onclick="iatfRegSalvarEdicao('+origIdx+')" title="Salvar">&#10003;</button> '
+                    +'<button class="btn btn-sm" onclick="iatfRegCancelarEdicao()" title="Cancelar">&#10005;</button>'
+                  +'</td></tr>';
+              }
+              return '<tr>'
+                +'<td><strong>'+r.brinco+'</strong></td>'
+                +'<td><input type="text" id="'+eid+'-data" value="'+(r.data||'')+'" maxlength="10" oninput="maskDate(this)" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100px;outline:none"></td>'
+                +'<td><input type="text" id="'+eid+'-touro" value="'+(r.touro||'').replace(/"/g,'&quot;')+'" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:110px;outline:none"></td>'
+                +'<td><input type="text" id="'+eid+'-ins" value="'+(r.inseminador||'').replace(/"/g,'&quot;')+'" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100px;outline:none"></td>'
+                +'<td><input type="text" id="'+eid+'-semen" value="'+(r.semen||'').replace(/"/g,'&quot;')+'" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100px;outline:none"></td>'
+                +'<td><input type="text" id="'+eid+'-obs" value="'+(r.obs||'').replace(/"/g,'&quot;')+'" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100%;outline:none"></td>'
+                +'<td class="tc" style="white-space:nowrap">'
+                  +'<button class="btn btn-primary btn-sm" onclick="iatfRegSalvarEdicao('+origIdx+')" title="Salvar">&#10003;</button> '
+                  +'<button class="btn btn-sm" onclick="iatfRegCancelarEdicao()" title="Cancelar">&#10005;</button>'
+                +'</td></tr>';
+            }
+            if(isNatural){
+              return '<tr><td><strong>'+r.brinco+'</strong></td><td>'+fmtD(r.data)+'</td><td>'+(r.touro||'-')+'</td><td>'+(r.obs||'-')+'</td>'
+                +'<td class="tc" style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="iatfRegEditar('+origIdx+')" title="Editar">&#9998;</button> '
+                +'<button class="btn btn-danger btn-sm" onclick="iatfRegExcluir('+origIdx+')" title="Excluir">&#128465;</button></td></tr>';
+            }
             return '<tr><td><strong>'+r.brinco+'</strong></td><td>'+fmtD(r.data)+'</td><td>'+(r.touro||'-')+'</td><td>'+(r.inseminador||'-')+'</td><td>'+(r.semen||'-')+'</td><td>'+(r.obs||'-')+'</td>'
-              +'<td class="tc"><button class="btn btn-danger btn-sm" onclick="iatfRegExcluir('+origIdx+')">&#128465;</button></td></tr>';
+              +'<td class="tc" style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="iatfRegEditar('+origIdx+')" title="Editar">&#9998;</button> '
+              +'<button class="btn btn-danger btn-sm" onclick="iatfRegExcluir('+origIdx+')" title="Excluir">&#128465;</button></td></tr>';
           }).join('')
-          +'</tbody></table></div>':'<div style="font-size:12px;color:var(--tx3);padding:8px 0">Nenhuma IATF registrada.</div>')
+          +'</tbody></table></div>':'<div style="font-size:12px;color:var(--tx3);padding:8px 0">'+(isNatural?'Nenhuma monta registrada.':'Nenhuma IATF registrada.')+'</div>')
       +'</div>';
     }).join('');
 
@@ -6814,7 +6965,7 @@ function renderIatfReg(){
           +'&#127968; Ano Reprodutivo '+g.ano
         +'</div>'
         +'<div class="ano-grupo-stats">'
-          +'<span>'+totalIatf+'/'+totalAnim+' IATFs registradas</span>'
+          +'<span>'+totalIatf+'/'+totalAnim+' registros de IATF/Monta</span>'
           +(totalAnim>0&&totalIatf===totalAnim?'<span style="color:var(--grn);font-weight:600">&#10003; Completo</span>':'')
         +'</div>'
         +'<span class="ano-grupo-arrow">&#9660;</span>'
@@ -6825,20 +6976,25 @@ function renderIatfReg(){
 }
 
 function iatfRegSalvar(pid){
+  var prot = DB_protocolos.find(function(p){ return p.id === pid; });
+  var isNatural = !!(prot && prot.tipo === 'natural');
   var brinco = document.getElementById('iatfreg-brinco-'+pid).value.trim();
   var data   = document.getElementById('iatfreg-data-'+pid).value.trim();
   var touro  = document.getElementById('iatfreg-touro-'+pid).value.trim();
-  var ins    = document.getElementById('iatfreg-ins-'+pid).value.trim();
-  var semen  = document.getElementById('iatfreg-semen-'+pid).value.trim();
+  var insEl  = document.getElementById('iatfreg-ins-'+pid);
+  var semenEl= document.getElementById('iatfreg-semen-'+pid);
+  var ins    = insEl ? insEl.value.trim() : '';
+  var semen  = semenEl ? semenEl.value.trim() : '';
   var obs    = document.getElementById('iatfreg-obs-'+pid).value.trim();
   if(!brinco){ toast('Selecione o animal','err'); return; }
+  if(isNatural && !touro){ toast('Selecione o touro utilizado','err'); return; }
   if(data && !validDate(data)){ toast('Data inválida. Use DD/MM/AAAA','err'); return; }
   if(!data) data = todayStr();
   DB_iatf_reg.push({ protId:pid, brinco:brinco, data:data, touro:touro, inseminador:ins, semen:semen, obs:obs });
   // Atualiza condição do animal para "Protocolado"
   var dg = DB.dg.find(function(d){ return d.brinco===brinco; });
   if(dg) dg.condAtual = 'Protocolado';
-  markDirty(); toast('IATF registrada para animal '+brinco,'ok');
+  markDirty(); toast((isNatural?'Monta registrada':'IATF registrada')+' para animal '+brinco,'ok');
   renderIatfReg();
 }
 
@@ -6847,6 +7003,34 @@ function iatfRegExcluir(idx){
     DB_iatf_reg.splice(idx,1);
     markDirty(); renderIatfReg(); toast('IATF removida','ok');
   });
+}
+
+function iatfRegEditar(idx){
+  iatfEditIdx = idx;
+  renderIatfReg();
+}
+
+function iatfRegCancelarEdicao(){
+  iatfEditIdx = null;
+  renderIatfReg();
+}
+
+function iatfRegSalvarEdicao(idx){
+  var r = DB_iatf_reg[idx];
+  if(!r){ toast('Registro não encontrado','err'); return; }
+  var eid = 'iatfedit-'+idx;
+  var data  = (document.getElementById(eid+'-data')||{}).value||'';
+  var touro = (document.getElementById(eid+'-touro')||{}).value||'';
+  var ins   = (document.getElementById(eid+'-ins')||{}).value||'';
+  var semen = (document.getElementById(eid+'-semen')||{}).value||'';
+  var obs   = (document.getElementById(eid+'-obs')||{}).value||'';
+  data=data.trim(); touro=touro.trim(); ins=ins.trim(); semen=semen.trim(); obs=obs.trim();
+  if(data && !validDate(data)){ toast('Data inválida. Use DD/MM/AAAA','err'); return; }
+  if(!data) data = r.data;
+  r.data = data; r.touro = touro; r.inseminador = ins; r.semen = semen; r.obs = obs;
+  iatfEditIdx = null;
+  markDirty(); toast('Registro de IATF atualizado','ok');
+  renderIatfReg();
 }
 
 // ─── DIAGNÓSTICO ─────────────────────────────────────────────────────────────
@@ -6883,36 +7067,55 @@ function renderDiagnostico(){
     var isOpen = (dgAnoFiltro !== 'todos') || (g.ano === anoMaisRecente);
     var totalDg=0, totalPrenha=0, totalAnim=0;
     g.protocolos.forEach(function(p){
-      var animaisIatf=DB_iatf_reg.filter(function(r){return r.protId===p.id;}).length;
-      totalAnim += animaisIatf;
+      var elegiveisCnt = DB_iatf_reg.filter(function(r){return r.protId===p.id;}).length;
+      totalAnim += elegiveisCnt;
       totalDg   += DB_dg_reg.filter(function(r){return r.protId===p.id;}).length;
       totalPrenha += DB_dg_reg.filter(function(r){return r.protId===p.id&&(r.resultado||'').toLowerCase()==='prenhe';}).length;
     });
     var taxaGrupo = totalDg>0 ? Math.round(totalPrenha/totalDg*100)+'%' : '—';
 
     var protHtml = g.protocolos.map(function(p){
+      var isNatural = p.tipo === 'natural';
+      // Elegível para DG: animal precisa ter uma cobertura registrada (IATF ou Monta, em "Registro de IATF e Monta")
       var animaisIatf = DB_iatf_reg.filter(function(r){return r.protId===p.id;}).map(function(r){return r.brinco;});
       if(!animaisIatf.length){
         return '<div class="dg-proto-section" style="margin-bottom:10px">'
           +'<div class="dg-proto-header" style="background:var(--surf2);padding:10px 14px;border-radius:var(--rsm);display:flex;align-items:center;justify-content:space-between">'
             +'<span class="dg-proto-title">&#128269; '+p.nome+'</span>'
-            +'<span style="font-size:11px;color:var(--tx3)">Nenhuma IATF registrada</span>'
+            +'<span style="font-size:11px;color:var(--tx3)">'+(isNatural?'Nenhuma monta registrada':'Nenhuma IATF registrada')+'</span>'
           +'</div>'
         +'</div>';
       }
-      var dgEstDate = p.dg_est ? fmtD(p.dg_est) : addDays(p.d10||p.d0, 30);
+      var dgEstDate = fmtD(protDgEstDate(p));
       var dgFeitosCnt = DB_dg_reg.filter(function(r){return r.protId===p.id;}).length;
       var prenhasCnt  = DB_dg_reg.filter(function(r){return r.protId===p.id&&(r.resultado||'').toLowerCase()==='prenhe';}).length;
       var rows = animaisIatf.map(function(b){
         var existing=DB_dg_reg.find(function(r){return r.protId===p.id&&r.brinco===b;});
         var idGen='dg-'+p.id+'-'+b.replace(/[^a-z0-9]/gi,'_');
         if(existing){
+          var editKey = p.id+'-'+b;
+          if(editKey===dgEditKey){
+            return '<tr>'
+              +'<td><strong>'+b+'</strong></td>'
+              +'<td><input type="text" id="'+idGen+'-edata" value="'+(existing.dataDG||'')+'" maxlength="10" oninput="maskDate(this)" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:110px;outline:none"></td>'
+              +'<td><select id="'+idGen+'-eres" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);outline:none">'
+                +'<option value=""'+(!existing.resultado?' selected':'')+'>—</option>'
+                +'<option'+(existing.resultado==='Prenhe'?' selected':'')+'>Prenhe</option>'
+                +'<option'+(existing.resultado==='Vazia'?' selected':'')+'>Vazia</option>'
+              +'</select></td>'
+              +'<td><input type="text" id="'+idGen+'-eobs" value="'+(existing.obs||'').replace(/"/g,'&quot;')+'" placeholder="Obs." style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:100%;outline:none"></td>'
+              +'<td class="tc" style="white-space:nowrap">'
+                +'<button class="btn btn-primary btn-sm" onclick="dgSalvarEdicao('+p.id+',\''+b.replace(/'/g,"\\'")+'\')" title="Salvar">&#10003;</button> '
+                +'<button class="btn btn-sm" onclick="dgCancelarEdicao()" title="Cancelar">&#10005;</button>'
+              +'</td></tr>';
+          }
           var cls=(existing.resultado||'').toLowerCase()==='prenhe'?'bdg-prenha':'bdg-vazia';
           return '<tr><td><strong>'+b+'</strong></td>'
             +'<td>'+fmtD(existing.dataDG)+'</td>'
             +'<td><span class="bdg '+cls+'">'+existing.resultado+'</span></td>'
             +'<td>'+(existing.obs||'-')+'</td>'
-            +'<td class="tc"><button class="btn btn-danger btn-sm" onclick="dgExcluir(\''+p.id+'\',\''+b.replace(/'/g,"\\'")+'\')" >&#128465;</button></td></tr>';
+            +'<td class="tc" style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="dgEditar('+p.id+',\''+b.replace(/'/g,"\\'")+'\')" title="Editar">&#9998;</button> '
+            +'<button class="btn btn-danger btn-sm" onclick="dgExcluir(\''+p.id+'\',\''+b.replace(/'/g,"\\'")+'\')" title="Excluir">&#128465;</button></td></tr>';
         }
         return '<tr>'
           +'<td><strong>'+b+'</strong></td>'
@@ -6926,7 +7129,7 @@ function renderDiagnostico(){
 
       return '<div class="dg-proto-section" style="margin-bottom:14px;border:1px solid var(--bord);border-radius:var(--rsm);overflow:hidden">'
         +'<div style="background:var(--surf2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">'
-          +'<span class="dg-proto-title">&#128269; '+p.nome+'</span>'
+          +'<span class="dg-proto-title">&#128269; '+p.nome+(isNatural?' <span style="font-size:9px;font-weight:700;color:var(--blut);background:var(--blubg);padding:1px 6px;border-radius:8px;margin-left:6px">&#128004; MONTA NATURAL</span>':'')+'</span>'
           +'<span style="font-size:11px;color:var(--tx2)">'+dgFeitosCnt+'/'+animaisIatf.length+' DG &nbsp;|&nbsp; Taxa: '+(dgFeitosCnt>0?Math.round(prenhasCnt/dgFeitosCnt*100)+'%':'—')+'</span>'
         +'</div>'
         +'<div class="tscroll"><table>'
@@ -7008,6 +7211,44 @@ function dgExcluir(pid, brinco){
   });
 }
 
+function dgEditar(pid, brinco){
+  dgEditKey = pid+'-'+brinco;
+  renderDiagnostico();
+}
+
+function dgCancelarEdicao(){
+  dgEditKey = null;
+  renderDiagnostico();
+}
+
+function dgSalvarEdicao(pid, brinco){
+  var r = DB_dg_reg.find(function(x){ return x.protId===parseInt(pid) && x.brinco===brinco; });
+  if(!r){ toast('Registro de DG não encontrado','err'); return; }
+  var idGen = 'dg-'+pid+'-'+brinco.replace(/[^a-z0-9]/gi,'_');
+  var data = document.getElementById(idGen+'-edata');
+  var res  = document.getElementById(idGen+'-eres');
+  var obs  = document.getElementById(idGen+'-eobs');
+  if(!data||!res){ toast('Erro ao localizar campos do DG','err'); return; }
+  var dataVal = data.value.trim();
+  var resVal  = res.value.trim();
+  var obsVal  = obs ? obs.value.trim() : '';
+  if(!resVal){ toast('Selecione o resultado do DG','err'); return; }
+  if(dataVal && !validDate(dataVal)){ toast('Data DG inválida','err'); return; }
+  if(!dataVal) dataVal = r.dataDG;
+  r.dataDG = dataVal; r.resultado = resVal; r.obs = obsVal;
+  // Atualiza condição atual do animal para refletir o novo resultado
+  var dg2 = DB.dg.find(function(d){ return d.brinco===brinco; });
+  if(dg2){
+    dg2.condAtual = resVal.toLowerCase()==='prenhe' ? 'Prenhe' : 'Vazia';
+    if(resVal.toLowerCase()==='prenhe') dg2.previsaoRepro = 'Prenhe';
+  }
+  var repEntry = DB.rep.find(function(x){ return x.brinco===brinco; });
+  if(repEntry) repEntry.cond = resVal.toLowerCase()==='prenhe' ? 'Prenhe' : 'Vazia';
+  dgEditKey = null;
+  markDirty(); toast('DG atualizado: '+brinco+' → '+resVal,'ok');
+  renderDiagnostico();
+}
+
 // ─── HISTÓRICO ───────────────────────────────────────────────────────────────
 function renderHistorico(){
   var lista = document.getElementById('hist-lista');
@@ -7015,26 +7256,36 @@ function renderHistorico(){
   var filtro = (document.getElementById('hist-search')||{}).value||'';
   filtro = filtro.trim().toLowerCase();
 
-  // Agrupa dados por brinco → por ano reprodutivo
-  // Estrutura: animais[brinco][anoRepro] = {emprenhou: bool|null, pariu: bool|null, desmamou: bool|null}
+  // Agrupa dados por brinco → lista de quadros (1 quadro por protocolo/período de entoura,
+  // ou por registro legado individual). Animais com mais de um protocolo/período no mesmo
+  // ano reprodutivo recebem quadros SEPARADOS (não são mesclados), exibidos lado a lado.
+  // Estrutura: animais[brinco] = [ {anoRepro, chave, ordem, emprenhou, pariu, desmamou}, ... ]
   var animais = {};
 
-  function getOrCreate(brinco, anoRepro){
-    if(!animais[brinco]) animais[brinco] = {};
-    if(!animais[brinco][anoRepro]) animais[brinco][anoRepro] = {emprenhou:null, pariu:null, desmamou:null};
-    return animais[brinco][anoRepro];
+  function novoQuadro(brinco, anoRepro, chave, ordem){
+    if(!animais[brinco]) animais[brinco] = [];
+    var q = {anoRepro:anoRepro, chave:chave, ordem:ordem, emprenhou:null, pariu:null, desmamou:null};
+    animais[brinco].push(q);
+    return q;
+  }
+  function achaQuadro(brinco, chave){
+    if(!animais[brinco]) return null;
+    for(var i=0;i<animais[brinco].length;i++){ if(animais[brinco][i].chave===chave) return animais[brinco][i]; }
+    return null;
   }
 
-  // ── Módulo legado DB.rep ──
+  // ── Módulo legado DB.rep ── (cada registro é um período distinto, nunca mescla)
   // emp/par/des são dados históricos do ano anterior ao registro
-  DB.rep.forEach(function(r){
+  DB.rep.forEach(function(r, idx){
     if(!r.brinco) return;
     // Determina ano reprodutivo a partir da data de diagnóstico ou ano atual
     var anoRepro = '—';
+    var dt = null;
     if(r.dtdiag && /^\d{2}\/\d{2}\/\d{4}$/.test(r.dtdiag)){
       anoRepro = anoReproFromD0(r.dtdiag) || r.dtdiag.split('/')[2];
+      dt = toDate(r.dtdiag);
     }
-    var entry = getOrCreate(r.brinco, anoRepro);
+    var entry = novoQuadro(r.brinco, anoRepro, 'legado-'+idx, dt ? dt.getTime() : -idx);
     if((r.emp||'').toLowerCase()==='sim')      entry.emprenhou = true;
     else if((r.emp||'').toLowerCase()==='nao') entry.emprenhou = false;
     if((r.par||'').toLowerCase()==='sim')      entry.pariu = true;
@@ -7043,27 +7294,31 @@ function renderHistorico(){
     else if((r.des||'').toLowerCase()==='nao') entry.desmamou = false;
   });
 
-  // ── Novo módulo DG (DB_dg_reg) ──
+  // ── Novo módulo DG (DB_dg_reg) ── (1 quadro por protocolo/período de entoura)
   // Cada registro de DG indica emprenhou; pariu/desmamou ainda não disponíveis neste módulo
   DB_dg_reg.forEach(function(r){
     if(!r.brinco) return;
-    // Acha o protocolo para obter o ano reprodutivo
+    // Acha o protocolo para obter o ano reprodutivo e a data (para ordenação)
     var prot = DB_protocolos.find(function(p){ return p.id === r.protId; });
     var anoRepro = prot ? (prot.ano || anoReproFromD0(prot.d0) || '—') : '—';
-    var entry = getOrCreate(r.brinco, anoRepro);
+    var chave = 'prot-'+r.protId;
+    var dt = toDate(protDataBase(prot));
+    var entry = achaQuadro(r.brinco, chave) || novoQuadro(r.brinco, anoRepro, chave, dt ? dt.getTime() : (r.protId||0));
     var prenhou = (r.resultado||'').toLowerCase()==='prenhe';
     // Só sobrescreve emprenhou se ainda não havia dado mais preciso
     if(entry.emprenhou === null) entry.emprenhou = prenhou;
   });
 
-  // ── IATF sem DG: marca como emprenhou=null (aguardando DG) ──
+  // ── IATF sem DG: cria quadro do protocolo aguardando resultado (emprenhou=null) ──
   DB_iatf_reg.forEach(function(r){
     if(!r.brinco) return;
     var prot = DB_protocolos.find(function(p){ return p.id === r.protId; });
     var anoRepro = prot ? (prot.ano || anoReproFromD0(prot.d0) || '—') : '—';
-    // Só cria entrada se não houver dado de DG já registrado
-    if(!animais[r.brinco] || !animais[r.brinco][anoRepro]){
-      getOrCreate(r.brinco, anoRepro);
+    var chave = 'prot-'+r.protId;
+    // Só cria quadro se este protocolo ainda não tiver um (ex.: via DG)
+    if(!achaQuadro(r.brinco, chave)){
+      var dt = toDate(protDataBase(prot));
+      novoQuadro(r.brinco, anoRepro, chave, dt ? dt.getTime() : (r.protId||0));
       // emprenhou permanece null = aguardando DG
     }
   });
@@ -7096,18 +7351,18 @@ function renderHistorico(){
     '<div style="display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surf2);border-radius:var(--rsm) var(--rsm) 0 0;border-bottom:2px solid var(--bord);font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;flex-wrap:wrap">'
       +'<span style="min-width:60px">Brinco</span>'
       +'<span style="min-width:120px">Cat. / Raça</span>'
-      +'<span style="flex:1">Histórico por Ano Reprodutivo</span>'
+      +'<span style="flex:1">Histórico por Período Reprodutivo</span>'
     +'</div>'
     + keys.map(function(b){
       var id = DB.id.find(function(r){ return r.brinco===b; })||{};
-      var anosMap = animais[b];
-      // Ordena anos reprodutivos: mais recente primeiro
-      var anosOrdenados = Object.keys(anosMap).sort(function(a,z){ return z.localeCompare(a); });
+      // Ordena quadros do mais recente para o mais antigo. Quando o mesmo animal tem mais de
+      // um protocolo/período no mesmo ano reprodutivo, cada um vira um quadro distinto,
+      // exibido lado a lado nesta mesma linha, em ordem cronológica.
+      var quadros = animais[b].slice().sort(function(x,z){ return z.ordem - x.ordem; });
 
-      var anosHtml = anosOrdenados.map(function(anoRepro){
-        var a = anosMap[anoRepro];
-        return '<div class="hist-ano" title="Ano Reprodutivo '+anoRepro+'">'
-          +'<div style="font-size:9px;font-weight:700;color:var(--tx2);text-align:center;margin-bottom:4px;white-space:nowrap">'+anoRepro+'</div>'
+      var anosHtml = quadros.map(function(a){
+        return '<div class="hist-ano" title="Período Reprodutivo '+a.anoRepro+'">'
+          +'<div style="font-size:9px;font-weight:700;color:var(--tx2);text-align:center;margin-bottom:4px;white-space:nowrap">'+a.anoRepro+'</div>'
           +'<div class="hist-bolas">'
             +bola(a.emprenhou, 'Emprenhou')
             +bola(a.pariu,     'Pariu')
@@ -7154,6 +7409,7 @@ function renderRepDash(){
 
   // KPIs
   var totalProt  = protosF.length;
+  // Animais protocolados: conta quem já tem registro de cobertura (IATF ou Monta Natural)
   var totalAnim  = iatfF.length;
   var totalDG    = dgF.length;
   var totalPrenha= dgF.filter(function(r){ return (r.resultado||'').toLowerCase()==='prenhe'; }).length;
@@ -7169,8 +7425,9 @@ function renderRepDash(){
   if(alertasEl){
     var hoje = new Date(); hoje.setHours(0,0,0,0);
     var protAtrasados = protosF.filter(function(p){
-      if(!p.dg_est) return false;
-      var dEst = toDate(p.dg_est);
+      var dgEst = protDgEstDate(p);
+      if(!dgEst) return false;
+      var dEst = toDate(dgEst);
       if(!dEst || dEst >= hoje) return false;
       var feitos = dgF.filter(function(d){ return d.protId===p.id; }).length;
       return feitos < (p.brincos||[]).length;
@@ -7195,7 +7452,7 @@ function renderRepDash(){
           +'<div style="font-size:12px;color:var(--tx2);line-height:1.7">'+protAtrasados.map(function(p){
             var feitos = dgF.filter(function(d){ return d.protId===p.id; }).length;
             var pend = (p.brincos||[]).length - feitos;
-            return '<strong>'+p.nome+'</strong> — DG previsto '+fmtD(p.dg_est)+' &bull; '+pend+' animal(is) sem diagnóstico';
+            return '<strong>'+p.nome+'</strong> — DG previsto '+fmtD(protDgEstDate(p))+' &bull; '+pend+' animal(is) sem diagnóstico';
           }).join('<br>')+'</div>'
         +'</div>');
       }
@@ -7215,15 +7472,16 @@ function renderRepDash(){
   var tbody = document.getElementById('tbl-rep-dash');
   if(tbody){
     tbody.innerHTML = protosF.map(function(p){
+      var isNatural  = p.tipo === 'natural';
       var iatfFeitas = DB_iatf_reg.filter(function(r){ return r.protId===p.id; }).length;
       var dgFeitos   = DB_dg_reg.filter(function(r){ return r.protId===p.id; }).length;
       var prenhas    = DB_dg_reg.filter(function(r){ return r.protId===p.id && (r.resultado||'').toLowerCase()==='prenhe'; }).length;
       var vazias     = DB_dg_reg.filter(function(r){ return r.protId===p.id && (r.resultado||'').toLowerCase()==='vazia'; }).length;
       var taxa2 = dgFeitos>0 ? Math.round(prenhas/dgFeitos*100)+'%' : '—';
       return '<tr>'
-        +'<td><strong>'+p.nome+'</strong></td>'
-        +'<td>'+fmtD(p.d0)+'</td>'
-        +'<td>'+fmtD(p.d10)+'</td>'
+        +'<td><strong>'+p.nome+'</strong>'+(isNatural?' <span style="font-size:8px;font-weight:700;color:var(--blut);background:var(--blubg);padding:1px 5px;border-radius:7px;margin-left:4px">MN</span>':'')+'</td>'
+        +'<td>'+fmtD(isNatural?p.dataInicio:p.d0)+'</td>'
+        +'<td>'+fmtD(isNatural?p.dataFim:p.d10)+'</td>'
         +'<td>'+(p.repr||'-')+'</td>'
         +'<td>'+p.brincos.length+'</td>'
         +'<td>'+iatfFeitas+'</td>'
