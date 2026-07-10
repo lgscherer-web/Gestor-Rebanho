@@ -194,6 +194,9 @@ tr:hover td{background:#fafaf7}
 .fc-tag-amamentando{background:var(--blubg);color:var(--blut)}
 .fc-tag-abortou{background:var(--ambbg);color:var(--amb)}
 .fc-tag-natimorto{background:var(--redbg);color:var(--red)}
+.fc-tag-terneiroape{background:var(--blubg);color:var(--blut)}
+.fc-tag-desmamado{background:var(--surf2);color:var(--tx3)}
+.fc-tag-apta{background:var(--grnbg);color:var(--grnt);font-size:10px}
 .fc-nf{text-align:center;padding:40px;color:var(--tx2);font-size:14px}
 .fc-hint{text-align:center;padding:48px 20px;color:var(--tx3)}
 .fc-hint-ic{font-size:40px;margin-bottom:12px}
@@ -724,8 +727,8 @@ tr:hover td{background:#fafaf7}
           </div>
           <div class="grid g3">
             <div class="fg"><label>Nome do Protocolo *</label><input type="text" id="ag-nome" placeholder="Ex: IATF-Jun/2026 Lote 1"><div class="field-err-msg"></div></div>
-            <div class="fg ag-campo-iatf"><label>D0 (Data Início) *</label><input type="text" id="ag-d0" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);agCalcDates();agSugerirAno()"><div class="field-err-msg"></div></div>
-            <div class="fg ag-campo-natural" style="display:none"><label>Data Início *</label><input type="text" id="ag-nat-inicio" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);agSugerirAno()"><div class="field-err-msg"></div></div>
+            <div class="fg ag-campo-iatf"><label>D0 (Data Início) *</label><input type="text" id="ag-d0" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);agCalcDates();agSugerirAno();agAutoCarregarAptas()"><div class="field-err-msg"></div></div>
+            <div class="fg ag-campo-natural" style="display:none"><label>Data Início *</label><input type="text" id="ag-nat-inicio" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);agSugerirAno();agAutoCarregarAptas()"><div class="field-err-msg"></div></div>
             <div class="fg">
               <label>Ano Reprodutivo *
                 <span style="font-size:10px;font-weight:400;color:var(--tx3)">(ex: 2025/2026)</span>
@@ -749,20 +752,10 @@ tr:hover td{background:#fafaf7}
             </div>
             <button class="btn btn-primary btn-sm" onclick="agAdicionarBrinco()">+ Adicionar</button>
           </div>
-          <!-- Seletor por categoria (padrão Manejo) -->
-          <div class="san-lote-box" style="margin-bottom:10px">
-            <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Adicionar por categoria</div>
-            <div class="san-lote-cats" id="ag-lote-cats"></div>
-            <div style="margin-top:8px;font-size:12px;color:var(--tx2)">Animais na seleção: <strong id="ag-lote-count">0</strong></div>
-          </div>
-          <!-- Chips dos animais selecionados (padrão Manejo) -->
-          <div id="ag-lote-brincos-wrap" style="display:none;margin-bottom:12px">
-            <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Animais incluídos <span style="font-weight:400;font-size:10px">(× para remover)</span></div>
-            <div id="ag-lote-brincos-chips" class="san-animal-list"></div>
-          </div>
-          <!-- Chips dos brincos individuais -->
+          <div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Ao preencher a data de início (D0 / Data Início), as fêmeas <strong>Aptas para reprodução</strong> (vazias, ou amamentando há 30+ dias, com mais de 1,7 anos) são adicionadas automaticamente à lista abaixo — use os campos acima para incluir outras, ou o &times; para remover alguma.</div>
+          <!-- Chips dos brincos selecionados (manuais + carregados automaticamente) -->
           <div id="ag-ind-brincos-wrap" style="display:none;margin-bottom:10px">
-            <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Animais adicionados individualmente <span style="font-weight:400;font-size:10px">(× para remover)</span></div>
+            <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Animais selecionados <span style="font-weight:400;font-size:10px">(× para remover)</span></div>
             <div id="ag-animais-chips" class="san-animal-list"></div>
           </div>
           <div id="ag-animais-count" style="font-size:11px;color:var(--tx3);margin-bottom:6px">Nenhum animal selecionado</div>
@@ -1759,7 +1752,7 @@ function parseWB(wb){
     var rows=XLSX.utils.sheet_to_json(shDg,{header:1,defval:'',raw:true});
     for(var i=3;i<rows.length;i++){
       var r=rows[i]; var b=cl(r[0]); if(!b) continue;
-      DB.dg.push({brinco:b,nasc:xlsxDateToStr(r[1]),mae:cl(r[3]),pai:cl(r[4]),avo:cl(r[5]),obs:cl(r[6]),condAtual:cl(r[7]),previsaoRepro:cl(r[8]),numPartos:parseInt(cl(r[9]))||0});
+      DB.dg.push({brinco:b,nasc:xlsxDateToStr(r[1]),mae:cl(r[3]),pai:cl(r[4]),avo:cl(r[5]),obs:cl(r[6]),condAtual:cl(r[7]),previsaoRepro:cl(r[8]),numPartos:parseInt(cl(r[9]))||0,dataDesmame:xlsxDateToStr(r[10]),dataInterRepro:xlsxDateToStr(r[11]),dataAmamentacao:xlsxDateToStr(r[12])});
     }
   }
   if(shPes){
@@ -2113,6 +2106,9 @@ function closeMobileNav(){
 function renderAll(){
   atualizarCategorias();
   normalizarCondAtual();
+  migrarCondicoesAbortoNatimorto();
+  migrarDataAmamentacao();
+  reconciliarCondicaoProtocolado();
   updateInfo();
   // Render current visible tab immediately
   renderTab(currentTab);
@@ -2190,7 +2186,7 @@ function renderReg(){
       +'<td>'+(dg.mae||'-')+'</td>'
       +'<td>'+(dg.pai||'-')+'</td>'
       +'<td>'+(dg.avo||'-')+'</td>'
-      +'<td style="max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(dg.condAtual||'-')+'</td>'
+      +'<td style="max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+condDisplay(r,dg)+'</td>'
       +'<td class="tc">'+(r.gen==='F'?String(dg.numPartos||0):'-')+'</td>'
       +'<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(dg.obs||'')+'">'+(dg.obs?dg.obs.substring(0,20)+(dg.obs.length>20?'…':''):'-')+'</td>'
       +'<td>'+acts('reg',i)+'</td>'
@@ -2305,7 +2301,11 @@ function saveReg(){
     obs:g('reg-obs').trim(),
     condAtual:existDg.condAtual||'',
     previsaoRepro:existDg.previsaoRepro||'',
-    numPartos:isNaN(partosVal)?(existDg.numPartos||0):Math.max(0,partosVal)
+    numPartos:isNaN(partosVal)?(existDg.numPartos||0):Math.max(0,partosVal),
+    // Campos de controle interno (não editáveis neste formulário) — preservados ao editar
+    dataDesmame:existDg.dataDesmame||'',
+    dataInterRepro:existDg.dataInterRepro||'',
+    dataAmamentacao:existDg.dataAmamentacao||''
   };
 
   if(idxId !== ''){
@@ -2509,7 +2509,7 @@ function _buildWorkbook(){
   var idD=[['IDENTIFICACAO DO ANIMAL'],['Cadastro unico por animal. O Brinco e o identificador primario.'],['Brinco','Raça dominante','Categoria','Genero']].concat(DB.id.map(function(r){return[r.brinco,r.raca,r.cat,r.gen];}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(idD),'Identificacao');
   // Dados Gerais
-  var dgD=[['DADOS GERAIS'],['Vinculado pelo Brinco.'],['Brinco','Data de Nascimento','Idade (anos)','Mãe (Brinco)','Pai','Avô materno','Observações','Condicao Atual','Previsao Reprodutiva','Nº de Partos']].concat(DB.dg.map(function(r,i){var row=i+4;return[r.brinco,r.nasc?exDate(r.nasc):null,{f:'IF(B'+row+'="","",ROUND((TODAY()-B'+row+')/365.25,1))'},r.mae,r.pai,r.avo,r.obs||'',r.condAtual||'',r.previsaoRepro||'',r.numPartos||0];}));
+  var dgD=[['DADOS GERAIS'],['Vinculado pelo Brinco.'],['Brinco','Data de Nascimento','Idade (anos)','Mãe (Brinco)','Pai','Avô materno','Observações','Condicao Atual','Previsao Reprodutiva','Nº de Partos','Data de Desmame','Data Aborto/Natimorto','Data Início Amamentação']].concat(DB.dg.map(function(r,i){var row=i+4;return[r.brinco,r.nasc?exDate(r.nasc):null,{f:'IF(B'+row+'="","",ROUND((TODAY()-B'+row+')/365.25,1))'},r.mae,r.pai,r.avo,r.obs||'',r.condAtual||'',r.previsaoRepro||'',r.numPartos||0,r.dataDesmame||'',r.dataInterRepro||'',r.dataAmamentacao||''];}));
   var wsDg=XLSX.utils.aoa_to_sheet(dgD);
   DB.dg.forEach(function(r,i){var c=wsDg[XLSX.utils.encode_cell({r:3+i,c:1})];if(c&&r.nasc)c.z='dd/mm/yyyy';});
   XLSX.utils.book_append_sheet(wb,wsDg,'Dados Gerais');
@@ -4076,7 +4076,7 @@ function renderLotes(){
         +'<td>'+(dg.mae||'-')+'</td>'
         +'<td>'+(dg.pai||'-')+'</td>'
         +'<td>'+(dg.avo||'-')+'</td>'
-        +'<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(dg.condAtual||'-')+'</td>'
+        +'<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+condDisplay(r,dg)+'</td>'
         +'<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(dg.previsaoRepro||'-')+'</td>'
         +'<td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(dg.obs||'')+'">'+(dg.obs?dg.obs.substring(0,18)+(dg.obs.length>18?'…':''):'-')+'</td>'
         +'</tr>';
@@ -5191,7 +5191,9 @@ function dgPrenheAtiva(brinco){
 function fcAbrirEstado(brinco){
   document.getElementById('me-title').textContent = 'Atualizar Estado — Brinco '+brinco;
   var ativa = dgPrenheAtiva(brinco);
+  var dgRecEst = DB.dg.find(function(r){ return r.brinco===brinco; })||{};
   if(ativa) fcRenderPartoForm(brinco, ativa);
+  else if(dgRecEst.condAtual==='Terneiro ao pé') fcRenderDesmameForm(brinco);
   else fcRenderEstadoManual(brinco);
   document.getElementById('modal-estado').classList.add('on');
 }
@@ -5261,10 +5263,19 @@ function fcConfirmarParto(brinco){
 
   var dgAnimal = DB.dg.find(function(r){ return r.brinco===brinco; });
   if(dgAnimal){
-    if(resultado==='pariu') dgAnimal.condAtual='Amamentando';
-    else if(resultado==='abortou') dgAnimal.condAtual='Abortou';
-    else if(resultado==='natimorto') dgAnimal.condAtual='Natimorto';
-    fcLogEstado(brinco, 'Condição atualizada para '+dgAnimal.condAtual+' (registro de parto/desfecho)', dataStr);
+    if(resultado==='pariu'){
+      dgAnimal.condAtual='Amamentando';
+      dgAnimal.dataInterRepro='';
+      dgAnimal.dataAmamentacao=dataStr;
+      fcLogEstado(brinco, 'Condição atualizada para Amamentando (registro de parto/desfecho)', dataStr);
+    } else if(resultado==='abortou' || resultado==='natimorto'){
+      // Aborto ou natimorto: a vaca volta a ficar vazia (apta para um novo protocolo reprodutivo
+      // após 30 dias dessa intercorrência — ver aptaReproducao). No histórico fica registrada
+      // apenas a intercorrência em si, não uma mudança de condição separada.
+      dgAnimal.condAtual='Vazia';
+      dgAnimal.dataInterRepro=dataStr;
+      fcLogEstado(brinco, resultado==='abortou' ? 'Aborto registrado' : 'Natimorto registrado (bezerro)', dataStr);
+    }
   }
 
   // Nascimento (vivo ou natimorto) conta como parição: incrementa o nº de partos da vaca e
@@ -5284,8 +5295,8 @@ function fcConfirmarParto(brinco){
   var repRecX = DB.rep.find(function(r){ return r.brinco===brinco; });
   if(repRecX){
     if(resultado==='pariu'){ repRecX.par='Sim'; repRecX.cond='Amamentando'; }
-    else if(resultado==='abortou'){ repRecX.par='Nao'; repRecX.cond='Abortou'; }
-    else if(resultado==='natimorto'){ repRecX.par='Sim'; repRecX.cond='Natimorto'; }
+    else if(resultado==='abortou'){ repRecX.par='Nao'; repRecX.cond='Vazia'; }
+    else if(resultado==='natimorto'){ repRecX.par='Sim'; repRecX.cond='Vazia'; }
   }
 
   // Natimorto: não cria registro de animal, por decisão do usuário.
@@ -5303,10 +5314,11 @@ function fcConfirmarParto(brinco){
     var dgRecTern = {
       brinco: ternBrinco, nasc: dataStr,
       mae: brinco, pai: iatfRec ? (iatfRec.touro||'') : '', avo: vacaDg.pai||'',
-      obs: obs, condAtual:'', previsaoRepro:'', numPartos:0
+      obs: obs, condAtual:'Terneiro ao pé', previsaoRepro:'', numPartos:0, dataDesmame:''
     };
     DB.id.push(idRecTern);
     DB.dg.push(dgRecTern);
+    fcLogEstado(ternBrinco, 'Condição inicial: Terneiro ao pé (nascimento)', dataStr);
   }
 
   markDirty();
@@ -5330,8 +5342,24 @@ function fcRenderEstadoManual(brinco){
 function fcSetCondManual(brinco, cond){
   var dgAnimal = DB.dg.find(function(r){ return r.brinco===brinco; });
   if(!dgAnimal){ toast('Animal não encontrado','err'); return; }
-  dgAnimal.condAtual = cond;
   var repRecX = DB.rep.find(function(r){ return r.brinco===brinco; });
+  if(cond==='Abortou' || cond==='Natimorto'){
+    // Aborto ou natimorto registrado manualmente: a vaca volta a ficar vazia, com carência de
+    // 30 dias antes de voltar a ser "Apta para reprodução" (ver aptaReproducao). No histórico de
+    // intercorrências fica só o registro do aborto/natimorto em si.
+    dgAnimal.condAtual = 'Vazia';
+    dgAnimal.dataInterRepro = todayBR();
+    if(repRecX) repRecX.cond = 'Vazia';
+    fcLogEstado(brinco, cond==='Abortou' ? 'Aborto registrado' : 'Natimorto registrado (bezerro)');
+    markDirty();
+    toast((cond==='Abortou'?'Aborto':'Natimorto')+' registrado. Condição atualizada para Vazia.','ok');
+    closeEstadoModal();
+    fcRender(brinco); renderReg(); renderHistorico(); renderDiagnostico(); renderAgenda(); renderRepDash();
+    return;
+  }
+  dgAnimal.condAtual = cond;
+  dgAnimal.dataInterRepro = '';
+  dgAnimal.dataAmamentacao = cond==='Amamentando' ? todayBR() : '';
   if(repRecX) repRecX.cond = cond;
   fcLogEstado(brinco, 'Condição atualizada manualmente para '+cond);
   markDirty();
@@ -5349,6 +5377,89 @@ function fcSetDescarte(brinco){
   toast('Animal '+brinco+' marcado para Descarte!','ok');
   closeEstadoModal();
   fcRender(brinco); renderReg(); renderHistorico(); renderDiagnostico(); renderAgenda(); renderRepDash();
+}
+
+// ─── DESMAME (terneiro ao pé → desmamado) ────────────────────────────────────
+function fcRenderDesmameForm(brinco){
+  document.getElementById('me-content').innerHTML =
+    '<div style="font-size:12px;color:var(--tx2);margin-bottom:12px">Registrar desmame do terneiro. A condição será alterada de "Terneiro ao pé" para "Desmamado".</div>'
+    +'<div class="fc-fg" style="margin-bottom:12px"><label>Data do Desmame</label><input id="me-desmame-data" placeholder="dd/mm/aaaa" value="'+todayBR()+'"></div>'
+    +'<button class="fc-add-btn" style="width:100%;justify-content:center" onclick="fcConfirmarDesmame(\''+brinco+'\')">Confirmar desmame</button>'
+    +'<div style="text-align:center;margin-top:10px"><a href="javascript:void(0)" style="font-size:12px;color:var(--tx2)" onclick="fcRenderEstadoManual(\''+brinco+'\')">Definir outro estado manualmente</a></div>';
+}
+
+function fcConfirmarDesmame(brinco){
+  var dataStr = g('me-desmame-data').trim();
+  if(!dataStr){ toast('Informe a data do desmame','err'); return; }
+  if(!validDate(dataStr)){ toast('Use o formato dd/mm/aaaa para a data','err'); return; }
+  if(toDate(dataStr) > new Date()){ toast('Data não pode ser futura','err'); return; }
+  var dgAnimal = DB.dg.find(function(r){ return r.brinco===brinco; });
+  if(!dgAnimal){ toast('Animal não encontrado','err'); return; }
+  dgAnimal.condAtual = 'Desmamado';
+  dgAnimal.dataDesmame = dataStr;
+  fcLogEstado(brinco, 'Desmame registrado', dataStr);
+  markDirty();
+  toast('Desmame registrado para '+brinco+'!','ok');
+  closeEstadoModal();
+  fcRender(brinco); renderReg(); renderHistorico(); renderDiagnostico(); renderAgenda(); renderRepDash(); renderLotes();
+}
+
+// ─── TROCA DE BRINCO (reetiquetagem, mantendo todo o histórico do animal) ────
+// Usada quando o animal perde o brinco original e precisa ser reetiquetado. Como quase todas as
+// tabelas do sistema referenciam o animal pelo número do brinco (não existe um ID interno
+// separado), a troca é feita propagando o novo número para todos os registros já existentes —
+// nada é apagado ou perdido, o histórico completo passa a ficar sob o novo brinco.
+function fcAbrirTrocaBrinco(brinco){
+  document.getElementById('me-title').textContent = 'Trocar Brinco — Atual: '+brinco;
+  document.getElementById('me-content').innerHTML =
+    '<div style="font-size:12px;color:var(--tx2);margin-bottom:12px">Use esta opção quando o animal perder o brinco original e precisar ser reetiquetado. Todo o histórico (pesagens, sanidade, manejo, reprodução, intercorrências) é mantido e passa a ficar associado ao novo número.</div>'
+    +'<div class="fc-fg" style="margin-bottom:10px"><label>Novo Brinco</label><input id="me-novo-brinco" placeholder="Ex: 1234"></div>'
+    +'<div class="fc-fg" style="margin-bottom:4px"><label>Motivo (opcional)</label><input id="me-troca-motivo" placeholder="Ex: Brinco original perdido"></div>'
+    +'<button class="fc-add-btn" style="width:100%;justify-content:center;margin-top:12px" onclick="fcConfirmarTrocaBrinco(\''+brinco+'\')">Confirmar troca</button>';
+  document.getElementById('modal-estado').classList.add('on');
+}
+
+function fcConfirmarTrocaBrinco(antigo){
+  var novo = g('me-novo-brinco').trim();
+  var motivo = (document.getElementById('me-troca-motivo')||{}).value||'';
+  motivo = motivo.trim();
+  var bMsg = brincoErrMsg(novo);
+  if(bMsg){ toast('Novo brinco: '+bMsg,'err'); return; }
+  if(novo===antigo){ toast('O novo brinco deve ser diferente do atual','err'); return; }
+  if(brincoExiste(novo)){ toast('Brinco '+novo+' já está em uso por outro animal','err'); return; }
+  renomearBrinco(antigo, novo, motivo);
+  closeEstadoModal();
+  toast('Brinco alterado: '+antigo+' → '+novo,'ok');
+  var fcInp = document.getElementById('fc-inp'); if(fcInp) fcInp.value = novo;
+  fcRender(novo);
+  renderReg(); renderPes(); renderSan(); renderMi(); renderHistorico(); renderDiagnostico(); renderAgenda(); renderRepDash(); renderLotes(); renderRepr();
+}
+
+// Propaga a troca de um brinco por todas as tabelas do sistema, incluindo referências cruzadas
+// (mãe/pai/avô de outros animais, terneiro de um parto registrado, protocolos, reprodutores,
+// intercorrências) — nenhum dado é perdido, tudo passa a ficar associado ao novo número.
+function renomearBrinco(antigo, novo, motivo){
+  function troca(arr){ arr.forEach(function(r){ if(r.brinco===antigo) r.brinco=novo; }); }
+  troca(DB.id); troca(DB.dg); troca(DB.pes); troca(DB.san); troca(DB_mi);
+  troca(DB.rep); troca(DB_iatf_reg); troca(DB_dg_reg);
+  // Referências cruzadas: o animal pode ser mãe/pai/avô de outros registros
+  DB.dg.forEach(function(d){
+    if(d.mae===antigo) d.mae=novo;
+    if(d.pai===antigo) d.pai=novo;
+    if(d.avo===antigo) d.avo=novo;
+  });
+  DB_dg_reg.forEach(function(r){ if(r.terneiroBrinco===antigo) r.terneiroBrinco=novo; });
+  DB_protocolos.forEach(function(p){
+    if(p.brincos && p.brincos.length) p.brincos = p.brincos.map(function(x){ return x===antigo?novo:x; });
+  });
+  DB_repr.forEach(function(r){ if(r.tipo==='touro' && r.brinco===antigo) r.brinco=novo; });
+  if(fcInter[antigo]){
+    if(!fcInter[novo]) fcInter[novo]=[];
+    fcInter[novo] = fcInter[novo].concat(fcInter[antigo]);
+    delete fcInter[antigo];
+  }
+  fcLogEstado(novo, 'Brinco alterado de '+antigo+' para '+novo+(motivo?' — '+motivo:''), todayBR());
+  markDirty();
 }
 
 // Check for unsaved session on page load — chamado após todas as vars globais serem declaradas
@@ -5912,6 +6023,13 @@ function toDate(d){
 function calcAge(d){var dt=toDate(d);if(!dt)return '-';var a=(new Date()-dt)/(365.25*86400000);return a<0?'-':a.toFixed(1)+' anos';}
 
 // Calcula categoria automatica baseada em genero, nascimento e status reprodutivo
+// Exibe a condição atual de um animal nas tabelas, ocultando-a para machos que já
+// passaram da fase de terneiro (Tourinho/Touro), que não têm condição reprodutiva própria.
+function condDisplay(r, dg){
+  if((r.gen||'').toUpperCase()==='M' && (r.cat==='Tourinho' || r.cat==='Touro')) return '-';
+  return (dg.condAtual||'-');
+}
+
 function calcCat(gen, nascStr, jaPariu){
   var dt = toDate(nascStr);
   if(!dt) return null; // sem data de nascimento, nao atualiza
@@ -5924,10 +6042,10 @@ function calcCat(gen, nascStr, jaPariu){
     return 'Touro';
   }
   if(g === 'F'){
-    if(anos < 1)  return 'Terneira';
-    if(anos < 2)  return 'Terneira Sobreano';
-    // >= 2 anos: so vira Novilha se nunca pariu; Matriz/Primipara preservam
-    if(jaPariu)   return null; // preserva categoria atual (Matriz ou Primipara)
+    if(anos < 1)    return 'Terneira';
+    if(anos < 1.7)  return 'Terneira Sobreano';
+    // >= 1,7 anos: so vira Novilha se nunca pariu; Matriz/Primipara preservam
+    if(jaPariu)     return null; // preserva categoria atual (Matriz ou Primipara)
     return 'Novilha';
   }
   return null; // genero indefinido, nao atualiza
@@ -5947,6 +6065,29 @@ function atualizarCategorias(){
       r.cat = novaCat;
       atualizados++;
     }
+    // Consistência de condição x categoria: aplicada em toda passagem (não só quando a categoria
+    // muda nesta chamada), para autocorrigir registros antigos/importados que já estejam na
+    // categoria alvo mas ainda carreguem uma condição desatualizada (ex.: planilha migrada antes
+    // desta funcionalidade existir). Fêmea que já é Terneira Sobreano e ainda consta Desmamado
+    // passa a Vazia; macho já Tourinho/Touro não tem condição reprodutiva a exibir ("-").
+    if(dg.brinco){
+      if((r.cat==='Terneiro' || r.cat==='Terneira') && !dg.condAtual){
+        // Terneiro/terneira sem condição registrada (ex.: cadastro antigo/importado, anterior a esta
+        // funcionalidade) é considerado ao pé por padrão, até que um desmame seja registrado.
+        dg.condAtual = 'Terneiro ao pé';
+      } else if(r.cat==='Terneira Sobreano' && dg.condAtual==='Desmamado'){
+        dg.condAtual = 'Vazia';
+        dg.dataInterRepro = '';
+        dg.dataAmamentacao = '';
+        fcLogEstado(r.brinco, 'Condição atualizada automaticamente de Desmamado para Vazia (Terneira Sobreano)');
+      } else if(r.cat==='Terneira Sobreano' && !dg.condAtual){
+        // Sem condição registrada (cadastro antigo/importado): toda terneira sobreano já está
+        // desmamada na prática, então o padrão passa a ser Vazia.
+        dg.condAtual = 'Vazia';
+      } else if((r.cat==='Tourinho' || r.cat==='Touro') && (r.gen||'').toUpperCase()==='M' && dg.condAtual){
+        dg.condAtual = '';
+      }
+    }
   });
   return atualizados;
 }
@@ -5963,6 +6104,101 @@ function normalizarCondAtual(){
   DB.rep.forEach(function(r){
     if(r.cond && r.cond.trim().toLowerCase()==='prenha') r.cond='Prenhe';
   });
+}
+
+// Corrige condAtual='Protocolado' que ficou desatualizado: acontece quando o animal já tem um
+// diagnóstico de gestação (DG) posterior ao último registro de IATF/Monta, mas condAtual nunca foi
+// sincronizado — por exemplo quando o DG foi lançado direto na planilha (fora da tela Diagnóstico
+// do app), já que só as funções dgSalvar/dgSalvarById atualizam esse campo. Autocorretiva a cada
+// carregamento, análogo ao que atualizarCategorias() faz para categoria x condição.
+function reconciliarCondicaoProtocolado(){
+  var corrigidos = 0;
+  DB.dg.forEach(function(dg){
+    if(dg.condAtual !== 'Protocolado') return;
+    var iatfs = DB_iatf_reg.filter(function(r){ return r.brinco===dg.brinco; });
+    if(!iatfs.length) return;
+    var ultimoIatf = iatfs.slice().sort(function(a,b){
+      var da=toDate(a.data), db=toDate(b.data);
+      if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+      return db-da;
+    })[0];
+    // DGs desse animal que ainda não resultaram em parto/aborto registrado (partoResultado vazio)
+    var dgs = DB_dg_reg.filter(function(r){ return r.brinco===dg.brinco && !r.partoResultado; });
+    if(!dgs.length) return;
+    var ultimoDg = dgs.slice().sort(function(a,b){
+      var da=toDate(a.dataDG), db=toDate(b.dataDG);
+      if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+      return db-da;
+    })[0];
+    var dtIatf = toDate(ultimoIatf.data);
+    var dtDg   = toDate(ultimoDg.dataDG);
+    if(!dtDg || !dtIatf || dtDg < dtIatf) return; // DG é anterior ao protocolo atual: continua "Protocolado" mesmo
+    var novaCond = (ultimoDg.resultado||'').toLowerCase().indexOf('prenh')===0 ? 'Prenhe' : 'Vazia';
+    dg.condAtual = novaCond;
+    dg.dataInterRepro = '';
+    dg.dataAmamentacao = '';
+    if(novaCond==='Prenhe') dg.previsaoRepro = 'Prenhe';
+    corrigidos++;
+    fcLogEstado(dg.brinco, 'Condição corrigida automaticamente de Protocolado para '+novaCond+' (DG já registrado)', ultimoDg.dataDG);
+  });
+  return corrigidos;
+}
+
+// Migra condAtual antigo 'Abortou'/'Natimorto' (registrado antes desta funcionalidade existir, ou
+// lançado direto na planilha fora do app) para o novo padrão: a vaca fica 'Vazia', com carência de
+// 30 dias contada a partir da intercorrência (dataInterRepro). Autocorretiva a cada carregamento.
+function migrarCondicoesAbortoNatimorto(){
+  var migrados = 0;
+  DB.dg.forEach(function(dg){
+    if(dg.condAtual!=='Abortou' && dg.condAtual!=='Natimorto') return;
+    var tipo = dg.condAtual==='Abortou' ? 'abortou' : 'natimorto';
+    var registros = DB_dg_reg.filter(function(r){
+      return r.brinco===dg.brinco && (r.partoResultado||'').toLowerCase()===tipo;
+    });
+    var dataEvento = '';
+    if(registros.length){
+      registros.sort(function(a,b){
+        var da=toDate(a.partoData), db=toDate(b.partoData);
+        if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+        return db-da;
+      });
+      dataEvento = registros[0].partoData || '';
+    }
+    if(!dataEvento) dataEvento = todayBR();
+    dg.condAtual = 'Vazia';
+    dg.dataInterRepro = dataEvento;
+    fcLogEstado(dg.brinco, (tipo==='abortou' ? 'Aborto registrado' : 'Natimorto registrado (bezerro)')+' (migração automática)', dataEvento);
+    migrados++;
+  });
+  return migrados;
+}
+
+// Preenche dataAmamentacao para vacas já 'Amamentando' que não passaram por fcConfirmarParto (ex.:
+// cadastro antigo/importado direto na planilha) — sem essa data, aptaReproducao() nunca teria como
+// saber que a carência de 30 dias já passou. Busca o parto mais recente em DB_dg_reg; se não achar
+// nenhum registro, assume hoje como início da carência (mais seguro que presumir apta imediatamente
+// ou deixá-la travada para sempre). Autocorretiva a cada carregamento.
+function migrarDataAmamentacao(){
+  var migrados = 0;
+  DB.dg.forEach(function(dg){
+    if(dg.condAtual!=='Amamentando' || dg.dataAmamentacao) return;
+    var registros = DB_dg_reg.filter(function(r){
+      return r.brinco===dg.brinco && (r.partoResultado||'').toLowerCase()==='pariu';
+    });
+    var dataEvento = '';
+    if(registros.length){
+      registros.sort(function(a,b){
+        var da=toDate(a.partoData), db=toDate(b.partoData);
+        if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+        return db-da;
+      });
+      dataEvento = registros[0].partoData || '';
+    }
+    if(!dataEvento) dataEvento = dataInicioCondAtual(dg.brinco, 'Amamentando') || todayBR();
+    dg.dataAmamentacao = dataEvento;
+    migrados++;
+  });
+  return migrados;
 }
 
 // Convert to Date object for Excel export
@@ -6097,12 +6333,41 @@ function fcRender(brinco){
     : '';
   // Estados manuais (definidos via botão "Atualizar Estado") têm prioridade sobre a
   // derivação automática por data de DG — refletem a condição real e mais recente do animal.
-  if(dgRec.condAtual==='Amamentando'){ tagCls='fc-tag-amamentando'; tagLbl='Amamentando'; tagSub=''; }
+  if(dgRec.condAtual==='Amamentando'){
+    tagCls='fc-tag-amamentando'; tagLbl='Amamentando'; tagSub='';
+    // Mesma regra de carência pós-parto do caso Vazia/pós-intercorrência: mostra quando ela volta
+    // a ficar apta para um novo protocolo, 30 dias após o parto (dataAmamentacao).
+    if(dgRec.dataAmamentacao){
+      var diasAmam = Math.floor((new Date() - toDate(dgRec.dataAmamentacao)) / 86400000);
+      tagSub = diasAmam>=30
+        ? 'Desde '+fmtD(dgRec.dataAmamentacao)
+        : 'Desde '+fmtD(dgRec.dataAmamentacao)+' · apta em '+(30-diasAmam)+' dia(s)';
+    }
+  }
   else if(dgRec.condAtual==='Abortou'){ tagCls='fc-tag-abortou'; tagLbl='Abortou'; tagSub=''; }
   else if(dgRec.condAtual==='Natimorto'){ tagCls='fc-tag-natimorto'; tagLbl='Natimorto (bezerro)'; tagSub=''; }
+  else if(dgRec.condAtual==='Terneiro ao pé'){ tagCls='fc-tag-terneiroape'; tagLbl='Terneiro ao pé'; tagSub=''; }
+  else if(dgRec.condAtual==='Desmamado'){ tagCls='fc-tag-desmamado'; tagLbl='Desmamado'+(dgRec.dataDesmame?' em '+fmtD(dgRec.dataDesmame):''); tagSub=''; }
+  else if(dgRec.condAtual==='Vazia' && dgRec.dataInterRepro){
+    // Vazia em decorrência de aborto/natimorto: mostra a carência de 30 dias até ficar apta.
+    var diasDesdeInter = Math.floor((new Date() - toDate(dgRec.dataInterRepro)) / 86400000);
+    tagCls='fc-tag-vazia'; tagLbl='Vazia';
+    tagSub = diasDesdeInter>=30
+      ? 'Pós-intercorrência ('+fmtD(dgRec.dataInterRepro)+')'
+      : 'Pós-intercorrência · apta em '+(30-diasDesdeInter)+' dia(s)';
+  }
+  // Macho que já passou da fase de terneiro (Tourinho/Touro) não tem condição reprodutiva
+  // própria a exibir — a categoria por idade tem prioridade máxima sobre qualquer condAtual residual.
+  if((idRec.gen||'').toUpperCase()==='M' && (idRec.cat==='Tourinho' || idRec.cat==='Touro')){
+    tagCls='fc-tag-na'; tagLbl='—'; tagSub='';
+  }
+  var isApta = aptaReproducao(brinco);
 
-  // ── Baixa (saida do rebanho) ──
-  var baixaAnimal = baixaDoAnimal(brinco);
+  // Nota: fcRender só é chamado para brincos atualmente presentes em DB.id — animais baixados
+  // são removidos do cadastro (purgarDadosAnimal), então qualquer animal exibido aqui está
+  // necessariamente ativo. Não checamos mais DB_baixas pelo brinco, porque um brinco reaproveitado
+  // (troca de brinco ou novo cadastro) pode coincidir com o de um animal antigo já baixado, o que
+  // gerava o alerta "Animal baixado" incorretamente para o animal ativo atual.
 
   // Ultima pesagem
   var lastPeso = pesagens.length ? pesagens[pesagens.length-1].peso+' kg' : '—';
@@ -6384,21 +6649,15 @@ function fcRender(brinco){
         +'<div class="fc-sub">'+(idRec.cat||'—')+' &bull; '+(idRec.raca||'—')+' &bull; Genero: '+(idRec.gen||'—')+'</div></div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">'
           +'<span class="fc-tag '+tagCls+'">'+tagLbl+'</span>'
+          +(isApta?'<span class="fc-tag fc-tag-apta">&#10003; Apta para reprodução</span>':'')
           +(tagSub?'<span style="font-size:10px;color:var(--tx3)">'+tagSub+'</span>':'')
-          +(baixaAnimal?'':'<div style="display:flex;gap:6px;margin-top:4px">'
+          +'<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;justify-content:flex-end">'
             +'<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="fcAbrirEstado(\''+brinco+'\')">&#128260; Atualizar estado</button>'
+            +'<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="fcAbrirTrocaBrinco(\''+brinco+'\')">&#127991; Trocar brinco</button>'
             +'<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="irParaBaixa(\''+brinco+'\')">&#128683; Dar baixa</button>'
-          +'</div>')
+          +'</div>'
         +'</div>'
       +'</div>'
-      +(baixaAnimal
-          ? '<div style="background:var(--redbg);border:1px solid #ef9a9a;border-radius:var(--rsm);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--red)">'
-            +'<strong>&#128683; Animal baixado</strong> — '+baixaAnimal.tipo+' em '+fmtD(baixaAnimal.data)
-            +(baixaAnimal.comprador?' &bull; Comprador: '+baixaAnimal.comprador:'')
-            +(baixaAnimal.valor?' &bull; '+fmtValorBR(baixaAnimal.valor):'')
-            +(baixaAnimal.motivo?'<br>'+baixaAnimal.motivo:'')
-          +'</div>'
-          : '')
       +'<div class="fc-info-grid">'+infoGrid+'</div>'+obsBlock
     +'</div>'
     // Chart
@@ -6495,6 +6754,87 @@ function fcLogEstado(brinco, desc, data){
   if(!brinco) return;
   if(!fcInter[brinco]) fcInter[brinco]=[];
   fcInter[brinco].push({data: data||todayBR(), desc: desc});
+}
+
+// Busca no histórico de intercorrências (fcInter) a data mais recente em que a condição atual do
+// animal foi definida como "cond" — usada para saber há quantos dias ele está nesse estado
+// (ex.: "amamentando há 30 dias"). Cobre tanto a definição automática (parto) quanto a manual
+// (botão Atualizar Estado), já que ambas passam por fcLogEstado com o nome da condição na descrição.
+function dataInicioCondAtual(brinco, cond){
+  var logs = (fcInter[brinco]||[]).filter(function(l){
+    return l.desc && l.desc.indexOf('ondição atualizada')!==-1 && l.desc.indexOf(cond)!==-1;
+  });
+  if(!logs.length) return '';
+  logs.sort(function(a,b){
+    var da=toDate(a.data), db=toDate(b.data);
+    if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+    return db-da;
+  });
+  return logs[0].data;
+}
+
+// Fêmea apta para reprodução: mais de 1,7 anos de idade, e vazia OU amamentando há 30+ dias.
+// Usada para pré-marcar automaticamente os animais ao criar um novo protocolo reprodutivo.
+// dataRef (opcional, string dd/mm/aaaa): data em relação à qual a carência de 30 dias e a idade
+// mínima são calculadas. Ao avaliar para um protocolo específico, deve ser o D0/Data Início desse
+// protocolo — não a data em que o protocolo está sendo cadastrado no sistema, que pode ser
+// diferente. Sem dataRef, usa a data de hoje (ex.: selo exibido na Ficha do Animal, fora do
+// contexto de um protocolo).
+function aptaReproducao(brinco, dataRef){
+  var refDate = dataRef ? toDate(dataRef) : new Date();
+  if(!refDate) refDate = new Date();
+  var idRec = DB.id.find(function(r){ return r.brinco===brinco; });
+  if(!idRec || (idRec.gen||'').toUpperCase()!=='F') return false;
+  var dgRec = DB.dg.find(function(r){ return r.brinco===brinco; });
+  if(!dgRec || !dgRec.nasc) return false;
+  var idade = (refDate - toDate(dgRec.nasc)) / (365.25*86400000);
+  if(idade < 1.7) return false;
+  if(dgRec.condAtual==='Vazia'){
+    // Vazia por aborto/natimorto: só apta 30 dias após a intercorrência (ver dataInterRepro,
+    // definido em fcConfirmarParto/fcSetCondManual e limpo sempre que a condição Vazia vier de
+    // outra origem — DG negativo, desmame, manual, etc.).
+    if(dgRec.dataInterRepro){
+      var diasInter = (refDate - toDate(dgRec.dataInterRepro)) / 86400000;
+      return diasInter >= 30;
+    }
+    return true;
+  }
+  if(dgRec.condAtual==='Amamentando'){
+    // Mesma regra de carência do caso Vazia/pós-intercorrência: 30 dias contados a partir do
+    // parto (dataAmamentacao), não da data de hoje. Cai para o histórico de intercorrências como
+    // reforço (dataInicioCondAtual) apenas se dataAmamentacao não estiver definida — cadastro
+    // antigo/importado que nunca passou por fcConfirmarParto (ver migrarDataAmamentacao).
+    var inicio = dgRec.dataAmamentacao || dataInicioCondAtual(brinco, 'Amamentando');
+    if(!inicio) return false;
+    var dias = (refDate - toDate(inicio)) / 86400000;
+    return dias >= 30;
+  }
+  return false;
+}
+
+// Retorna a data do aborto/natimorto mais recente do animal, apenas se ele ainda não tiver sido
+// incluído em nenhum protocolo de IATF/Monta desde então — ou seja, indica que o próximo protocolo
+// em que ela entrar será o primeiro após a intercorrência. Usada para sinalizar esse animal na
+// tela de criação de protocolo.
+function interReproPendente(brinco){
+  var eventos = (fcInter[brinco]||[]).filter(function(l){
+    return l.desc && (l.desc.indexOf('Aborto registrado')!==-1 || l.desc.indexOf('Natimorto registrado')!==-1);
+  });
+  if(!eventos.length) return '';
+  eventos = eventos.slice().sort(function(a,b){
+    var da=toDate(a.data), db=toDate(b.data);
+    if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+    return db-da;
+  });
+  var maisRecente = eventos[0];
+  var dtEvento = toDate(maisRecente.data);
+  if(!dtEvento) return '';
+  var jaProtocolada = DB_iatf_reg.some(function(r){
+    if(r.brinco!==brinco) return false;
+    var dtR = toDate(r.data);
+    return dtR && dtR > dtEvento;
+  });
+  return jaProtocolada ? '' : maisRecente.data;
 }
 
 function fcAddInt(brinco){
@@ -6728,78 +7068,38 @@ function agCalcDates(){
   document.getElementById('ag-d10').value = validDate(d0) ? addDays(d0, 10) : '';
 }
 
-// Estado das categorias selecionadas na Agenda
-var agSelCats = [];
-var agLoteExcluidos = [];
-
-function agPopulateLoteCats(){
-  var c = document.getElementById('ag-lote-cats');
-  if(!c) return;
-  c.innerHTML = CATEGORIAS.map(function(cat){
-    // Apenas categorias com fêmeas
-    var n = DB.id.filter(function(r){ return r.cat===cat && (r.gen||'').toUpperCase()==='F'; }).length;
-    if(n===0) return '';
-    var sel = agSelCats.indexOf(cat)!==-1;
-    return '<span class="san-lote-cat'+(sel?' sel':'')+'" onclick="agToggleCat(\''+cat+'\')" style="margin-bottom:4px">'+cat+' <small>('+n+')</small></span>';
-  }).join('');
-  agAtualizarContLote();
-  agRenderLoteBrincosChips();
-}
-
-function agToggleCat(cat){
-  var idx = agSelCats.indexOf(cat);
-  if(idx===-1) agSelCats.push(cat); else agSelCats.splice(idx,1);
-  agLoteExcluidos=[];
-  agPopulateLoteCats();
-}
-
-function agGetLoteBrincos(){
-  return DB.id.filter(function(r){
-    return agSelCats.indexOf(r.cat)!==-1
-      && (r.gen||'').toUpperCase()==='F'
-      && agLoteExcluidos.indexOf(r.brinco)===-1;
-  }).map(function(r){ return r.brinco; });
-}
-
-function agAtualizarContLote(){
-  var cnt = document.getElementById('ag-lote-count');
-  if(cnt) cnt.textContent = agGetLoteBrincos().length;
-}
-
-function agLoteRemoverBrinco(b){
-  agLoteExcluidos.push(b);
-  agAtualizarContLote();
-  agRenderLoteBrincosChips();
-  agSyncCount();
-}
-
-function agRenderLoteBrincosChips(){
-  var wrap = document.getElementById('ag-lote-brincos-wrap');
-  var cont = document.getElementById('ag-lote-brincos-chips');
-  if(!wrap||!cont) return;
-  var brincos = agGetLoteBrincos();
-  if(!brincos.length||!agSelCats.length){ wrap.style.display='none'; return; }
-  wrap.style.display='';
-  cont.innerHTML = brincos.map(function(b){
-    var id = DB.id.find(function(r){ return r.brinco===b; })||{};
-    return '<span class="san-chip sel" style="cursor:default">'
-      +b+(id.cat?' <small style="opacity:.7">('+id.cat+')</small>':'')
-      +'<span class="san-chip-x" style="cursor:pointer;display:inline" onclick="agLoteRemoverBrinco(\''+b+'\')" title="Remover">&#10005;</span>'
-    +'</span>';
-  }).join('');
-}
-
 function agSyncCount(){
-  // Merge brincos individuais + lote, deduplicated
   var total = agGetAllBrincos().length;
   var cnt = document.getElementById('ag-animais-count');
   if(cnt) cnt.textContent = total ? total+' animal(is) selecionado(s)' : 'Nenhum animal selecionado';
 }
 
 function agGetAllBrincos(){
-  var arr = agBrincosSel.slice();
-  agGetLoteBrincos().forEach(function(b){ if(arr.indexOf(b)===-1) arr.push(b); });
-  return arr;
+  return agBrincosSel.slice();
+}
+
+// Ao informar a data de início do protocolo (D0 na IATF, Data Início na Monta Natural), carrega
+// automaticamente todas as fêmeas classificadas como "Apta para reprodução" (ver aptaReproducao),
+// mantendo a possibilidade de adicionar outras manualmente ou remover alguma da lista. Só age no
+// modo de criação — editar um protocolo existente não deve sobrescrever a seleção já salva.
+function agAutoCarregarAptas(){
+  var editIdx = document.getElementById('ag-edit-idx').value;
+  if(editIdx !== '') return;
+  var d0 = agTipoProtocolo==='natural'
+    ? document.getElementById('ag-nat-inicio').value.trim()
+    : document.getElementById('ag-d0').value.trim();
+  if(!validDate(d0)) return;
+  var added = 0;
+  DB.id.forEach(function(r){
+    if(agBrincosSel.indexOf(r.brinco)===-1 && aptaReproducao(r.brinco, d0)){
+      agBrincosSel.push(r.brinco);
+      added++;
+    }
+  });
+  if(added){
+    agRenderChips();
+    toast(added+' fêmea(s) apta(s) para reprodução carregada(s) automaticamente','ok');
+  }
 }
 
 function agBrincoInput(){
@@ -6834,8 +7134,6 @@ function agAdicionarBrinco(){
   agRenderChips();
 }
 
-// agSelecionarCategoria replaced by agToggleCat UI
-
 function agRenderChips(){
   var wrap = document.getElementById('ag-ind-brincos-wrap');
   var cont = document.getElementById('ag-animais-chips');
@@ -6843,8 +7141,12 @@ function agRenderChips(){
     cont.innerHTML = agBrincosSel.map(function(b){
       var id = DB.id.find(function(r){ return r.brinco===b; })||{};
       var cat = id.cat ? ' <small style="opacity:.7">('+id.cat+')</small>' : '';
+      var dtInter = interReproPendente(b);
+      var alerta = dtInter
+        ? ' <small style="color:var(--amb);font-weight:600" title="Aborto/natimorto em '+fmtD(dtInter)+' — primeiro protocolo desde a intercorrência">&#9888; pós-intercorrência</small>'
+        : '';
       return '<span class="san-chip sel ag-ind-chip" data-b="'+b+'" style="cursor:default">'
-        +b+cat
+        +b+cat+alerta
         +'<span class="san-chip-x ag-rm-chip">&#10005;</span>'
       +'</span>';
     }).join('');
@@ -6981,12 +7283,9 @@ function agCancelar(){
   document.getElementById('agenda-form-title').textContent='Novo Protocolo';
   // Zera seleção de animais
   agBrincosSel=[];
-  agSelCats=[];
-  agLoteExcluidos=[];
   // Volta ao tipo padrão (IATF)
   agSetTipo('iatf');
   // Atualiza UI
-  agPopulateLoteCats();
   agRenderChips();
   agSyncCount();
 }
@@ -7013,11 +7312,8 @@ function agEditar(idx){
   document.getElementById('ag-edit-idx').value = idx;
   document.getElementById('ag-save-btn').textContent='Salvar Alterações';
   document.getElementById('agenda-form-title').textContent='Editar Protocolo';
-  // Restore individual brincos (exclude those covered by categories)
-  agSelCats=[];
-  agLoteExcluidos=[];
   agBrincosSel = (p.brincos||[]).slice();
-  agPopulateLoteCats();
+  agRenderChips();
   agSyncCount();
   window.scrollTo(0,0);
 }
@@ -7041,7 +7337,6 @@ function agExcluir(idx){
 }
 
 function renderAgenda(){
-  agPopulateLoteCats();
   renderAnoTabsBar('ag-ano-tabs-bar','todos' /* placeholder */, 'agSetAno');
   // rebuild with actual filter
   (function(){
@@ -7536,6 +7831,8 @@ function dgSalvarById(pid, brinco){
   var dg2 = DB.dg.find(function(d){ return d.brinco===brinco; });
   if(dg2){
     dg2.condAtual = resVal.toLowerCase()==='prenhe' ? 'Prenhe' : 'Vazia';
+    dg2.dataInterRepro = '';
+    dg2.dataAmamentacao = '';
     if(resVal.toLowerCase()==='prenhe') dg2.previsaoRepro = 'Prenhe';
     fcLogEstado(brinco, 'Condição atualizada para '+dg2.condAtual+' (Diagnóstico de Gestação)', dataVal);
   }
@@ -7557,6 +7854,8 @@ function dgSalvar(pid, brinco){
   var dg = DB.dg.find(function(d){ return d.brinco===brinco; });
   if(dg){
     dg.condAtual = res.toLowerCase()==='prenhe' ? 'Prenhe' : 'Vazia';
+    dg.dataInterRepro = '';
+    dg.dataAmamentacao = '';
     if(res.toLowerCase()==='prenhe') dg.previsaoRepro = 'Prenhe';
     fcLogEstado(brinco, 'Condição atualizada para '+dg.condAtual+' (Diagnóstico de Gestação)', data);
   }
@@ -7604,6 +7903,8 @@ function dgSalvarEdicao(pid, brinco){
   var dg2 = DB.dg.find(function(d){ return d.brinco===brinco; });
   if(dg2){
     dg2.condAtual = resVal.toLowerCase()==='prenhe' ? 'Prenhe' : 'Vazia';
+    dg2.dataInterRepro = '';
+    dg2.dataAmamentacao = '';
     if(resVal.toLowerCase()==='prenhe') dg2.previsaoRepro = 'Prenhe';
     fcLogEstado(brinco, 'Condição atualizada para '+dg2.condAtual+' (edição de DG)', dataVal);
   }
@@ -7702,7 +8003,9 @@ function renderHistorico(){
   // porAno[anoRepro][brinco] = [quadros daquele animal específico naquele ano]
   var porAno = {};
   Object.keys(animais).forEach(function(b){
-    if(filtro && b.toLowerCase().indexOf(filtro)===-1) return;
+    // Busca por brinco exato (não por trecho) — evita retornar vários animais cujo número
+    // apenas contém a sequência digitada (ex.: buscar "1" não deve trazer "10", "21" etc.).
+    if(filtro && b.toLowerCase()!==filtro) return;
     animais[b].forEach(function(q){
       var a = q.anoRepro || '—';
       if(!porAno[a]) porAno[a] = {};
