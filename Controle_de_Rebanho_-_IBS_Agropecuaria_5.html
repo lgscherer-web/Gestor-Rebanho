@@ -43,7 +43,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sb-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
 .sb-logo h1{font-size:15px;font-weight:700;color:#fff}
 .sb-logo p{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px}
-.sb-nav{padding:10px 8px;flex:1}
+.sb-nav{padding:10px 8px}
 .sb-sec{font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px;padding:12px 8px 5px}
 .nb{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border:none;background:none;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;border-radius:var(--rsm);cursor:pointer;text-align:left;transition:background .12s,color .12s}
 .nb:hover{background:rgba(255,255,255,.1);color:#fff}
@@ -215,6 +215,7 @@ tr:hover td{background:#fafaf7}
 .fc-tag-terneiroape{background:var(--blubg);color:var(--blut)}
 .fc-tag-desmamado{background:var(--surf2);color:var(--tx3)}
 .fc-tag-apta{background:var(--grnbg);color:var(--grnt);font-size:10px}
+.fc-tag-protocolado{background:var(--ambbg);color:var(--amb)}
 .fc-nf{text-align:center;padding:40px;color:var(--tx2);font-size:14px}
 .fc-hint{text-align:center;padding:48px 20px;color:var(--tx3)}
 .fc-hint-ic{font-size:40px;margin-bottom:12px}
@@ -497,8 +498,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">1.0.6</span><br>
-              Data da versão: <span id="app-versao-data">14/07/2026</span><br>
+              Versão: <span id="app-versao">1.0.12</span><br>
+              Data da versão: <span id="app-versao-data">15/07/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -1220,7 +1221,8 @@ tr:hover td{background:#fafaf7}
             </div>
             <!-- Info card do animal -->
             <div id="mi-animal-info" style="display:none;background:var(--grnbg);border:1px solid #a5d6a7;border-radius:var(--rsm);padding:10px 14px;margin:10px 0;font-size:12px">
-              <div style="font-weight:700;font-size:13px;color:var(--grnt);margin-bottom:4px" id="mi-info-brinco"></div>
+              <div style="font-weight:700;font-size:13px;color:var(--grnt);margin-bottom:6px" id="mi-info-brinco"></div>
+              <div style="margin-bottom:8px" id="mi-info-cond"></div>
               <div style="display:flex;gap:16px;flex-wrap:wrap" id="mi-info-detalhes"></div>
             </div>
             <div class="grid g2">
@@ -2694,16 +2696,19 @@ function cancelEdit(sec){
     s('reg-idx-id','');s('reg-idx-dg','');
     document.getElementById('reg-form-title').textContent='Novo animal';
     document.getElementById('reg-save-btn').textContent='+ Adicionar animal';
+    focusField('reg-brinco');
   } else if(sec==='pes'){
     s('pes-brinco','');s('pes-peso','');s('pes-data',todayBR());s('pes-idx','');
     document.getElementById('pes-form-title').textContent='Registrar pesagem';
     document.getElementById('pes-save-btn').textContent='+ Registrar pesagem';
+    focusField('pes-brinco');
   } else if(sec==='rep'){
     ['rep-brinco','rep-cond','rep-dtdiag','rep-proto','rep-ama','rep-terngen','rep-ternbrinco','rep-emp','rep-par','rep-des','rep-obs'].forEach(function(i){s(i,'');});
     s('rep-dtdiag',todayBR());s('rep-idx','');
     document.getElementById('rep-form-title').textContent='Novo registro reprodutivo';
     document.getElementById('rep-save-btn').textContent='+ Adicionar';
     toggleTern();
+    focusField('rep-brinco');
   }
 }
 
@@ -3340,18 +3345,21 @@ function salvarSanLote(){
   if(pulados>0) msg += ' ('+pulados+' duplicata(s) ignorada(s))';
   toast(msg, pulados>0&&adicionados===0?'err':'ok');
   if(adicionados===0) return;
+  // Lembra a última data usada, para vir pré-preenchida no próximo manejo.
+  if(data){ ultimaDataManejo=data; try{ localStorage.setItem('ultimaDataManejo_rebanho', data); }catch(e){} }
   cancelarSan();
   markDirty(); renderSan(); renderMi();
 }
 
 function cancelarSan(){
-  var sd=document.getElementById('san-data'); if(sd) sd.value=todayBR();
+  var sd=document.getElementById('san-data'); if(sd) sd.value=ultimaDataManejo||todayBR();
   var so=document.getElementById('san-lote-obs'); if(so) so.value='';
   var bi=document.getElementById('mi-lote-brinco-inp'); if(bi) bi.value='';
   sanSelCats=[]; sanLoteExcluidos=[]; miLoteExtras=[];
   sanDescSel=[]; updateSanDescChips();
   var w=document.getElementById('san-lote-brincos-wrap'); if(w) w.style.display='none';
   renderLoteCats();
+  focusField('mi-lote-brinco-inp');
 }
 
 // Override doDelete to handle san
@@ -3803,9 +3811,15 @@ function renderDash(){
       var da=toDate(a.data),db=toDate(b.data);
       if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return db-da;
     }).slice(0,5);
+    // Datas com alguma pesagem registrada (qualquer animal), para sinalizar "Pesagem" na
+    // descrição do manejo mesmo quando o peso foi lançado à parte da medicação/vacina.
+    var datasComPesagem = {};
+    DB.pes.forEach(function(p){ if(p.data) datasComPesagem[p.data]=true; });
     sanEl.innerHTML='<table class="gmd-table"><thead><tr><th>Data</th><th>Descrição</th><th>Animais</th></tr></thead><tbody>'
       +evList.map(function(e){
-        var descTxt = e.desc || '—';
+        var descTxt = e.desc || '';
+        if(datasComPesagem[e.data]) descTxt = descTxt ? (descTxt+', Pesagem') : 'Pesagem';
+        if(!descTxt) descTxt = '—';
         return '<tr><td>'+fmtD(e.data)+'</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+descTxt+'">'+descTxt+'</td><td>'+e.n+'</td></tr>';
       }).join('')+'</tbody></table>'
       +(Object.keys(eventos).length>5?'<div style="font-size:11px;color:var(--tx3);margin-top:6px">+' +(Object.keys(eventos).length-5)+' eventos anteriores</div>':'');
@@ -4014,6 +4028,7 @@ function cancelarMed(){
   ['med-nome','med-dose','med-disp','med-val','med-obs'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('med-edit-idx').value='';
   document.getElementById('med-form-title').textContent='Novo medicamento';
+  focusField('med-nome');
 }
 
 // ─── SUB-NAVEGAÇÃO DA JANELA MATERIAIS ─────────────────────────────
@@ -4085,6 +4100,7 @@ function cancelarMat(){
   ['mat-nome','mat-unidade','mat-obs'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('mat-edit-idx').value='';
   document.getElementById('mat-form-title').textContent='Novo material';
+  focusField('mat-nome');
 }
 
 // ─── CONTROLE DE ESTOQUE (Medicamentos/Materiais, por categoria) ───
@@ -4210,6 +4226,7 @@ function cancelarEstCat(pfx){
   document.getElementById('est'+pfx+'-obs').value='';
   var u=document.getElementById('est'+pfx+'-unidade'); if(u) u.value = pfx==='med' ? 'doses' : 'unid.';
   var d=document.getElementById('est'+pfx+'-data'); if(d) d.value='';
+  focusField('est'+pfx+'-insumo');
 }
 
 // ─── DOSES SÊMEN (movimentações de estoque) ─────────────────────────
@@ -4341,6 +4358,7 @@ function cancelarSemenDose(){
   document.getElementById('sd-obs').value='';
   document.getElementById('sd-edit-idx').value='';
   document.getElementById('sd-form-title').textContent='Nova movimentação de doses';
+  focusField('sd-data');
 }
 
 // ─── MANEJO INDIVIDUAL ─────────────────────────────────────────────
@@ -4402,9 +4420,33 @@ function miBrincoInput(){
   if(exato){ miMostrarInfo(exato); } else { miOcultarInfo(); }
 }
 function miBrincoKey(e){}
+// Mapeia a condição atual do animal (DB.dg.condAtual) para um selo (fc-tag) em destaque,
+// reaproveitando as mesmas classes/cores usadas na Ficha do Animal. Com big=true, o selo
+// fica bem maior/mais chamativo — usado no Cadastro de Manejos para chamar a atenção de
+// quem está lançando o manejo (ex.: evitar aplicar protocolo/medicação incompatível).
+function condAtualTagHtml(cond, big){
+  var map = {
+    'Prenhe':         {cls:'fc-tag-prenha',      lbl:'Prenhe'},
+    'Vazia':          {cls:'fc-tag-vazia',       lbl:'Vazia'},
+    'Amamentando':    {cls:'fc-tag-amamentando', lbl:'Amamentando'},
+    'Protocolado':    {cls:'fc-tag-protocolado', lbl:'Protocolado'},
+    'Abortou':        {cls:'fc-tag-abortou',     lbl:'Abortou'},
+    'Natimorto':      {cls:'fc-tag-natimorto',   lbl:'Natimorto (bezerro)'},
+    'Terneiro ao pé': {cls:'fc-tag-terneiroape', lbl:'Terneiro ao pé'},
+    'Desmamado':      {cls:'fc-tag-desmamado',   lbl:'Desmamado'}
+  };
+  var info = map[cond] || {cls:'fc-tag-na', lbl: cond || 'Sem condição registrada'};
+  var style = big
+    ? 'vertical-align:middle;font-size:18px;font-weight:800;padding:8px 18px;border-radius:8px;letter-spacing:.3px;box-shadow:0 1px 3px rgba(0,0,0,.12)'
+    : 'margin-left:8px;vertical-align:middle';
+  return '<span class="fc-tag '+info.cls+'" style="'+style+'">'+info.lbl+'</span>';
+}
 function miMostrarInfo(rec){
   var dg = DB.dg.find(function(d){return d.brinco===rec.brinco;})||{};
   document.getElementById('mi-info-brinco').textContent='Brinco '+rec.brinco;
+  document.getElementById('mi-info-cond').innerHTML =
+    '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Condição atual do animal</div>'
+    + condAtualTagHtml(dg.condAtual, true);
   var partes=[];
   if(rec.raca) partes.push('<span><b>Raca:</b> '+rec.raca+'</span>');
   if(rec.cat)  partes.push('<span><b>Categoria:</b> '+rec.cat+'</span>');
@@ -4550,6 +4592,9 @@ function salvarMi(){
     DB.san.push({brinco:b, data:data, meds:medsNovasMi.join(', '), obs:obsVal, _miTag:miTag2});
   }
 
+  // Lembra a última data usada, para vir pré-preenchida no próximo manejo.
+  if(data){ ultimaDataManejo=data; try{ localStorage.setItem('ultimaDataManejo_rebanho', data); }catch(e){} }
+
   cancelarMi();
   renderMi();
   renderPes();
@@ -4594,7 +4639,7 @@ function excluirMi(idx){
 function cancelarMi(){
   miModo('individual');
   document.getElementById('mi-brinco-inp').value='';
-  document.getElementById('mi-data').value=todayBR();
+  document.getElementById('mi-data').value=ultimaDataManejo||todayBR();
   document.getElementById('mi-peso').value='';
   document.getElementById('mi-obs').value='';
   document.getElementById('mi-edit-idx').value='';
@@ -4604,6 +4649,7 @@ function cancelarMi(){
   miOcultarInfo();
   var picker=document.getElementById('mi-med-picker');
   if(picker) picker.style.display='none';
+  focusField('mi-brinco-inp');
 }
 
 // ─── REPRODUTORES ──────────────────────────────────────────────────
@@ -4764,6 +4810,7 @@ function cancelarRepr(){
   document.getElementById('repr-edit-idx').value='';
   document.getElementById('repr-form-title').textContent='Novo reprodutor';
   reprTipo('touro');
+  focusField('repr-brinco');
 }
 
 // ─── LOTES ─────────────────────────────────────────────────────────
@@ -4915,6 +4962,7 @@ function cancelarEst(){
   document.getElementById('est-qtd').value='';
   document.getElementById('est-obs').value='';
   var u=document.getElementById('est-unidade'); if(u) u.value='doses';
+  focusField('est-insumo');
 }
 
 // ─── SAIDA DO REBANHO ────────────────────────────────────────────────
@@ -5112,6 +5160,7 @@ function cancelarBaixa(){
   document.getElementById('baixa-tipo').value='Venda';
   baixaToggleTipo();
   clearAllFieldErrs(['baixa-brinco','baixa-data','baixa-valor']);
+  focusField('baixa-brinco');
 }
 
 function salvarBaixaLote(){
@@ -5178,6 +5227,7 @@ function cancelarBaixaLote(){
   var w=document.getElementById('baixa-lote-brincos-wrap'); if(w) w.style.display='none';
   renderBaixaLoteCats();
   clearAllFieldErrs(['baixa-lote-data','baixa-lote-valor']);
+  focusField('baixa-lote-data');
 }
 
 function filtrarBaixas(tipo){ baixaTipoFiltro = tipo; renderBaixas(); }
@@ -5350,6 +5400,7 @@ function cancelarLancamento(){
   document.getElementById('rec-categoria').value='Producao';
   finSetTipo('despesa');
   clearAllFieldErrs(['lanc-data','lanc-valor','fin-categoria-outra','rec-descricao']);
+  focusField('lanc-data');
 }
 function renderFinanceiro(){
   var tb = document.getElementById('fin-tbody');
@@ -5815,6 +5866,7 @@ function cancelarIatf(){
   document.getElementById('iatf-form-title').textContent='Novo protocolo IATF';
   iatfBrincos=[];
   iatfRenderChips();
+  focusField('iatf-prot');
 }
 
 function atualizarCatPreview(){
@@ -6690,6 +6742,15 @@ function searchTrigger(tbId,e){
 }
 function g(id){return document.getElementById(id).value;}
 function s(id,v){var el=document.getElementById(id);if(el)el.value=(v===null||v===undefined)?'':String(v);}
+// Devolve o foco (cursor) ao primeiro campo de um formulário após salvar/limpar,
+// agilizando a digitação sequencial de vários registros. Usa setTimeout(0) para
+// rodar após eventuais re-renderizações da tela terem terminado.
+function focusField(id){
+  setTimeout(function(){
+    var el=document.getElementById(id);
+    if(el && typeof el.focus==='function') el.focus();
+  },0);
+}
 function today(){return new Date().toISOString().split('T')[0];}
 function todayBR(){ var d=new Date(); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
 function markDirty(){
@@ -6711,7 +6772,9 @@ function clearDirty(){
 }
 function setDefaults(){
   var t=todayBR();
-  ['pes-data','rep-dtdiag','san-data','mi-data','iatf-data','estmed-data','estmat-data','sd-data','baixa-data','baixa-lote-data','lanc-data'].forEach(function(id){var el=document.getElementById(id);if(el&&!el.value)el.value=t;});
+  ['pes-data','rep-dtdiag','iatf-data','estmed-data','estmat-data','sd-data','baixa-data','baixa-lote-data','lanc-data'].forEach(function(id){var el=document.getElementById(id);if(el&&!el.value)el.value=t;});
+  // Data do manejo (individual e por lote): usa a última data lembrada, se houver.
+  ['san-data','mi-data'].forEach(function(id){var el=document.getElementById(id);if(el&&!el.value)el.value=ultimaDataManejo||t;});
 }
 function toggleTern(){ var on=g('rep-ama')==='Sim'; ['fg-tern-gen','fg-tern-brinco'].forEach(function(id){var el=document.getElementById(id);el.style.opacity=on?'1':'0.4';el.style.pointerEvents=on?'auto':'none';}); }
 
@@ -7679,6 +7742,10 @@ try{
   iatfUltimoInseminador = localStorage.getItem('iatfUltimoInseminador_rebanho') || '';
   iatfUltimoSemen = localStorage.getItem('iatfUltimoSemen_rebanho') || '';
 }catch(e){}
+// Última data usada no Cadastro de Manejos (individual ou por lote) — fica como padrão no
+// campo "Data do manejo" até que uma nova data seja inserida.
+var ultimaDataManejo = '';
+try{ ultimaDataManejo = localStorage.getItem('ultimaDataManejo_rebanho') || ''; }catch(e){}
 var dgEditKey       = null;     // chave 'protId-brinco' do registro de DG em edição
 var dashAnoFiltro   = 'todos';  // filtro de ano no Dashboard Reprodutivo
 var histAnoFiltro   = 'todos';  // filtro de ano no Histórico Reprodutivo
@@ -8449,6 +8516,7 @@ function iatfRegSalvar(pid){
   }
   markDirty(); toast((isNatural?'Monta registrada':'IATF registrada')+' para animal '+brinco,'ok');
   renderIatfReg();
+  focusField('iatfreg-brinco-'+pid);
 }
 
 function iatfRegExcluir(idx){
