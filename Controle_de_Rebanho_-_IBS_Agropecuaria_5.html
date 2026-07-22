@@ -498,8 +498,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">1.0.12</span><br>
-              Data da versão: <span id="app-versao-data">15/07/2026</span><br>
+              Versão: <span id="app-versao">1.0.19</span><br>
+              Data da versão: <span id="app-versao-data">22/07/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -670,9 +670,10 @@ tr:hover td{background:#fafaf7}
               <label>Data de nascimento <span style="font-weight:400;text-transform:none;letter-spacing:0">(dd/mm/aaaa)</span></label>
               <input id="reg-nasc" placeholder="Ex: 15/08/2022" maxlength="10" oninput="maskDate(this)"><div class="field-err-msg"></div>
             </div>
-            <div class="fg"><label>Mae (brinco)</label><input id="reg-mae" placeholder="Ex: 16"></div>
-            <div class="fg"><label>Pai</label><select id="reg-pai"><option value="">selecione</option></select></div>
-            <div class="fg"><label>Avô materno</label><select id="reg-avo"><option value="">selecione</option></select></div>
+            <div class="fg"><label>Mae (brinco)</label><input id="reg-mae" placeholder="Ex: 16" oninput="regMaeInput()"></div>
+            <div class="fg"><label>Avô materno <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(auto)</span></label><select id="reg-avo"><option value="">selecione</option></select></div>
+            <div class="fg"><label>Pai</label><select id="reg-pai" onchange="regAutoAvoPaterno()"><option value="">selecione</option></select></div>
+            <div class="fg"><label>Avô Paterno <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(auto)</span></label><input id="reg-avo-pat" placeholder="Preenchido a partir do Pai"></div>
             <div class="fg"><label>Nº de Partos</label><input type="number" id="reg-partos" placeholder="0" min="0" step="1"></div>
           </div>
 
@@ -702,7 +703,7 @@ tr:hover td{background:#fafaf7}
             <table>
               <thead><tr>
                 <th>Brinco</th><th>Categoria</th><th>Raça</th><th>Gênero</th>
-                <th>Nascimento</th><th>Idade</th><th>Peso</th><th>Mãe</th><th>Pai</th><th>Avô</th><th>Cond.Atual</th><th>Nº Partos</th><th>Obs.</th>
+                <th>Nascimento</th><th>Idade</th><th>Peso</th><th>Mãe</th><th>Pai</th><th>Avô Materno</th><th>Avô Paterno</th><th>Cond.Atual</th><th>Nº Partos</th><th>Obs.</th>
                 <th style="width:90px">Acoes</th>
               </tr></thead>
               <tbody id="reg-tbody"></tbody>
@@ -1214,19 +1215,22 @@ tr:hover td{background:#fafaf7}
             <div class="grid g2">
               <div class="fg" style="position:relative">
                 <label>Brinco do animal *</label>
-                <input type="text" id="mi-brinco-inp" placeholder="Digite o brinco..." autocomplete="off" oninput="miBrincoInput()" onkeydown="miBrincoKey(event)">
-                <div id="mi-brinco-ac" style="display:none;position:absolute;top:58px;left:0;right:0;background:var(--surf);border:1px solid var(--bord);border-radius:var(--rsm);z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.1);max-height:160px;overflow-y:auto"></div>
+                <input type="text" id="mi-brinco-inp" placeholder="Digite o brinco..." autocomplete="off" oninput="miBrincoInput()" onkeydown="miBrincoKey(event)" style="font-size:20px;font-weight:700;height:44px;letter-spacing:.5px">
+                <div id="mi-brinco-ac" style="display:none;position:absolute;top:66px;left:0;right:0;background:var(--surf);border:1px solid var(--bord);border-radius:var(--rsm);z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.1);max-height:160px;overflow-y:auto"></div>
               </div>
-              <div class="fg"><label>Data do manejo</label><input type="text" id="mi-data" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"></div>
+              <div class="fg"><label>Data do manejo</label><input type="text" id="mi-data" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);miAtualizarGmdAtual()"></div>
             </div>
             <!-- Info card do animal -->
             <div id="mi-animal-info" style="display:none;background:var(--grnbg);border:1px solid #a5d6a7;border-radius:var(--rsm);padding:10px 14px;margin:10px 0;font-size:12px">
               <div style="font-weight:700;font-size:13px;color:var(--grnt);margin-bottom:6px" id="mi-info-brinco"></div>
               <div style="margin-bottom:8px" id="mi-info-cond"></div>
+              <div style="margin-bottom:8px" id="mi-info-peso"></div>
               <div style="display:flex;gap:16px;flex-wrap:wrap" id="mi-info-detalhes"></div>
             </div>
             <div class="grid g2">
-              <div class="fg"><label>Pesagem (kg)</label><input type="number" id="mi-peso" placeholder="Ex: 320" step="0.1" min="0"></div>
+              <div class="fg"><label>Pesagem (kg)</label><input type="number" id="mi-peso" placeholder="Ex: 320" step="0.1" min="0" oninput="miAtualizarGmdAtual()">
+                <div id="mi-gmd-atual" style="margin-top:6px"></div>
+              </div>
               <div class="fg"><label>Medicacao aplicada <span style="font-weight:400;font-size:11px">(múltipla escolha)</span></label>
                 <div id="mi-med-chips-wrap" style="min-height:36px;padding:6px 8px;border:1px solid var(--bord);border-radius:var(--rsm);background:var(--surf);cursor:pointer;display:flex;flex-wrap:wrap;gap:4px;align-items:center" onclick="abrirMiMedPicker()">
                   <span id="mi-med-placeholder" style="font-size:13px;color:var(--tx3)">Selecione medicamentos...</span>
@@ -1237,8 +1241,8 @@ tr:hover td{background:#fafaf7}
             <div class="fg" style="margin-top:8px"><label>Observações</label><textarea id="mi-obs" rows="2" placeholder="Procedimento realizado, observações clínicas..."></textarea></div>
             <input type="hidden" id="mi-edit-idx" value="">
             <div class="form-actions">
-              <button class="btn btn-ghost btn-sm" onclick="cancelarMi()">Cancelar</button>
               <button class="btn btn-primary" onclick="salvarMi()">&#10003; Salvar</button>
+              <button class="btn btn-ghost btn-sm" onclick="cancelarMi()">Cancelar</button>
             </div>
           </div>
 
@@ -1311,8 +1315,8 @@ tr:hover td{background:#fafaf7}
           <!-- CAMPOS TOURO -->
           <div id="repr-bloco-touro">
             <div class="grid g2">
-              <div class="fg"><label>Brinco / Identificacao *</label><input type="text" id="repr-brinco" placeholder="Ex: T-01"></div>
-              <div class="fg"><label>Nome / Registro</label><input type="text" id="repr-nome" placeholder="Ex: Touro Braganca 123"></div>
+              <div class="fg"><label>Brinco/Nome *</label><input type="text" id="repr-brinco" placeholder="Ex: 200"></div>
+              <div class="fg"><label>Registro do Animal</label><input type="text" id="repr-nome" placeholder="Ex: Touro Braganca 123 (opcional)"></div>
               <div class="fg"><label>Raça</label><select id="repr-raca"><option value="">Selecione...</option><option>Brangus</option><option>R.Brangus</option><option>Braford</option><option>Hereford</option><option>A.Angus</option><option>R.Angus</option><option>Nelore</option><option>Simental</option><option>Cruzado</option><option>Outra</option></select></div>
               <div class="fg"><label>Nascimento</label><input type="text" id="repr-nasc" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"></div>
               <div class="fg"><label>Procedencia</label><input type="text" id="repr-proc" placeholder="Ex: Fazenda Origem"></div>
@@ -1324,8 +1328,8 @@ tr:hover td{background:#fafaf7}
           <!-- CAMPOS SEMEN -->
           <div id="repr-bloco-semen" style="display:none">
             <div class="grid g2">
-              <div class="fg"><label>Nome (registro) *</label><input type="text" id="repr-semen-nome" placeholder="Ex: Touro Braganca 123"></div>
-              <div class="fg"><label>Apelido</label><input type="text" id="repr-semen-apelido" placeholder="Ex: Braganca"></div>
+              <div class="fg"><label>Brinco/Nome *</label><input type="text" id="repr-semen-nome" placeholder="Ex: Yako"></div>
+              <div class="fg"><label>Registro do Animal</label><input type="text" id="repr-semen-apelido" placeholder="Ex: Morris Yas 264 Gladiador T/E (opcional)"></div>
               <div class="fg"><label>Raça</label><select id="repr-semen-raca"><option value="">Selecione...</option><option>Brangus</option><option>R.Brangus</option><option>Braford</option><option>Hereford</option><option>A.Angus</option><option>R.Angus</option><option>Nelore</option><option>Simental</option><option>Cruzado</option><option>Outra</option></select></div>
               <div class="fg"><label>Procedencia / Central</label><input type="text" id="repr-semen-proc" placeholder="Ex: CRV Lagoa"></div>
               <div class="fg"><label>Estoque de doses</label><input type="number" id="repr-semen-doses" placeholder="Ex: 20" min="0" step="1"></div>
@@ -1346,7 +1350,7 @@ tr:hover td{background:#fafaf7}
             <span class="tcnt" id="repr-total">0</span>
           </div>
           <div class="tscroll"><table><thead><tr>
-            <th>Tipo</th><th>Identificação</th><th>Raça</th><th>Nasc./Doses</th><th>Procedencia</th><th>Mãe</th><th>Pai</th><th>Obs.</th><th class="tc">Ação</th>
+            <th>Tipo</th><th>Brinco/Nome</th><th>Raça</th><th>Nasc./Doses</th><th>Procedencia</th><th>Mãe</th><th>Pai</th><th>Obs.</th><th class="tc">Ação</th>
           </tr></thead><tbody id="tbl-repr"></tbody></table></div>
         </div>
       </div><!-- /tab-reprodutores -->
@@ -1559,7 +1563,7 @@ tr:hover td{background:#fafaf7}
         </div>
 
         <div class="tcard" style="margin-bottom:18px">
-          <div class="tbar"><span style="font-size:13px;font-weight:600">Registrar lançamento</span></div>
+          <div class="tbar"><span style="font-size:13px;font-weight:600" id="lanc-form-title">Registrar lançamento</span></div>
           <div style="padding:14px 16px">
             <div class="fg">
               <label>Tipo de lançamento *</label>
@@ -1603,7 +1607,7 @@ tr:hover td{background:#fafaf7}
 
             <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
               <button class="btn btn-ghost" onclick="cancelarLancamento()">Limpar</button>
-              <button class="btn btn-primary" onclick="salvarLancamento()">Registrar lançamento</button>
+              <button class="btn btn-primary" id="lanc-save-btn" onclick="salvarLancamento()">Registrar lançamento</button>
             </div>
           </div>
         </div>
@@ -1960,9 +1964,18 @@ function parseWB(wb){
   }
   if(shDg){
     var rows=XLSX.utils.sheet_to_json(shDg,{header:1,defval:'',raw:true});
+    // Compatibilidade: planilhas salvas antes da coluna "Avô Paterno" existir têm 'Observações'
+    // na coluna 6; a partir daqui, 'Avô Paterno' entra na coluna 6 e tudo desloca uma casa.
+    // Detecta pelo cabeçalho (linha 2) qual layout está sendo lido, em vez de assumir um só.
+    var headerDg = rows[2]||[];
+    var temAvoPat = headerDg.indexOf('Avô Paterno')!==-1;
     for(var i=3;i<rows.length;i++){
       var r=rows[i]; var b=cl(r[0]); if(!b) continue;
-      DB.dg.push({brinco:b,nasc:xlsxDateToStr(r[1]),mae:cl(r[3]),pai:cl(r[4]),avo:cl(r[5]),obs:cl(r[6]),condAtual:cl(r[7]),previsaoRepro:cl(r[8]),numPartos:parseInt(cl(r[9]))||0,dataDesmame:xlsxDateToStr(r[10]),dataInterRepro:xlsxDateToStr(r[11]),dataAmamentacao:xlsxDateToStr(r[12])});
+      if(temAvoPat){
+        DB.dg.push({brinco:b,nasc:xlsxDateToStr(r[1]),mae:cl(r[3]),pai:cl(r[4]),avo:cl(r[5]),avoPat:cl(r[6]),obs:cl(r[7]),condAtual:cl(r[8]),previsaoRepro:cl(r[9]),numPartos:parseInt(cl(r[10]))||0,dataDesmame:xlsxDateToStr(r[11]),dataInterRepro:xlsxDateToStr(r[12]),dataAmamentacao:xlsxDateToStr(r[13])});
+      } else {
+        DB.dg.push({brinco:b,nasc:xlsxDateToStr(r[1]),mae:cl(r[3]),pai:cl(r[4]),avo:cl(r[5]),avoPat:'',obs:cl(r[6]),condAtual:cl(r[7]),previsaoRepro:cl(r[8]),numPartos:parseInt(cl(r[9]))||0,dataDesmame:xlsxDateToStr(r[10]),dataInterRepro:xlsxDateToStr(r[11]),dataAmamentacao:xlsxDateToStr(r[12])});
+      }
     }
   }
   if(shPes){
@@ -2399,7 +2412,7 @@ function populaSelectReprodutor(selectId, valorAtual){
   var cur = valorAtual!==undefined ? valorAtual : sel.value;
   var nomes = [];
   DB_repr.forEach(function(r){
-    var nome = r.tipo==='touro' ? (r.nome||r.brinco||'') : (r.semen_nome||r.semen_apelido||'');
+    var nome = r.tipo==='touro' ? (r.brinco||r.nome||'') : (r.semen_nome||r.semen_apelido||'');
     if(nome && nomes.indexOf(nome)===-1) nomes.push(nome);
   });
   nomes.sort(function(a,b){ return a.localeCompare(b); });
@@ -2409,6 +2422,39 @@ function populaSelectReprodutor(selectId, valorAtual){
   sel.value = cur||'';
 }
 
+// Retorna o "pai" já registrado de um reprodutor (touro ou sêmen) pelo nome/apelido usado
+// no select de "Pai" — usado para auto-preencher o Avô Paterno do animal ao identificar o Pai.
+function reprodutorPaiPorNome(nome){
+  if(!nome) return '';
+  // Aceita tanto o identificador preferencial atual (Brinco/Nome) quanto o campo
+  // secundário (Registro do Animal), para continuar resolvendo corretamente registros
+  // antigos que foram salvos usando a convenção anterior (ex: Pai='Nego' em vez de '200').
+  var r = DB_repr.find(function(x){
+    if(x.tipo==='touro') return (x.brinco && x.brinco===nome) || (x.nome && x.nome===nome);
+    return (x.semen_nome && x.semen_nome===nome) || (x.semen_apelido && x.semen_apelido===nome);
+  });
+  if(!r) return '';
+  return (r.tipo==='touro' ? r.pai : r.semen_pai) || '';
+}
+// Ao selecionar o Pai, preenche automaticamente o Avô Paterno com o pai registrado desse
+// reprodutor (campo Pai/Sêmen do cadastro de Reprodutores). Continua editável manualmente.
+function regAutoAvoPaterno(){
+  var pai = document.getElementById('reg-pai').value;
+  var avoPatEl = document.getElementById('reg-avo-pat');
+  if(!avoPatEl) return;
+  avoPatEl.value = reprodutorPaiPorNome(pai);
+}
+// Ao identificar a Mãe (brinco de um animal já cadastrado no rebanho), preenche automaticamente
+// o Avô Materno com o Pai registrado dessa mãe (avô materno = pai da mãe). Continua editável.
+function regMaeInput(){
+  var v = (document.getElementById('reg-mae').value||'').trim().toUpperCase();
+  if(!v) return;
+  var mae = DB.id.find(function(r){ return r.brinco.toUpperCase()===v; });
+  if(!mae) return;
+  var dgMae = DB.dg.find(function(d){ return d.brinco===mae.brinco; });
+  if(!dgMae || !dgMae.pai) return;
+  populaSelectReprodutor('reg-avo', dgMae.pai);
+}
 function renderReg(){
   populaSelectReprodutor('reg-pai');
   populaSelectReprodutor('reg-avo');
@@ -2421,7 +2467,7 @@ function renderReg(){
   var total=lista.length;
   document.getElementById('reg-cnt').textContent=total+' registro(s)';
   paginateTable('reg-tbody', true);
-  if(!total){ tb.innerHTML='<tr><td colspan="14"><div class="empty"><div class="empty-ic">&#128203;</div><p>Nenhum animal cadastrado. Preencha o formulário acima.</p></div></td></tr>'; return; }
+  if(!total){ tb.innerHTML='<tr><td colspan="15"><div class="empty"><div class="empty-ic">&#128203;</div><p>Nenhum animal cadastrado. Preencha o formulário acima.</p></div></td></tr>'; return; }
   tb.innerHTML=lista.map(function(r){
     var i = DB.id.indexOf(r);
     var dg=DB.dg.find(function(d){return d.brinco===r.brinco;})||{};
@@ -2440,6 +2486,7 @@ function renderReg(){
       +'<td>'+(dg.mae||'-')+'</td>'
       +'<td>'+(dg.pai||'-')+'</td>'
       +'<td>'+(dg.avo||'-')+'</td>'
+      +'<td>'+(dg.avoPat||'-')+'</td>'
       +'<td style="max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+condDisplay(r,dg)+'</td>'
       +'<td class="tc">'+(r.gen==='F'?String(dg.numPartos||0):'-')+'</td>'
       +'<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(dg.obs||'')+'">'+(dg.obs?dg.obs.substring(0,20)+(dg.obs.length>20?'…':''):'-')+'</td>'
@@ -2530,8 +2577,7 @@ function saveReg(){
 
   // ── Data de nascimento: não pode ser futura ──
   if(nascRaw && validDate(nascRaw)){
-    var dtNasc = toDate(nascRaw);
-    if(dtNasc && dtNasc > new Date()){
+    if(dataEhFutura(nascRaw)){
       fieldErr('reg-nasc', 'Data de nascimento não pode ser futura');
       erros++;
     }
@@ -2551,7 +2597,7 @@ function saveReg(){
   var partosVal = parseInt(g('reg-partos'));
   var dgRec = {
     brinco:b, nasc:nascRaw,
-    mae:g('reg-mae'), pai:g('reg-pai'), avo:g('reg-avo'),
+    mae:g('reg-mae'), pai:g('reg-pai'), avo:g('reg-avo'), avoPat:g('reg-avo-pat'),
     obs:g('reg-obs').trim(),
     condAtual:existDg.condAtual||'',
     previsaoRepro:existDg.previsaoRepro||'',
@@ -2592,7 +2638,7 @@ function savePes(){
   // ── Data: obrigatória + formato + não futura ──
   if(!d){ fieldErr('pes-data', 'Data é obrigatória'); erros++; }
   else if(!validDate(d)){ fieldErr('pes-data', 'Use o formato dd/mm/aaaa'); erros++; }
-  else if(toDate(d) > new Date()){ fieldErr('pes-data', 'Data não pode ser futura'); erros++; }
+  else if(dataEhFutura(d)){ fieldErr('pes-data', 'Data não pode ser futura'); erros++; }
 
   // ── Peso: obrigatório + faixa válida ──
   if(!pStr){ fieldErr('pes-peso', 'Peso é obrigatório'); erros++; }
@@ -2631,7 +2677,7 @@ function saveRep(){
   // ── Data do diagnóstico: formato + não futura (se preenchida) ──
   if(dtdiag){
     if(!validDate(dtdiag)){ fieldErr('rep-dtdiag', 'Use o formato dd/mm/aaaa'); erros++; }
-    else if(toDate(dtdiag) > new Date()){ fieldErr('rep-dtdiag', 'Data não pode ser futura'); erros++; }
+    else if(dataEhFutura(dtdiag)){ fieldErr('rep-dtdiag', 'Data não pode ser futura'); erros++; }
   }
 
   if(erros) return;
@@ -2660,6 +2706,7 @@ function editRow(sec,idx){
     s('reg-brinco',r.brinco);s('reg-raca',r.raca);s('reg-cat',r.cat);s('reg-gen',r.gen);
     s('reg-nasc',dg.nasc||'');s('reg-mae',dg.mae||'');
     populaSelectReprodutor('reg-pai', dg.pai||''); populaSelectReprodutor('reg-avo', dg.avo||'');
+    s('reg-avo-pat',dg.avoPat||'');
     s('reg-obs',dg.obs||'');
     s('reg-partos',dg.numPartos||0);
     s('reg-idx-id',idx);
@@ -2692,7 +2739,7 @@ function editRow(sec,idx){
 
 function cancelEdit(sec){
   if(sec==='reg'){
-    ['reg-brinco','reg-raca','reg-cat','reg-gen','reg-nasc','reg-mae','reg-pai','reg-avo','reg-obs','reg-partos'].forEach(function(i){s(i,'');});
+    ['reg-brinco','reg-raca','reg-cat','reg-gen','reg-nasc','reg-mae','reg-pai','reg-avo','reg-avo-pat','reg-obs','reg-partos'].forEach(function(i){s(i,'');});
     s('reg-idx-id','');s('reg-idx-dg','');
     document.getElementById('reg-form-title').textContent='Novo animal';
     document.getElementById('reg-save-btn').textContent='+ Adicionar animal';
@@ -2751,6 +2798,13 @@ function doDelete(){
   } else {
     var arr={pes:DB.pes,rep:DB.rep,san:DB.san,fin:DB_financeiro,receita:DB_receitas}[delTarget.sec];
     if(arr) arr.splice(delTarget.idx,1);
+    // Exclusão pode deslocar índices de fin/receita — invalida uma edição em andamento no
+    // formulário unificado para evitar sobrescrever o registro errado ao salvar.
+    if((delTarget.sec==='fin'||delTarget.sec==='receita') && lancEditIdx!==null){
+      lancEditTipo=null; lancEditIdx=null;
+      var titleEl=document.getElementById('lanc-form-title'); if(titleEl) titleEl.textContent='Registrar lançamento';
+      var btnEl=document.getElementById('lanc-save-btn'); if(btnEl) btnEl.textContent='Registrar lançamento';
+    }
   }
   closeModal(); markDirty(); renderAll();
   toast('Registro excluido','ok');
@@ -2768,7 +2822,7 @@ function _buildWorkbook(){
   var idD=[['IDENTIFICACAO DO ANIMAL'],['Cadastro unico por animal. O Brinco e o identificador primario.'],['Brinco','Raça dominante','Categoria','Genero']].concat(DB.id.map(function(r){return[r.brinco,r.raca,r.cat,r.gen];}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(idD),'Identificacao');
   // Dados Gerais
-  var dgD=[['DADOS GERAIS'],['Vinculado pelo Brinco.'],['Brinco','Data de Nascimento','Idade (anos)','Mãe (Brinco)','Pai','Avô materno','Observações','Condicao Atual','Previsao Reprodutiva','Nº de Partos','Data de Desmame','Data Aborto/Natimorto','Data Início Amamentação']].concat(DB.dg.map(function(r,i){var row=i+4;return[r.brinco,r.nasc?exDate(r.nasc):null,{f:'IF(B'+row+'="","",ROUND((TODAY()-B'+row+')/365.25,1))'},r.mae,r.pai,r.avo,r.obs||'',r.condAtual||'',r.previsaoRepro||'',r.numPartos||0,r.dataDesmame||'',r.dataInterRepro||'',r.dataAmamentacao||''];}));
+  var dgD=[['DADOS GERAIS'],['Vinculado pelo Brinco.'],['Brinco','Data de Nascimento','Idade (anos)','Mãe (Brinco)','Pai','Avô materno','Avô Paterno','Observações','Condicao Atual','Previsao Reprodutiva','Nº de Partos','Data de Desmame','Data Aborto/Natimorto','Data Início Amamentação']].concat(DB.dg.map(function(r,i){var row=i+4;return[r.brinco,r.nasc?exDate(r.nasc):null,{f:'IF(B'+row+'="","",ROUND((TODAY()-B'+row+')/365.25,1))'},r.mae,r.pai,r.avo,r.avoPat||'',r.obs||'',r.condAtual||'',r.previsaoRepro||'',r.numPartos||0,r.dataDesmame||'',r.dataInterRepro||'',r.dataAmamentacao||''];}));
   var wsDg=XLSX.utils.aoa_to_sheet(dgD);
   DB.dg.forEach(function(r,i){var c=wsDg[XLSX.utils.encode_cell({r:3+i,c:1})];if(c&&r.nasc)c.z='dd/mm/yyyy';});
   XLSX.utils.book_append_sheet(wb,wsDg,'Dados Gerais');
@@ -3314,7 +3368,7 @@ function salvarSanLote(){
   // ── Data: obrigatória + formato + não futura ──
   if(!data){ fieldErr('san-data', 'Data é obrigatória'); erros++; }
   else if(!validDate(data)){ fieldErr('san-data', 'Use o formato dd/mm/aaaa'); erros++; }
-  else if(toDate(data) > new Date()){ fieldErr('san-data', 'Data não pode ser futura'); erros++; }
+  else if(dataEhFutura(data)){ fieldErr('san-data', 'Data não pode ser futura'); erros++; }
 
   // ── Categorias ──
   if(sanSelCats.length === 0){ toast('Selecione ao menos uma categoria','err'); erros++; }
@@ -4195,7 +4249,7 @@ function salvarEstCat(pfx, cat){
 
   if(!data){ fieldErr('est'+pfx+'-data', 'Data é obrigatória'); erros++; }
   else if(!validDate(data)){ fieldErr('est'+pfx+'-data', 'Use o formato dd/mm/aaaa'); erros++; }
-  else if(toDate(data) > new Date()){ fieldErr('est'+pfx+'-data', 'Data não pode ser futura'); erros++; }
+  else if(dataEhFutura(data)){ fieldErr('est'+pfx+'-data', 'Data não pode ser futura'); erros++; }
 
   if(erros) return;
 
@@ -4379,10 +4433,19 @@ function renderMi(){
     return {brinco:p.brinco, data:p.data, peso:p.peso, meds:[], obs:'', _pesoOnly:true};
   });
 
-  var sorted = DB_mi.concat(pesagensSemMi).sort(function(a,b){
-    var da=toDate(a.data),db=toDate(b.data);
-    if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return db-da;
-  });
+  // Ordena sempre do registro mais recente para o mais antigo. Em caso de empate na data
+  // (comum quando vários manejos são lançados no mesmo dia), o critério de desempate é a
+  // ordem de inserção — o último lançado aparece primeiro — em vez de depender da
+  // estabilidade do sort para manter a ordem original (que colocaria o mais antigo no topo).
+  var merged = DB_mi.concat(pesagensSemMi);
+  var sorted = merged.map(function(r,i){ return {r:r,i:i}; }).sort(function(x,y){
+    var da=toDate(x.r.data), db=toDate(y.r.data);
+    if(!da&&!db) return y.i-x.i;
+    if(!da) return 1;
+    if(!db) return -1;
+    var diff = db-da;
+    return diff!==0 ? diff : (y.i-x.i);
+  }).map(function(o){ return o.r; });
   if(!sorted.length){
     tb.innerHTML='<tr><td colspan="7"><div class="empty"><div class="empty-ic">&#128203;</div>Nenhum manejo registrado</div></td></tr>';
   } else {
@@ -4441,12 +4504,61 @@ function condAtualTagHtml(cond, big){
     : 'margin-left:8px;vertical-align:middle';
   return '<span class="fc-tag '+info.cls+'" style="'+style+'">'+info.lbl+'</span>';
 }
+// Retorna a última pesagem do animal e o GMD (g/dia) em relação à pesagem anterior,
+// usando a mesma fórmula (peso atual - peso anterior)/dias * 1000 já usada no restante
+// do app (Dashboard e Ficha do Animal). gmd fica null se houver menos de 2 pesagens.
+function ultimaPesagemGmd(brinco){
+  var arr = DB.pes.filter(function(p){ return p.brinco===brinco; })
+    .slice().sort(function(a,b){ return (toDate(a.data)||new Date(0))-(toDate(b.data)||new Date(0)); });
+  if(!arr.length) return null;
+  var ultima = arr[arr.length-1];
+  var gmd = null;
+  if(arr.length>=2){
+    var anterior = arr[arr.length-2];
+    var d1=toDate(anterior.data), d2=toDate(ultima.data);
+    if(d1 && d2 && ultima.peso!=null && anterior.peso!=null){
+      var dias = (d2-d1)/86400000;
+      if(dias>0) gmd = Math.round((parseFloat(ultima.peso)-parseFloat(anterior.peso))/dias*1000);
+    }
+  }
+  return { data: ultima.data, peso: ultima.peso, gmd: gmd };
+}
+// Referência (data/peso) da última pesagem HISTÓRICA do animal atualmente identificado no
+// Cadastro de Manejos individual — usada por miAtualizarGmdAtual() para calcular, ao vivo,
+// o GMD entre essa última pesagem e o peso que está sendo digitado agora (ainda não salvo).
+var miPesoRefAtual = null;
 function miMostrarInfo(rec){
   var dg = DB.dg.find(function(d){return d.brinco===rec.brinco;})||{};
+  // Data do manejo: em um registro NOVO (não edição), assim que o animal é identificado,
+  // preenche automaticamente com a data de hoje — evita usar sem perceber uma data antiga
+  // que tenha ficado lembrada de uma sessão anterior. O campo continua livre para edição.
+  var isEdit = document.getElementById('mi-edit-idx').value !== '';
+  if(!isEdit){
+    var dataEl = document.getElementById('mi-data');
+    if(dataEl) dataEl.value = todayBR();
+  }
   document.getElementById('mi-info-brinco').textContent='Brinco '+rec.brinco;
   document.getElementById('mi-info-cond').innerHTML =
     '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Condição atual do animal</div>'
     + condAtualTagHtml(dg.condAtual, true);
+  var pesInfo = ultimaPesagemGmd(rec.brinco);
+  miPesoRefAtual = pesInfo ? {data:pesInfo.data, peso:pesInfo.peso} : null;
+  var pesEl = document.getElementById('mi-info-peso');
+  if(pesEl){
+    if(!pesInfo){
+      pesEl.innerHTML = '<span style="color:var(--tx3);font-size:12px">Nenhuma pesagem registrada</span>';
+    } else {
+      var linhas = '<span><b>Última pesagem:</b> '+pesInfo.peso+' kg em '+fmtD(pesInfo.data)+'</span>';
+      if(pesInfo.gmd!==null){
+        var gmdCor = pesInfo.gmd>=0 ? 'var(--grnt)' : 'var(--red)';
+        var gmdSinal = pesInfo.gmd>=0 ? '+' : '';
+        linhas += ' &nbsp;&middot;&nbsp; <span><b>Último GMD:</b> <span style="color:'+gmdCor+';font-weight:800">'+gmdSinal+pesInfo.gmd+' g/dia</span></span>';
+      } else {
+        linhas += ' &nbsp;&middot;&nbsp; <span style="color:var(--tx3)">GMD indisponível (apenas 1 pesagem)</span>';
+      }
+      pesEl.innerHTML = linhas;
+    }
+  }
   var partes=[];
   if(rec.raca) partes.push('<span><b>Raca:</b> '+rec.raca+'</span>');
   if(rec.cat)  partes.push('<span><b>Categoria:</b> '+rec.cat+'</span>');
@@ -4454,9 +4566,37 @@ function miMostrarInfo(rec){
   if(dg.nasc)  partes.push('<span><b>Nasc.:</b> '+fmtD(dg.nasc)+'</span>');
   document.getElementById('mi-info-detalhes').innerHTML=partes.join('');
   document.getElementById('mi-animal-info').style.display='block';
+  // Sincroniza o GMD atual (ex.: reabrindo um manejo para edição já com peso preenchido).
+  miAtualizarGmdAtual();
 }
 function miOcultarInfo(){
   document.getElementById('mi-animal-info').style.display='none';
+  miPesoRefAtual = null;
+  var gmdEl = document.getElementById('mi-gmd-atual'); if(gmdEl) gmdEl.innerHTML='';
+}
+// Calcula, ao vivo, o GMD entre a última pesagem histórica do animal e o peso que está
+// sendo digitado agora no formulário (ainda não salvo). Só exibe algo depois que um peso
+// válido é informado — antes disso fica em branco (item explicitamente pedido pelo usuário).
+function miAtualizarGmdAtual(){
+  var out = document.getElementById('mi-gmd-atual');
+  if(!out) return;
+  var pesoStr = (document.getElementById('mi-peso').value||'').trim();
+  var peso = parseFloat(pesoStr);
+  if(!pesoStr || isNaN(peso) || !miPesoRefAtual){ out.innerHTML=''; return; }
+  var dataStr = (document.getElementById('mi-data').value||'').trim();
+  var d2 = validDate(dataStr) ? toDate(dataStr) : null;
+  var d1 = toDate(miPesoRefAtual.data);
+  if(!d1 || !d2){ out.innerHTML=''; return; }
+  var dias = (d2-d1)/86400000;
+  if(dias<=0){
+    out.innerHTML = '<span style="font-size:11px;color:var(--tx3)">Informe uma data posterior à última pesagem ('+fmtD(miPesoRefAtual.data)+') para calcular o GMD atual</span>';
+    return;
+  }
+  var gmd = Math.round((peso-parseFloat(miPesoRefAtual.peso))/dias*1000);
+  var cor = gmd>=0 ? 'var(--grnt)' : 'var(--red)';
+  var sinal = gmd>=0 ? '+' : '';
+  out.innerHTML = '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">GMD atual (desde '+fmtD(miPesoRefAtual.data)+')</div>'
+    +'<div style="font-size:28px;font-weight:800;color:'+cor+';line-height:1.1">'+sinal+gmd+' g/dia</div>';
 }
 
 // Medication picker
@@ -4538,7 +4678,7 @@ function salvarMi(){
   // ── Data: obrigatória + formato + não futura ──
   if(!data){ fieldErr('mi-data', 'Data é obrigatória'); erros++; }
   else if(!validDate(data)){ fieldErr('mi-data', 'Use o formato dd/mm/aaaa'); erros++; }
-  else if(toDate(data) > new Date()){ fieldErr('mi-data', 'Data não pode ser futura'); erros++; }
+  else if(dataEhFutura(data)){ fieldErr('mi-data', 'Data não pode ser futura'); erros++; }
 
   // ── Peso: faixa válida (se preenchido) ──
   if(pesoVal !== ''){
@@ -4678,7 +4818,7 @@ function renderRepr(){
       var tipoBadge = isTouro
         ? '<span style="background:var(--grnbg);color:var(--grnt);padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600">&#128004; Touro</span>'
         : '<span style="background:var(--blubg);color:var(--blut);padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600">&#129514; Semen</span>';
-      var ident = isTouro ? (r.brinco||'-') : (r.semen_nome||'-') + (r.semen_apelido?' ('+r.semen_apelido+')':'');
+      var ident = isTouro ? (r.brinco||'-') + (r.nome?' ('+r.nome+')':'') : (r.semen_nome||'-') + (r.semen_apelido?' ('+r.semen_apelido+')':'');
       var nascDoses = isTouro ? fmtD(r.nasc||'') : (r.semen_doses!=null&&r.semen_doses!==''?r.semen_doses+' doses':'-');
       var raca = isTouro ? (r.raca||'-') : (r.semen_raca||'-');
       var proc = isTouro ? (r.proc||'-') : (r.semen_proc||'-');
@@ -4724,7 +4864,7 @@ function salvarRepr(){
 
     // ── Data de nascimento: formato (se preenchida) ──
     if(nascRepr && !validDate(nascRepr)){ fieldErr('repr-nasc', 'Use o formato dd/mm/aaaa'); erros++; }
-    else if(nascRepr && validDate(nascRepr) && toDate(nascRepr) > new Date()){
+    else if(nascRepr && validDate(nascRepr) && dataEhFutura(nascRepr)){
       fieldErr('repr-nasc', 'Data de nascimento não pode ser futura'); erros++;
     }
 
@@ -4743,7 +4883,7 @@ function salvarRepr(){
     var dosesStr = document.getElementById('repr-semen-doses').value.trim();
 
     // ── Nome do sêmen: obrigatório ──
-    if(!nome){ fieldErr('repr-semen-nome', 'Nome do sêmen é obrigatório'); erros++; }
+    if(!nome){ fieldErr('repr-semen-nome', 'Brinco/Nome é obrigatório'); erros++; }
     else if(hasReprDup('semen', nome, skipIdx)){
       fieldErr('repr-semen-nome', 'Sêmen "' + nome + '" já cadastrado');
       erros++;
@@ -4938,7 +5078,7 @@ function salvarEst(){
   // ── Data: obrigatória + formato + não futura ──
   if(!data){ fieldErr('est-data', 'Data é obrigatória'); erros++; }
   else if(!validDate(data)){ fieldErr('est-data', 'Use o formato dd/mm/aaaa'); erros++; }
-  else if(toDate(data) > new Date()){ fieldErr('est-data', 'Data não pode ser futura'); erros++; }
+  else if(dataEhFutura(data)){ fieldErr('est-data', 'Data não pode ser futura'); erros++; }
 
   if(erros) return;
 
@@ -5121,7 +5261,7 @@ function salvarBaixa(){
 
   if(!data){ fieldErr('baixa-data', 'Informe a data'); erros++; }
   else if(!validDate(data)){ fieldErr('baixa-data', 'Use o formato dd/mm/aaaa'); erros++; }
-  else if(toDate(data) > new Date()){ fieldErr('baixa-data', 'Data não pode ser futura'); erros++; }
+  else if(dataEhFutura(data)){ fieldErr('baixa-data', 'Data não pode ser futura'); erros++; }
 
   if(tipo==='Venda' && valor && isNaN(parseValorBR(valor))){ fieldErr('baixa-valor', 'Valor inválido'); erros++; }
 
@@ -5175,7 +5315,7 @@ function salvarBaixaLote(){
 
   if(!data){ fieldErr('baixa-lote-data', 'Informe a data'); erros++; }
   else if(!validDate(data)){ fieldErr('baixa-lote-data', 'Use o formato dd/mm/aaaa'); erros++; }
-  else if(toDate(data) > new Date()){ fieldErr('baixa-lote-data', 'Data não pode ser futura'); erros++; }
+  else if(dataEhFutura(data)){ fieldErr('baixa-lote-data', 'Data não pode ser futura'); erros++; }
 
   if(baixaSelCats.length === 0){ toast('Selecione ao menos uma categoria','err'); erros++; }
 
@@ -5351,6 +5491,10 @@ function finSetTipo(tipo){
   if(campRec) campRec.style.display = tipo==='receita' ? '' : 'none';
   clearAllFieldErrs(['lanc-data','lanc-valor','fin-categoria-outra','rec-descricao']);
 }
+// Controla a edição de um lançamento (despesa 'fin' ou 'receita') já existente no
+// formulário unificado de Registrar lançamento — null/null significa "novo lançamento".
+var lancEditTipo = null;
+var lancEditIdx = null;
 function salvarLancamento(){
   var data  = document.getElementById('lanc-data').value.trim();
   var valor = document.getElementById('lanc-valor').value.trim();
@@ -5369,8 +5513,17 @@ function salvarLancamento(){
     var descricao = document.getElementById('rec-descricao').value.trim();
     if(!descricao){ fieldErr('rec-descricao', 'Informe a descrição'); erros++; }
     if(erros) return;
-    DB_receitas.push({ data:data, categoria:categoria, descricao:descricao, valor:valor });
-    toast('Receita registrada: '+recLabel(categoria)+' ('+fmtValorBR(valor)+')','ok');
+    var isEdit = lancEditTipo==='receita' && lancEditIdx!==null && DB_receitas[lancEditIdx];
+    var recRec = { data:data, categoria:categoria, descricao:descricao, valor:valor };
+    if(isEdit){
+      // Preserva campos internos (ex.: vínculo com Saída do Rebanho) que não aparecem no formulário.
+      recRec = Object.assign({}, DB_receitas[lancEditIdx], recRec);
+      DB_receitas[lancEditIdx] = recRec;
+      toast('Receita atualizada: '+recLabel(categoria)+' ('+fmtValorBR(valor)+')','ok');
+    } else {
+      DB_receitas.push(recRec);
+      toast('Receita registrada: '+recLabel(categoria)+' ('+fmtValorBR(valor)+')','ok');
+    }
   } else {
     var grupo = document.getElementById('fin-grupo').value;
     var catSel = document.getElementById('fin-categoria').value;
@@ -5382,14 +5535,61 @@ function salvarLancamento(){
       categoria = catOutra;
     }
     if(erros) return;
-    DB_financeiro.push({ data:data, grupo:grupo, categoria:categoria, valor:valor, obs:obs });
-    toast('Despesa registrada: '+categoria+' ('+fmtValorBR(valor)+')','ok');
+    var isEditD = lancEditTipo==='fin' && lancEditIdx!==null && DB_financeiro[lancEditIdx];
+    var despRec = { data:data, grupo:grupo, categoria:categoria, valor:valor, obs:obs };
+    if(isEditD){
+      DB_financeiro[lancEditIdx] = despRec;
+      toast('Despesa atualizada: '+categoria+' ('+fmtValorBR(valor)+')','ok');
+    } else {
+      DB_financeiro.push(despRec);
+      toast('Despesa registrada: '+categoria+' ('+fmtValorBR(valor)+')','ok');
+    }
   }
 
   cancelarLancamento();
   markDirty(); renderFinanceiro();
 }
+// Preenche o formulário unificado com os dados de um lançamento existente para edição.
+function editarLancamento(tipo, idx){
+  if(tipo==='receita'){
+    var r = DB_receitas[idx];
+    if(!r){ toast('Lançamento não encontrado','err'); return; }
+    lancEditTipo='receita'; lancEditIdx=idx;
+    finSetTipo('receita');
+    document.getElementById('lanc-data').value = r.data||'';
+    document.getElementById('lanc-valor').value = r.valor||'';
+    document.getElementById('rec-categoria').value = r.categoria||'Producao';
+    document.getElementById('rec-descricao').value = r.descricao||'';
+  } else {
+    var r = DB_financeiro[idx];
+    if(!r){ toast('Lançamento não encontrado','err'); return; }
+    lancEditTipo='fin'; lancEditIdx=idx;
+    finSetTipo('despesa');
+    document.getElementById('lanc-data').value = r.data||'';
+    document.getElementById('lanc-valor').value = r.valor||'';
+    document.getElementById('fin-grupo').value = r.grupo||'Geral';
+    finAtualizarCategorias();
+    var cats = finCategoriasFor(r.grupo||'Geral');
+    if(cats.indexOf(r.categoria)!==-1){
+      document.getElementById('fin-categoria').value = r.categoria;
+    } else {
+      document.getElementById('fin-categoria').value = '__outra__';
+    }
+    finToggleOutra();
+    if(cats.indexOf(r.categoria)===-1) document.getElementById('fin-categoria-outra').value = r.categoria||'';
+    document.getElementById('fin-obs').value = r.obs||'';
+  }
+  clearAllFieldErrs(['lanc-data','lanc-valor','fin-categoria-outra','rec-descricao']);
+  var titleEl=document.getElementById('lanc-form-title'); if(titleEl) titleEl.textContent='Editando lançamento';
+  var btnEl=document.getElementById('lanc-save-btn'); if(btnEl) btnEl.textContent='Atualizar lançamento';
+  var card = document.getElementById('lanc-data');
+  var tcard = card && card.closest ? card.closest('.tcard') : null;
+  if(tcard && tcard.scrollIntoView) tcard.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 function cancelarLancamento(){
+  lancEditTipo = null; lancEditIdx = null;
+  var titleEl=document.getElementById('lanc-form-title'); if(titleEl) titleEl.textContent='Registrar lançamento';
+  var btnEl=document.getElementById('lanc-save-btn'); if(btnEl) btnEl.textContent='Registrar lançamento';
   var dataEl = document.getElementById('lanc-data'); if(dataEl) dataEl.value='';
   var valorEl = document.getElementById('lanc-valor'); if(valorEl) valorEl.value='';
   var obsEl = document.getElementById('fin-obs'); if(obsEl) obsEl.value='';
@@ -5491,7 +5691,10 @@ function renderFinanceiro(){
       +'<td>'+grupoCat+'</td>'
       +'<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(u.desc||'')+'">'+(u.desc||'-')+'</td>'
       +'<td>'+fmtValorBR(u.valor)+'</td>'
-      +'<td class="tc"><button class="btn btn-danger btn-sm" onclick="askDel(\''+secKey+'\','+origIdx+')" title="Excluir">&#128465;</button></td>'
+      +'<td class="tc"><div style="display:flex;gap:3px;justify-content:center">'
+        +'<button class="btn btn-ghost btn-sm" onclick="editarLancamento(\''+secKey+'\','+origIdx+')" title="Editar">&#9998;</button>'
+        +'<button class="btn btn-danger btn-sm" onclick="askDel(\''+secKey+'\','+origIdx+')" title="Excluir">&#128465;</button>'
+      +'</div></td>'
       +'</tr>';
   }).join('');
 }
@@ -6022,7 +6225,7 @@ function fcConfirmarParto(brinco){
 
   if(!dataStr){ toast('Informe a data do parto/desfecho','err'); return; }
   if(!validDate(dataStr)){ toast('Use o formato dd/mm/aaaa para a data','err'); return; }
-  if(toDate(dataStr) > new Date()){ toast('Data não pode ser futura','err'); return; }
+  if(dataEhFutura(dataStr)){ toast('Data não pode ser futura','err'); return; }
 
   if(resultado==='pariu'){
     var bMsg = brincoErrMsg(ternBrinco);
@@ -6173,7 +6376,7 @@ function fcConfirmarDesmame(brinco){
   var dataStr = g('me-desmame-data').trim();
   if(!dataStr){ toast('Informe a data do desmame','err'); return; }
   if(!validDate(dataStr)){ toast('Use o formato dd/mm/aaaa para a data','err'); return; }
-  if(toDate(dataStr) > new Date()){ toast('Data não pode ser futura','err'); return; }
+  if(dataEhFutura(dataStr)){ toast('Data não pode ser futura','err'); return; }
   var dgAnimal = DB.dg.find(function(r){ return r.brinco===brinco; });
   if(!dgAnimal){ toast('Animal não encontrado','err'); return; }
   dgAnimal.condAtual = 'Desmamado';
@@ -6822,6 +7025,21 @@ function toDate(d){
 
 function calcAge(d){var dt=toDate(d);if(!dt)return '-';var a=(new Date()-dt)/(365.25*86400000);return a<0?'-':a.toFixed(1)+' anos';}
 
+// Verifica se uma data (string dd/mm/aaaa ou ISO) é futura em relação a hoje, comparando
+// apenas o dia — não o horário. toDate() normaliza a data informada para meio-dia (12:00)
+// para evitar problemas de fuso horário, mas isso fazia a data de HOJE ser rejeitada como
+// "futura" sempre que o registro era feito antes do meio-dia (comparando 12:00 de hoje
+// contra a hora atual, ex.: 09:00). Aqui comparamos contra o fim do dia de hoje (23:59:59),
+// então qualquer data de hoje ou anterior é aceita, e só datas realmente futuras (amanhã em
+// diante) continuam bloqueadas.
+function dataEhFutura(dataStr){
+  var d = toDate(dataStr);
+  if(!d) return false;
+  var fimDeHoje = new Date();
+  fimDeHoje.setHours(23,59,59,999);
+  return d > fimDeHoje;
+}
+
 // Calcula categoria automatica baseada em genero, nascimento e status reprodutivo
 // Exibe a condição atual de um animal nas tabelas, ocultando-a para machos que já
 // passaram da fase de terneiro (Tourinho/Touro), que não têm condição reprodutiva própria.
@@ -7231,7 +7449,8 @@ function fcRender(brinco){
     ['Pai', dgRec.pai||'—'],
     ['Mãe (brinco)', dgRec.mae||'—'],
   ];
-  if(dgRec.avo) fields.push(['Avô', dgRec.avo]);
+  if(dgRec.avo) fields.push(['Avô Materno', dgRec.avo]);
+  if(dgRec.avoPat) fields.push(['Avô Paterno', dgRec.avoPat]);
   if(idRec.gen==='F') fields.push(['Nº de Partos', String(dgRec.numPartos||0)]);
   if(repRec.proto) fields.push(['Protocolo reprod.', repRec.proto]);
 
@@ -7570,6 +7789,44 @@ function fcDrawChart(brinco, pesagens){
   });
   var labels=ordered.map(function(p){return fmtD(p.data);});
   var vals=ordered.map(function(p){return p.peso;});
+  var datasOrd=ordered.map(function(p){return toDate(p.data);});
+  // Plugin (inline, sem dependência externa — o app roda offline) que desenha, entre cada par
+  // de pesagens consecutivas, uma etiqueta com o GMD (g/dia) daquele intervalo: verde se
+  // positivo, vermelho se negativo. Usa closures sobre vals/datasOrd definidos acima.
+  var fcGmdLabelsPlugin = {
+    id: 'fcGmdLabels',
+    afterDatasetsDraw: function(chart){
+      var meta = chart.getDatasetMeta(0);
+      var pontos = meta.data;
+      if(!pontos || pontos.length<2) return;
+      var ctx = chart.ctx;
+      ctx.save();
+      ctx.font = '700 11px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      for(var i=1;i<pontos.length;i++){
+        var p0=pontos[i-1], p1=pontos[i];
+        var d0=datasOrd[i-1], d1=datasOrd[i];
+        if(!p0||!p1||!d0||!d1) continue;
+        var dias=(d1-d0)/86400000;
+        if(dias<=0) continue;
+        var v0=parseFloat(vals[i-1]), v1=parseFloat(vals[i]);
+        if(isNaN(v0)||isNaN(v1)) continue;
+        var gmd=Math.round((v1-v0)/dias*1000);
+        var cor = gmd>=0 ? '#2e7d32' : '#c62828';
+        var sinal = gmd>=0 ? '+' : '';
+        var texto = sinal+gmd+' g/dia';
+        var midX=(p0.x+p1.x)/2;
+        var midY=Math.min(p0.y,p1.y)-10;
+        var w=ctx.measureText(texto).width;
+        ctx.fillStyle='rgba(255,255,255,.88)';
+        ctx.fillRect(midX-w/2-4, midY-13, w+8, 15);
+        ctx.fillStyle=cor;
+        ctx.fillText(texto, midX, midY+2);
+      }
+      ctx.restore();
+    }
+  };
   fcChart=new Chart(canvas,{
     type:'line',
     data:{
@@ -7580,8 +7837,10 @@ function fcDrawChart(brinco, pesagens){
         tension:.3,pointRadius:4,pointBackgroundColor:'#2e7d32',fill:true
       }]
     },
+    plugins:[fcGmdLabelsPlugin],
     options:{
       responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:24}},
       plugins:{legend:{display:false}},
       scales:{
         x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11},maxRotation:45}},
@@ -8414,7 +8673,7 @@ function renderIatfReg(){
             +'<select id="iatfreg-touro-'+p.id+'">'
               +'<option value="">— selecione —</option>'
               +touroOpts.map(function(r){
-                var lbl=r.tipo==='touro'?(r.nome||r.brinco||'Touro'):(r.semen_nome||r.semen_apelido||'Sêmen');
+                var lbl=r.tipo==='touro'?(r.brinco||r.nome||'Touro'):(r.semen_nome||r.semen_apelido||'Sêmen');
                 return '<option value="'+lbl+'">'+lbl+'</option>';
               }).join('')
             +'</select>'
