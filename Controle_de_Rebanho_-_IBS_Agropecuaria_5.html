@@ -520,7 +520,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">1.0.34</span><br>
+              Versão: <span id="app-versao">1.1.3</span><br>
               Data da versão: <span id="app-versao-data">22/07/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -1581,6 +1581,45 @@ tr:hover td{background:#fafaf7}
           <div class="rep-kpi rep-kpi-amb"><div class="rep-kpi-ic">&#127919;</div><div class="rep-kpi-lbl">Maior categoria (despesa)</div><div class="rep-kpi-val" id="fin-kpi-topcat" style="font-size:15px">-</div><div class="rep-kpi-sub" id="fin-kpi-topcat-val">R$ 0,00</div></div>
         </div>
 
+        <!-- CONTAS FIXAS DO MÊS — lembrete de pagamento -->
+        <div class="tcard" style="margin-bottom:14px">
+          <div class="tbar">
+            <span style="font-size:13px;font-weight:600">&#128197; Contas fixas &mdash; <span id="cf-mes-label"></span></span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="tcnt" id="cf-resumo"></span>
+              <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 10px" onclick="toggleContasFixasCad()">&#9881; Cadastrar contas</button>
+            </div>
+          </div>
+          <div id="cf-painel" style="padding:10px 16px"></div>
+
+          <!-- Cadastro das contas fixas (recolhido por padrão) -->
+          <div id="cf-cadastro" style="display:none;border-top:1px solid var(--bord);padding:14px 16px;background:var(--surf2)">
+            <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Cadastro de contas fixas mensais</div>
+            <div class="grid g4">
+              <div class="fg"><label>Descrição *</label><input type="text" id="cf-desc" placeholder="Ex: Energia — sede"></div>
+              <div class="fg"><label>Grupo</label>
+                <select id="cf-grupo" onchange="cfAtualizarCategorias()">
+                  <option value="Geral">Geral</option>
+                  <option value="Producao">Produção</option>
+                </select>
+              </div>
+              <div class="fg"><label>Categoria *</label><select id="cf-categoria"></select></div>
+              <div class="fg"><label>Dia do vencimento *</label><input type="number" id="cf-dia" min="1" max="31" placeholder="Ex: 10"></div>
+              <div class="fg"><label>Valor estimado (R$)</label><input type="text" id="cf-valor" placeholder="Ex: 450,00"></div>
+            </div>
+            <input type="hidden" id="cf-edit-idx" value="">
+            <div class="form-actions">
+              <button class="btn btn-ghost btn-sm" onclick="cfCancelar()">Limpar</button>
+              <button class="btn btn-primary" id="cf-save-btn" onclick="cfSalvar()">+ Adicionar conta fixa</button>
+            </div>
+            <div class="tscroll" style="margin-top:14px">
+              <table><thead><tr>
+                <th>Descrição</th><th>Categoria</th><th class="tc">Vencimento</th><th>Valor estimado</th><th class="tc">Ativa</th><th class="tc">Ação</th>
+              </tr></thead><tbody id="cf-tbody"></tbody></table>
+            </div>
+          </div>
+        </div>
+
         <div class="tcard" style="margin-bottom:14px">
           <div class="tbar"><span style="font-size:13px;font-weight:600">Ano</span></div>
           <div id="fin-ano-tabs" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px"></div>
@@ -1750,6 +1789,10 @@ var baixaSelCats = [];
 var baixaLoteExcluidos = [];
 var baixaLoteExtras = []; // brincos adicionados manualmente (independente da categoria selecionada)
 var DB_financeiro = []; // [{data, grupo:'Geral'|'Producao', categoria, valor, obs}] — controle financeiro
+// Contas fixas mensais (lembrete de pagamento). Cadastro feito uma vez, vale para todo mês.
+// A baixa é automática: a conta é considerada paga quando existe uma despesa lançada naquele
+// mês na mesma categoria — nada de marcar manualmente, nada que possa ficar dessincronizado.
+var DB_contasfixas = []; // [{descricao, grupo, categoria, diaVenc, valorEstimado, ativa}]
 var finAnoFiltro = '';
 var finGrupoFiltro = '';
 var finCatFiltro = '';
@@ -2110,6 +2153,35 @@ function parseWB(wb){
       r.semen_proc  = dosesVal;
     }
   });
+
+  // Auto-correção estrutural: Nome x Brinco/Registro trocados nos sêmens.
+  //
+  // A detecção por cabeçalho acima resolve o caso normal, mas falha quando o arquivo é gravado
+  // por uma versão do app diferente da que o lê (ex.: navegador servindo um HTML antigo em
+  // cache). O resultado é o Nome e o Registro aparecerem invertidos em todas as telas.
+  //
+  // Aqui a checagem é por CONTEÚDO, e não por rótulo: o campo "Pai" dos animais (DB.dg.pai)
+  // sempre guarda o NOME do reprodutor. Se esses valores casarem mais com o campo de registro
+  // do que com o de nome, então as duas colunas vieram trocadas — e só nesse caso desfaz.
+  (function corrigirNomeRegistroSemen(){
+    var paisUsados = {};
+    DB.dg.forEach(function(d){ if(d.pai) paisUsados[d.pai] = true; });
+    DB.dg.forEach(function(d){ if(d.avo) paisUsados[d.avo] = true; });
+    if(!Object.keys(paisUsados).length) return;
+    var acertosNome = 0, acertosReg = 0;
+    DB_repr.forEach(function(r){
+      if(r.tipo !== 'semen') return;
+      if(r.semen_nome && paisUsados[r.semen_nome]) acertosNome++;
+      if(r.semen_apelido && paisUsados[r.semen_apelido]) acertosReg++;
+    });
+    if(acertosReg > acertosNome){
+      DB_repr.forEach(function(r){
+        if(r.tipo !== 'semen') return;
+        var tmp = r.semen_nome; r.semen_nome = r.semen_apelido; r.semen_apelido = tmp;
+      });
+    }
+  })();
+
   // Estoque
   DB_estoque=[];
   var shEst = findSh(wb,['stoque','Estoque','estoque']);
@@ -2151,7 +2223,9 @@ function parseWB(wb){
     for(var i=3;i<rows.length;i++){
       var r=rows[i]; var cat=cl(r[2]); if(!cat) continue;
       var grp = (cl(r[1])||'').toLowerCase()==='producao' ? 'Producao' : 'Geral';
-      DB_financeiro.push({data:xlsxDateToStr(r[0]),grupo:grp,categoria:cat,valor:cl(r[3]),obs:cl(r[4])});
+      // r[5] ('Registrado em') só existe em arquivos gravados a partir da v1.1.2; nos antigos
+      // vem vazio e a ordenação do histórico cai para a ordem de inserção.
+      DB_financeiro.push({data:xlsxDateToStr(r[0]),grupo:grp,categoria:cat,valor:cl(r[3]),obs:cl(r[4]),_ts:cl(r[5])||undefined});
     }
   }
   // Receitas
@@ -2162,7 +2236,21 @@ function parseWB(wb){
     for(var i=3;i<rows.length;i++){
       var r=rows[i]; var catRaw=cl(r[1]); if(!catRaw) continue;
       var cat = REC_CATS.indexOf(catRaw)!==-1 ? catRaw : (catRaw.toLowerCase().indexOf('lucas')!==-1 ? 'Investimento Lucas' : catRaw.toLowerCase().indexOf('carmem')!==-1 ? 'Investimento Carmem' : catRaw.toLowerCase().indexOf('credito')!==-1||catRaw.toLowerCase().indexOf('crédito')!==-1 ? 'Credito Bancario' : 'Producao');
-      DB_receitas.push({data:xlsxDateToStr(r[0]),categoria:cat,descricao:cl(r[2]),valor:cl(r[3]),_baixaTag:cl(r[4])||undefined});
+      DB_receitas.push({data:xlsxDateToStr(r[0]),categoria:cat,descricao:cl(r[2]),valor:cl(r[3]),_baixaTag:cl(r[4])||undefined,_ts:cl(r[5])||undefined});
+    }
+  }
+  // Contas fixas mensais (aba nova — arquivos antigos simplesmente não a têm)
+  DB_contasfixas=[];
+  var shCf = findSh(wb,['Contas Fixas','ontas Fixas','ContasFixas']);
+  if(shCf){
+    var rows=XLSX.utils.sheet_to_json(shCf,{header:1,defval:'',raw:true});
+    for(var i=3;i<rows.length;i++){
+      var r=rows[i]; var d=cl(r[0]); if(!d) continue;
+      DB_contasfixas.push({
+        descricao:d, grupo:cl(r[1])==='Producao'?'Producao':'Geral', categoria:cl(r[2]),
+        diaVenc:parseInt(cl(r[3]))||1, valorEstimado:cl(r[4]),
+        ativa: cl(r[5]).toLowerCase()!=='nao'
+      });
     }
   }
   // IATF
@@ -3069,18 +3157,31 @@ function _buildWorkbook(){
   XLSX.utils.book_append_sheet(wb,wsBaixa,'Saidas do Rebanho');
 
   // Financeiro
-  var finD=[['CONTROLE FINANCEIRO'],['Lancamentos de despesas por categoria (Geral/Producao).'],['Data','Grupo','Categoria','Valor (R$)','Observacao']]
-    .concat(DB_financeiro.map(function(r){return[r.data?exDate(r.data):null,r.grupo==='Producao'?'Producao':'Geral',r.categoria||'',r.valor||'',r.obs||''];}));
+  // 'Registrado em' entra como ÚLTIMA coluna de propósito: acrescentar no fim é a única forma
+  // segura de evoluir o formato, porque não desloca nenhuma coluna existente. Versões antigas
+  // do app simplesmente ignoram a coluna extra, e a leitura das demais continua idêntica.
+  var finD=[['CONTROLE FINANCEIRO'],['Lancamentos de despesas por categoria (Geral/Producao).'],['Data','Grupo','Categoria','Valor (R$)','Observacao','Registrado em']]
+    .concat(DB_financeiro.map(function(r){return[r.data?exDate(r.data):null,r.grupo==='Producao'?'Producao':'Geral',r.categoria||'',r.valor||'',r.obs||'',r._ts||''];}));
   var wsFin=XLSX.utils.aoa_to_sheet(finD);
   DB_financeiro.forEach(function(r,i){var c=wsFin[XLSX.utils.encode_cell({r:3+i,c:0})];if(c&&r.data)c.z='dd/mm/yyyy';});
   XLSX.utils.book_append_sheet(wb,wsFin,'Financeiro');
 
   // Receitas
-  var recD=[['RECEITAS'],['Lancamentos de receita por categoria (Producao/Investimento Lucas/Investimento Carmem/Credito Bancario).'],['Data','Categoria','Descricao','Valor (R$)','Tag Vinculo Saida']]
-    .concat(DB_receitas.map(function(r){return[r.data?exDate(r.data):null,r.categoria||'',r.descricao||'',r.valor||'',r._baixaTag||''];}));
+  var recD=[['RECEITAS'],['Lancamentos de receita por categoria (Producao/Investimento Lucas/Investimento Carmem/Credito Bancario).'],['Data','Categoria','Descricao','Valor (R$)','Tag Vinculo Saida','Registrado em']]
+    .concat(DB_receitas.map(function(r){return[r.data?exDate(r.data):null,r.categoria||'',r.descricao||'',r.valor||'',r._baixaTag||'',r._ts||''];}));
   var wsRec=XLSX.utils.aoa_to_sheet(recD);
   DB_receitas.forEach(function(r,i){var c=wsRec[XLSX.utils.encode_cell({r:3+i,c:0})];if(c&&r.data)c.z='dd/mm/yyyy';});
   XLSX.utils.book_append_sheet(wb,wsRec,'Receitas');
+
+  // Contas fixas mensais (lembrete). Guarda só o cadastro — a baixa é derivada dos
+  // lançamentos de despesa, então não há estado de "pago" para persistir.
+  var cfD=[['CONTAS FIXAS MENSAIS'],['Lembrete de contas recorrentes. A baixa e automatica: conta paga = despesa lancada no mes na mesma categoria.'],
+           ['Descricao','Grupo','Categoria','Dia Vencimento','Valor Estimado','Ativa']]
+    .concat(DB_contasfixas.map(function(r){
+      return[r.descricao||'', r.grupo==='Producao'?'Producao':'Geral', r.categoria||'',
+             r.diaVenc||'', r.valorEstimado||'', r.ativa===false?'Nao':'Sim'];
+    }));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cfD),'Contas Fixas');
 
   // IATF
   var iatfD=[['IATF'],['Protocolos de Inseminação Artificial em Tempo Fixo.'],['Protocolo','Data','Reprodutor','Tecnico','Data DG','Brincos (sep ;)','Taxa Prenhez','Observações']]
@@ -4077,6 +4178,19 @@ function renderDash(){
     return DB.pes.filter(function(p){return p.brinco===r.brinco;}).length===1;
   });
   if(soPesagem1.length) alerts.push({ic:'&#128202;',cor:'#1565c0',txt:'<strong>'+soPesagem1.length+' animal(is)</strong> com apenas uma pesagem (GMD indisponível).'});
+  // Contas fixas do mês: atrasadas e as que vencem nos próximos 5 dias.
+  if(typeof cfSituacaoDoMes === 'function' && DB_contasfixas.length){
+    var sitCf = cfSituacaoDoMes(hoje.getFullYear(), hoje.getMonth());
+    var cfAtras = sitCf.filter(function(s){ return s.status==='atrasado'; });
+    var cfHoje  = sitCf.filter(function(s){ return s.status==='hoje'; });
+    var cfProx  = sitCf.filter(function(s){ return s.status==='avencer' && s.diasRestantes!==null && s.diasRestantes<=5; });
+    if(cfAtras.length) alerts.push({ic:'&#128181;',cor:'var(--red)',
+      txt:'<strong>'+cfAtras.length+' conta(s) fixa(s) em atraso</strong>: '+cfAtras.map(function(s){return s.conta.descricao;}).join(', ')+'.'});
+    if(cfHoje.length) alerts.push({ic:'&#9200;',cor:'var(--amb)',
+      txt:'<strong>'+cfHoje.length+' conta(s) fixa(s) vencem hoje</strong>: '+cfHoje.map(function(s){return s.conta.descricao;}).join(', ')+'.'});
+    if(cfProx.length) alerts.push({ic:'&#128197;',cor:'var(--amb)',
+      txt:'<strong>'+cfProx.length+' conta(s) fixa(s)</strong> vencem nos próximos dias: '+cfProx.map(function(s){return s.conta.descricao+' (dia '+s.dia+')';}).join(', ')+'.'});
+  }
 
   var alertCard = _id('dash-alertas-card');
   if(!alerts.length){
@@ -5465,6 +5579,22 @@ function parseValorBR(v){
   }
   return parseFloat(s);
 }
+// Carimbo do instante do registro, no formato 'dd/mm/aaaa hh:mm:ss'. Guardado no campo _ts
+// dos lançamentos para ordenar o histórico dentro de um mesmo dia — o campo "data" guarda
+// apenas a data (é a data do fato, editável), então sozinho não diz o que foi digitado por último.
+function nowTS(){
+  var d = new Date(), p = function(n){ return String(n).padStart(2,'0'); };
+  return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '
+       + p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+}
+// Converte o carimbo em número comparável. Sem carimbo (lançamentos antigos) devolve null.
+function tsValor(ts){
+  if(!ts) return null;
+  var m = String(ts).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if(!m) return null;
+  return new Date(+m[3], +m[2]-1, +m[1], +m[4], +m[5], +(m[6]||0)).getTime();
+}
+
 function fmtValorBR(v){
   var n = parseValorBR(v);
   if(isNaN(n)) return '-';
@@ -5664,6 +5794,228 @@ function renderBaixas(){
 }
 
 // ─── CONTROLE FINANCEIRO ─────────────────────────────────────────────
+// ═══ CONTAS FIXAS MENSAIS (lembrete de pagamento) ═══════════════════
+// A baixa é AUTOMÁTICA: uma conta é dada como paga no mês quando existe pelo menos uma
+// despesa lançada naquele mês, na mesma categoria. Não há marcação manual — assim o lembrete
+// nunca fica dessincronizado do lançamento real, seguindo o mesmo princípio das outras
+// reconciliações do app.
+//
+// Retorna, para o mês/ano informados, a situação de cada conta fixa ativa.
+function cfSituacaoDoMes(ano, mes){
+  var hoje = new Date();
+  var ehMesCorrente = (hoje.getFullYear()===ano && hoje.getMonth()===mes);
+  var ultimoDia = new Date(ano, mes+1, 0).getDate();
+
+  // Despesas lançadas no mês, agrupadas por categoria
+  var pagasPorCat = {};
+  DB_financeiro.forEach(function(r){
+    var d = toDate(r.data);
+    if(!d || d.getFullYear()!==ano || d.getMonth()!==mes) return;
+    var c = r.categoria||'';
+    if(!pagasPorCat[c]) pagasPorCat[c] = [];
+    pagasPorCat[c].push(r);
+  });
+
+  return DB_contasfixas.filter(function(c){ return c.ativa!==false; }).map(function(c){
+    var lancs = pagasPorCat[c.categoria]||[];
+    var pago = lancs.length>0;
+    var valorPago = lancs.reduce(function(s,r){ var n=parseValorBR(r.valor); return s+(isNaN(n)?0:n); },0);
+    // Dia 31 numa competência de 30 dias cai no último dia do mês.
+    var dia = Math.min(parseInt(c.diaVenc)||1, ultimoDia);
+    var status, diasRestantes = null;
+    if(pago){
+      status = 'pago';
+    } else if(!ehMesCorrente){
+      // Mês passado sem lançamento = atrasado; mês futuro = ainda a vencer.
+      var ref = new Date(ano, mes, dia);
+      status = ref < new Date(hoje.getFullYear(), hoje.getMonth(), 1) ? 'atrasado' : 'avencer';
+    } else {
+      diasRestantes = dia - hoje.getDate();
+      status = diasRestantes < 0 ? 'atrasado' : (diasRestantes===0 ? 'hoje' : 'avencer');
+    }
+    return { conta:c, dia:dia, status:status, diasRestantes:diasRestantes,
+             valorPago:valorPago, lancamentos:lancs.length };
+  }).sort(function(a,b){
+    // Pendentes primeiro (mais urgente no topo), pagas por último.
+    var ordem = {atrasado:0, hoje:1, avencer:2, pago:3};
+    if(ordem[a.status]!==ordem[b.status]) return ordem[a.status]-ordem[b.status];
+    return a.dia-b.dia;
+  });
+}
+
+var CF_ESTILOS = {
+  pago:     {bg:'var(--grnbg)', cor:'var(--grnt)', txt:'Pago',      ic:'&#10003;'},
+  atrasado: {bg:'var(--redbg)', cor:'var(--red)',  txt:'Atrasado',  ic:'&#9888;'},
+  hoje:     {bg:'var(--ambbg)', cor:'var(--amb)',  txt:'Vence hoje',ic:'&#9200;'},
+  avencer:  {bg:'var(--surf2)', cor:'var(--tx2)',  txt:'A vencer',  ic:'&#8226;'}
+};
+
+function renderContasFixas(){
+  var painel = document.getElementById('cf-painel');
+  if(!painel) return;
+  var hoje = new Date();
+  var ano = hoje.getFullYear(), mes = hoje.getMonth();
+  var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var lbl = document.getElementById('cf-mes-label');
+  if(lbl) lbl.textContent = MESES[mes]+'/'+ano;
+
+  var sit = cfSituacaoDoMes(ano, mes);
+  var resumoEl = document.getElementById('cf-resumo');
+
+  if(!sit.length){
+    painel.innerHTML = '<div style="text-align:center;padding:18px;color:var(--tx3);font-size:13px">'
+      +'Nenhuma conta fixa cadastrada. Use <strong>&#9881; Cadastrar contas</strong> para registrar as despesas que se repetem todo mês.</div>';
+    if(resumoEl) resumoEl.textContent = '';
+    renderContasFixasCad();
+    return;
+  }
+
+  var pagas = sit.filter(function(s){return s.status==='pago';}).length;
+  var atrasadas = sit.filter(function(s){return s.status==='atrasado';}).length;
+  var pendValor = sit.filter(function(s){return s.status!=='pago';})
+    .reduce(function(s,x){ var n=parseValorBR(x.conta.valorEstimado); return s+(isNaN(n)?0:n); },0);
+  if(resumoEl){
+    resumoEl.innerHTML = pagas+' de '+sit.length+' pagas'
+      + (pendValor>0 ? ' &bull; ~'+fmtValorBR(pendValor)+' pendente' : '')
+      + (atrasadas ? ' &bull; <span style="color:var(--red);font-weight:700">'+atrasadas+' atrasada'+(atrasadas>1?'s':'')+'</span>' : '');
+  }
+
+  painel.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px">'
+    + sit.map(function(s, i){
+        var e = CF_ESTILOS[s.status];
+        var detalhe = s.status==='pago'
+          ? 'Lançado: '+fmtValorBR(s.valorPago)+(s.lancamentos>1?' ('+s.lancamentos+' lançamentos)':'')
+          : 'Vence dia '+s.dia
+            + (s.diasRestantes!==null && s.diasRestantes>0 ? ' &bull; em '+s.diasRestantes+' dia'+(s.diasRestantes>1?'s':'') : '')
+            + (s.status==='atrasado' && s.diasRestantes!==null ? ' &bull; <strong>'+Math.abs(s.diasRestantes)+' dia'+(Math.abs(s.diasRestantes)>1?'s':'')+' em atraso</strong>' : '')
+            + (parseValorBR(s.conta.valorEstimado) ? ' &bull; ~'+fmtValorBR(parseValorBR(s.conta.valorEstimado)) : '');
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--rsm);background:'+e.bg+';border:1px solid var(--bord)">'
+          +'<span style="font-size:11px;font-weight:700;color:'+e.cor+';min-width:82px;white-space:nowrap">'+e.ic+' '+e.txt+'</span>'
+          +'<div style="flex:1;min-width:0">'
+            +'<div style="font-size:13px;font-weight:600;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.conta.descricao||s.conta.categoria)+'</div>'
+            +'<div style="font-size:11px;color:var(--tx3)">'+s.conta.categoria+' &bull; '+detalhe+'</div>'
+          +'</div>'
+          +(s.status!=='pago'
+              ? '<button class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 12px;white-space:nowrap" onclick="cfLancar('+i+')">Lançar</button>'
+              : '')
+        +'</div>';
+      }).join('')
+    +'</div>';
+  // Guarda a situação para o botão "Lançar" saber a qual conta se refere.
+  window._cfSitAtual = sit;
+  renderContasFixasCad();
+}
+
+// Abre o formulário de lançamento já preenchido com os dados da conta fixa pendente.
+function cfLancar(idx){
+  var s = (window._cfSitAtual||[])[idx];
+  if(!s) return;
+  var hoje = new Date();
+  finSetTipo('despesa');
+  s_('lanc-data', todayBR());
+  s_('lanc-valor', s.conta.valorEstimado||'');
+  s_('fin-grupo', s.conta.grupo||'Geral');
+  finAtualizarCategorias();
+  var selCat = document.getElementById('fin-categoria');
+  if(selCat){
+    var existe = Array.prototype.some.call(selCat.options, function(o){ return o.value===s.conta.categoria; });
+    selCat.value = existe ? s.conta.categoria : '__outra__';
+    finToggleOutra();
+    if(!existe) s_('fin-categoria-outra', s.conta.categoria);
+  }
+  s_('fin-obs', s.conta.descricao||'');
+  var card = document.getElementById('lanc-form-title');
+  if(card) card.scrollIntoView({behavior:'smooth', block:'center'});
+  toast('Confira o valor e salve para dar baixa em "'+(s.conta.descricao||s.conta.categoria)+'"','ok');
+}
+function s_(id,v){ var el=document.getElementById(id); if(el) el.value = (v===null||v===undefined)?'':String(v); }
+
+// ── Cadastro das contas fixas ──
+function toggleContasFixasCad(){
+  var el = document.getElementById('cf-cadastro');
+  if(!el) return;
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+  if(el.style.display==='block'){ cfAtualizarCategorias(); focusField('cf-desc'); }
+}
+function cfAtualizarCategorias(){
+  var grupo = (document.getElementById('cf-grupo')||{}).value || 'Geral';
+  var sel = document.getElementById('cf-categoria');
+  if(!sel) return;
+  var cur = sel.value;
+  var cats = finCategoriasFor(grupo);
+  sel.innerHTML = cats.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  if(cats.indexOf(cur)!==-1) sel.value = cur;
+}
+function cfSalvar(){
+  var desc = (document.getElementById('cf-desc')||{}).value||'';
+  var dia  = (document.getElementById('cf-dia')||{}).value||'';
+  var cat  = (document.getElementById('cf-categoria')||{}).value||'';
+  desc = desc.trim();
+  if(!desc){ toast('Informe a descrição da conta','err'); return; }
+  if(!cat){ toast('Selecione a categoria','err'); return; }
+  var diaN = parseInt(dia);
+  if(isNaN(diaN) || diaN<1 || diaN>31){ toast('Dia do vencimento deve estar entre 1 e 31','err'); return; }
+  var rec = {
+    descricao: desc,
+    grupo: (document.getElementById('cf-grupo')||{}).value||'Geral',
+    categoria: cat,
+    diaVenc: diaN,
+    valorEstimado: ((document.getElementById('cf-valor')||{}).value||'').trim(),
+    ativa: true
+  };
+  var idx = (document.getElementById('cf-edit-idx')||{}).value;
+  if(idx!==''){ rec.ativa = DB_contasfixas[parseInt(idx)].ativa!==false; DB_contasfixas[parseInt(idx)] = rec; toast('Conta fixa atualizada','ok'); }
+  else { DB_contasfixas.push(rec); toast('Conta fixa cadastrada','ok'); }
+  cfCancelar(); markDirty(); renderContasFixas(); renderDash();
+}
+function cfCancelar(){
+  ['cf-desc','cf-dia','cf-valor','cf-edit-idx'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  var b=document.getElementById('cf-save-btn'); if(b) b.textContent='+ Adicionar conta fixa';
+  focusField('cf-desc');
+}
+function cfEditar(idx){
+  var c = DB_contasfixas[idx]; if(!c) return;
+  s_('cf-desc',c.descricao); s_('cf-grupo',c.grupo||'Geral');
+  cfAtualizarCategorias();
+  s_('cf-categoria',c.categoria); s_('cf-dia',c.diaVenc); s_('cf-valor',c.valorEstimado||'');
+  s_('cf-edit-idx',idx);
+  var b=document.getElementById('cf-save-btn'); if(b) b.textContent='Salvar alterações';
+  var el=document.getElementById('cf-cadastro'); if(el) el.style.display='block';
+  focusField('cf-desc');
+}
+function cfToggleAtiva(idx){
+  var c = DB_contasfixas[idx]; if(!c) return;
+  c.ativa = (c.ativa===false);
+  markDirty(); renderContasFixas(); renderDash();
+}
+function cfExcluir(idx){
+  var c = DB_contasfixas[idx]; if(!c) return;
+  showConfirm('Excluir a conta fixa "'+(c.descricao||c.categoria)+'"? O histórico de lançamentos não é afetado.', function(){
+    DB_contasfixas.splice(idx,1); markDirty(); renderContasFixas(); renderDash();
+    toast('Conta fixa removida','ok');
+  });
+}
+function renderContasFixasCad(){
+  var tb = document.getElementById('cf-tbody'); if(!tb) return;
+  if(!DB_contasfixas.length){
+    tb.innerHTML = '<tr><td colspan="6"><div class="empty" style="padding:14px">Nenhuma conta fixa cadastrada.</div></td></tr>';
+    return;
+  }
+  tb.innerHTML = DB_contasfixas.map(function(c,i){
+    var ativa = c.ativa!==false;
+    return '<tr'+(ativa?'':' style="opacity:.5"')+'>'
+      +'<td><strong>'+(c.descricao||'-')+'</strong></td>'
+      +'<td>'+(c.categoria||'-')+'</td>'
+      +'<td class="tc">dia '+(c.diaVenc||'-')+'</td>'
+      +'<td>'+(c.valorEstimado ? 'R$ '+c.valorEstimado : '-')+'</td>'
+      +'<td class="tc"><button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="cfToggleAtiva('+i+')">'+(ativa?'Sim':'Não')+'</button></td>'
+      +'<td class="tc"><div style="display:flex;gap:3px;justify-content:center">'
+        +'<button class="btn btn-ghost btn-sm" onclick="cfEditar('+i+')" title="Editar">&#9998;</button>'
+        +'<button class="btn btn-danger btn-sm" onclick="cfExcluir('+i+')" title="Excluir">&#128465;</button>'
+      +'</div></td></tr>';
+  }).join('');
+}
+
 function finCategoriasFor(grupo){
   return grupo==='Producao' ? FIN_CATS_PRODUCAO : FIN_CATS_GERAL;
 }
@@ -5742,10 +6094,13 @@ function salvarLancamento(){
     if(!descricao){ fieldErr('rec-descricao', 'Informe a descrição'); erros++; }
     if(erros) return;
     var isEdit = lancEditTipo==='receita' && lancEditIdx!==null && DB_receitas[lancEditIdx];
-    var recRec = { data:data, categoria:categoria, descricao:descricao, valor:valor };
+    // _ts = instante do registro. Serve para ordenar o histórico dentro de um mesmo dia
+    // (o campo "data" tem só a data, sem hora). Ao editar, o carimbo original é preservado.
+    var recRec = { data:data, categoria:categoria, descricao:descricao, valor:valor, _ts: nowTS() };
     if(isEdit){
       // Preserva campos internos (ex.: vínculo com Saída do Rebanho) que não aparecem no formulário.
       recRec = Object.assign({}, DB_receitas[lancEditIdx], recRec);
+      recRec._ts = DB_receitas[lancEditIdx]._ts || recRec._ts;  // editar não muda a ordem
       DB_receitas[lancEditIdx] = recRec;
       toast('Receita atualizada: '+recLabel(categoria)+' ('+fmtValorBR(valor)+')','ok');
     } else {
@@ -5764,8 +6119,9 @@ function salvarLancamento(){
     }
     if(erros) return;
     var isEditD = lancEditTipo==='fin' && lancEditIdx!==null && DB_financeiro[lancEditIdx];
-    var despRec = { data:data, grupo:grupo, categoria:categoria, valor:valor, obs:obs };
+    var despRec = { data:data, grupo:grupo, categoria:categoria, valor:valor, obs:obs, _ts: nowTS() };
     if(isEditD){
+      despRec._ts = DB_financeiro[lancEditIdx]._ts || despRec._ts;  // editar não muda a ordem
       DB_financeiro[lancEditIdx] = despRec;
       toast('Despesa atualizada: '+categoria+' ('+fmtValorBR(valor)+')','ok');
     } else {
@@ -5775,7 +6131,9 @@ function salvarLancamento(){
   }
 
   cancelarLancamento();
-  markDirty(); renderFinanceiro();
+  // renderFinanceiro já redesenha o painel de contas fixas (a baixa é derivada dos
+  // lançamentos); renderDash atualiza os alertas da tela inicial.
+  markDirty(); renderFinanceiro(); renderDash();
 }
 // Preenche o formulário unificado com os dados de um lançamento existente para edição.
 function editarLancamento(tipo, idx){
@@ -5837,6 +6195,9 @@ function renderFinanceiro(){
   // Inicializa selects na primeira renderizacao
   var selCat = document.getElementById('fin-categoria');
   if(selCat && !selCat.options.length) finAtualizarCategorias();
+  var selCf = document.getElementById('cf-categoria');
+  if(selCf && !selCf.options.length) cfAtualizarCategorias();
+  renderContasFixas();
 
   // Tabs de ano
   var anos = finAnosUnicos();
@@ -5871,10 +6232,15 @@ function renderFinanceiro(){
   var elTCV=document.getElementById('fin-kpi-topcat-val'); if(elTCV) elTCV.textContent = topCat ? fmtValorBR(porCat[topCat]) : 'R$ 0,00';
 
   // Monta lista unificada: despesas (vermelho) + receitas (verde)
+  // _ord = posição do registro no array de origem. Para lançamentos antigos (sem carimbo de
+  // horário) ela funciona como aproximação da ordem de digitação, já que novos itens sempre
+  // são acrescentados ao final.
   var unificada = despesasDoAno.map(function(r){
-    return { tipo:'despesa', data:r.data, grupo:r.grupo, categoria:r.categoria, desc:r.obs, valor:r.valor, ref:r };
+    return { tipo:'despesa', data:r.data, grupo:r.grupo, categoria:r.categoria, desc:r.obs, valor:r.valor, ref:r,
+             _ts:r._ts, _ord:DB_financeiro.indexOf(r) };
   }).concat(receitasDoAno.map(function(r){
-    return { tipo:'receita', data:r.data, grupo:'', categoria:recLabel(r.categoria), desc:r.descricao, valor:r.valor, ref:r };
+    return { tipo:'receita', data:r.data, grupo:'', categoria:recLabel(r.categoria), desc:r.descricao, valor:r.valor, ref:r,
+             _ts:r._ts, _ord:DB_receitas.indexOf(r) };
   }));
 
   // Filtro de categoria (populado com categorias ja usadas no ano, de ambos os tipos)
@@ -5900,10 +6266,26 @@ function renderFinanceiro(){
     tb.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-ic">&#128176;</div>Nenhum lançamento neste período.</div></td></tr>';
     return;
   }
+  // Ordem: mais recente primeiro. Primeiro pela DATA do lançamento; dentro do mesmo dia,
+  // pelo HORÁRIO em que foi registrado (_ts). Lançamentos antigos não têm carimbo de horário —
+  // nesses casos usa-se a ordem de inserção (_ord), que reflete a sequência de digitação.
+  // Um lançamento com carimbo é sempre considerado mais recente que outro sem carimbo no
+  // mesmo dia, já que o carimbo só passou a existir a partir desta versão.
   var sorted = lista.slice().sort(function(a,b){
     var da=toDate(a.data), db=toDate(b.data);
-    if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
-    return db-da;
+    if(da&&db && da.getTime()!==db.getTime()) return db-da;
+    if(!da&&db) return 1;
+    if(da&&!db) return -1;
+    var ta=tsValor(a._ts), tb2=tsValor(b._ts);
+    if(ta!==null && tb2!==null && ta!==tb2) return tb2-ta;
+    if(ta!==null && tb2===null) return -1;
+    if(ta===null && tb2!==null) return 1;
+    // Nenhum dos dois tem carimbo (lançamentos anteriores a esta versão): usa a ordem de
+    // digitação. Só vale entre registros do MESMO tipo — despesas e receitas são listas
+    // separadas, então seus índices não são comparáveis entre si. Tipos diferentes ficam
+    // empatados e o navegador preserva a ordem em que já estavam.
+    if(a.tipo===b.tipo) return (b._ord||0)-(a._ord||0);
+    return 0;
   });
   tb.innerHTML = sorted.map(function(u){
     var isDespesa = u.tipo==='despesa';
