@@ -520,7 +520,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">1.1.3</span><br>
+              Versão: <span id="app-versao">1.2.0</span><br>
               Data da versão: <span id="app-versao-data">22/07/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -9462,7 +9462,7 @@ function renderIatfReg(){
         +'</div>'
         +'<div class="grid g3" style="margin-bottom:10px">'
           +'<div class="fg"><label>Animal *</label>'
-            +'<select id="iatfreg-brinco-'+p.id+'">'
+            +'<select id="iatfreg-brinco-'+p.id+'" onchange="iatfAtualizarConsanguinidade('+p.id+')">'
               +'<option value="">— selecione —</option>'
               +pendentes.map(function(b){ return '<option value="'+b+'">'+b+'</option>'; }).join('')
             +'</select>'
@@ -9471,11 +9471,11 @@ function renderIatfReg(){
             +'<input type="text" id="iatfreg-data-'+p.id+'" value="'+dataPadrao+'" maxlength="10" oninput="maskDate(this)" placeholder="DD/MM/AAAA">'
           +'</div>'
           +'<div class="fg"><label>Touro'+(isNatural?' *':' / Sêmen')+'</label>'
-            +'<select id="iatfreg-touro-'+p.id+'">'
+            +'<select id="iatfreg-touro-'+p.id+'" onchange="iatfConferirTouro('+p.id+')">'
               +'<option value="">— selecione —</option>'
               +touroOpts.map(function(r){
                 var lbl=reprNome(r)||(r.tipo==='touro'?'Touro':'Sêmen');
-                return '<option value="'+lbl+'">'+lbl+'</option>';
+                return '<option value="'+lbl+'" data-nome="'+lbl+'">'+lbl+'</option>';
               }).join('')
             +'</select>'
           +'</div>'
@@ -9483,6 +9483,9 @@ function renderIatfReg(){
           +(isNatural?'':'<div class="fg"><label>Sêmen / Lote</label><input type="text" id="iatfreg-semen-'+p.id+'" value="'+(iatfUltimoSemen||'').replace(/"/g,'&quot;')+'" placeholder="Ex: P123 / Lote 05/2026"></div>')
           +'<div class="fg"><label>Observações</label><input type="text" id="iatfreg-obs-'+p.id+'" placeholder="Anotações"></div>'
         +'</div>'
+        // Aviso de consanguinidade — preenchido ao escolher o animal (iatfAtualizarConsanguinidade)
+        +'<div id="iatfreg-consang-'+p.id+'" style="display:none;background:var(--redbg);border:1px solid var(--red);'
+          +'border-radius:var(--rsm);padding:10px 12px;margin-bottom:10px"></div>'
         +'<div style="display:flex;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--bord)">'
           +'<button class="btn btn-primary btn-sm" onclick="iatfRegSalvar('+p.id+')">&#10003; Registrar '+(isNatural?'Monta':'IATF')+'</button>'
         +'</div>'
@@ -9549,6 +9552,90 @@ function renderIatfReg(){
   }).join('');
 }
 
+// ═══ CONTROLE DE CONSANGUINIDADE ═══════════════════════════════════
+// Uma fêmea não pode ser coberta pelo próprio pai nem por um dos avós. Estes três campos da
+// genealogia guardam justamente o NOME do reprodutor, que é a mesma chave usada no seletor de
+// Touro/Sêmen — então a comparação é direta.
+//
+// Devolve [{nome, parentesco}] com os reprodutores vetados para aquele animal.
+function reprodutoresConsanguineos(brinco){
+  var dg = DB.dg.find(function(d){ return d.brinco===brinco; });
+  if(!dg) return [];
+  var vetados = [];
+  function add(valor, parentesco){
+    var nome = nomeGenealogico(valor);   // reduz "Fulano (REGISTRO)" a "Fulano"
+    if(!nome) return;
+    var ja = vetados.find(function(v){ return v.nome.toUpperCase()===nome.toUpperCase(); });
+    if(ja){ if(ja.parentesco.indexOf(parentesco)===-1) ja.parentesco += ' e '+parentesco; return; }
+    vetados.push({ nome:nome, parentesco:parentesco });
+  }
+  add(dg.pai,    'pai');
+  add(dg.avo,    'avô materno');
+  add(dg.avoPat, 'avô paterno');
+  return vetados;
+}
+
+// Confere se um reprodutor específico é consanguíneo do animal. Devolve o parentesco ('' se livre).
+function parentescoComReprodutor(brinco, nomeTouro){
+  if(!brinco || !nomeTouro) return '';
+  var alvo = nomeGenealogico(nomeTouro).toUpperCase();
+  var achou = reprodutoresConsanguineos(brinco).find(function(v){ return v.nome.toUpperCase()===alvo; });
+  return achou ? achou.parentesco : '';
+}
+
+// Redesenha o aviso e bloqueia no seletor os touros/sêmens vetados para o animal escolhido.
+// Chamado quando o usuário troca o animal no formulário de IATF/Monta.
+function iatfAtualizarConsanguinidade(pid){
+  var selB = document.getElementById('iatfreg-brinco-'+pid);
+  var selT = document.getElementById('iatfreg-touro-'+pid);
+  var box  = document.getElementById('iatfreg-consang-'+pid);
+  if(!selB || !selT || !box) return;
+  var brinco = selB.value.trim();
+  var vetados = brinco ? reprodutoresConsanguineos(brinco) : [];
+
+  // Marca as opções vetadas: desabilitadas e com o parentesco no rótulo, para ficar claro o motivo.
+  Array.prototype.forEach.call(selT.options, function(opt){
+    if(!opt.value) return;
+    var base = opt.getAttribute('data-nome') || opt.value;
+    opt.setAttribute('data-nome', base);
+    var p = brinco ? parentescoComReprodutor(brinco, base) : '';
+    opt.disabled = !!p;
+    opt.textContent = p ? (base+'  ⛔ '+p+' do animal') : base;
+  });
+  // Se o que já estava escolhido virou proibido, limpa a seleção.
+  if(selT.value && parentescoComReprodutor(brinco, selT.value)) selT.value='';
+
+  if(!brinco || !vetados.length){
+    box.style.display='none';
+    box.innerHTML='';
+    return;
+  }
+  box.style.display='block';
+  box.innerHTML =
+    '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px">'
+      +'&#9888; Não usar em '+brinco+' — consanguinidade</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
+    + vetados.map(function(v){
+        return '<span style="font-size:12px;font-weight:600;background:var(--redbg);color:var(--red);'
+             + 'border:1px solid var(--red);padding:3px 10px;border-radius:12px">'
+             + v.nome+' <span style="font-weight:400;opacity:.85">('+v.parentesco+')</span></span>';
+      }).join('')
+    +'</div>';
+}
+
+// Rede de proteção no momento da escolha do touro. As opções vetadas já ficam desabilitadas,
+// mas isso cobre seleção por teclado e qualquer caminho que escape do desabilitado.
+function iatfConferirTouro(pid){
+  var selB = document.getElementById('iatfreg-brinco-'+pid);
+  var selT = document.getElementById('iatfreg-touro-'+pid);
+  if(!selB || !selT) return;
+  var p = parentescoComReprodutor(selB.value.trim(), selT.value.trim());
+  if(p){
+    toast('Não permitido: '+selT.value.trim()+' é '+p+' do animal '+selB.value.trim()+'.','err');
+    selT.value='';
+  }
+}
+
 function iatfRegSalvar(pid){
   var prot = DB_protocolos.find(function(p){ return p.id === pid; });
   var isNatural = !!(prot && prot.tipo === 'natural');
@@ -9562,6 +9649,12 @@ function iatfRegSalvar(pid){
   var obs    = document.getElementById('iatfreg-obs-'+pid).value.trim();
   if(!brinco){ toast('Selecione o animal','err'); return; }
   if(isNatural && !touro){ toast('Selecione o touro utilizado','err'); return; }
+  // Barreira final contra consanguinidade — vale mesmo que o registro venha por outro caminho.
+  var _parente = parentescoComReprodutor(brinco, touro);
+  if(_parente){
+    toast('Registro bloqueado: '+touro+' é '+_parente+' do animal '+brinco+'.','err');
+    return;
+  }
   if(data && !validDate(data)){ toast('Data inválida. Use DD/MM/AAAA','err'); return; }
   if(!data) data = todayStr();
   DB_iatf_reg.push({ protId:pid, brinco:brinco, data:data, touro:touro, inseminador:ins, semen:semen, obs:obs });

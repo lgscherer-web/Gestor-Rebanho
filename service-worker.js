@@ -5,7 +5,7 @@
 
 // IMPORTANTE: aumente este número a cada nova versão do app, senão os aparelhos que já
 // instalaram continuam abrindo o HTML antigo guardado em cache.
-var CACHE_NAME = 'rebanho-v4';
+var CACHE_NAME = 'rebanho-v5';
 
 var FILES_TO_CACHE = [
   './Controle_de_Rebanho_-_IBS_Agropecuaria_5.html',
