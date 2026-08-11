@@ -501,8 +501,10 @@ tr:hover td{background:#fafaf7}
       <div class="sb-file-name" id="sb-file-info"><strong>Nenhum arquivo</strong>Clique em Carregar para começar</div>
       <div id="sb-dirty" style="display:none;font-size:11px;color:#ffb74d;padding:0 8px 4px;line-height:1.4">&#9679; Alterações não salvas — auto-save em 1,5s</div>
       <div id="sb-autosave" style="font-size:10px;padding:0 8px 8px;color:#81c784;line-height:1.5"></div>
+      <button class="btn btn-save btn-sm" id="sb-share-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="compartilharArquivo()" title="Abre o menu de compartilhamento do celular para enviar o arquivo direto ao Google Drive">&#9729; Salvar no Drive</button>
       <button class="btn btn-save btn-sm" id="sb-overwrite-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="sobrescreverArquivo()" title="Sobrescreve o mesmo arquivo, sem criar uma versão nova">&#9851; Sobrescrever arquivo</button>
       <button class="btn btn-save btn-sm" id="sb-save-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="salvarComoNovaVersao()" title="Salva uma copia nova com data/hora no nome">&#128190; Salvar nova versão</button>
+      <div id="sb-share-hint" style="display:none;font-size:10px;color:var(--tx2);padding:0 8px 8px;line-height:1.5">No celular: toque em <strong>Salvar no Drive</strong> &rarr; escolha <em>Google Drive</em> ou <em>Salvar em Arquivos</em> e substitua o arquivo anterior.</div>
       <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="abrirArquivo('fi2')">&#128193; Carregar .xlsx</button>
       <input type="file" id="fi2" accept=".xlsx" style="display:none" onchange="loadXLSX(this)">
     </div>
@@ -520,7 +522,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">1.2.0</span><br>
+              Versão: <span id="app-versao">1.2.1</span><br>
               Data da versão: <span id="app-versao-data">22/07/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -2444,17 +2446,54 @@ function updateInfo(){
 // claro que é um download, e não uma gravação no lugar.
 function _suportaGravacaoDireta(){ return !!window.showOpenFilePicker; }
 
+// Tipo MIME oficial do .xlsx. Usar 'application/octet-stream' fazia o iOS/Android tratarem o
+// arquivo como binário genérico: ao baixar pelo celular ele chegava sem extensão reconhecida e
+// o Drive/Arquivos não oferecia abrir como planilha. Com o MIME correto o sistema identifica
+// o arquivo como Excel e o botão de compartilhar consegue mandá-lo direto pro Drive.
+var MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+// Web Share API com arquivos: disponível no Safari (iOS 15+) e no Chrome do Android. É o único
+// caminho no celular que entrega o arquivo pronto para o app do Google Drive / "Salvar em Arquivos".
+function _podeCompartilharArquivos(){
+  try{
+    if(!navigator.share || !navigator.canShare) return false;
+    var teste = new File([new Blob([''], {type:MIME_XLSX})], 'teste.xlsx', {type:MIME_XLSX});
+    return !!navigator.canShare({files:[teste]});
+  }catch(e){ return false; }
+}
+
+function _nomeArquivoAtual(){
+  return (fileName && /\.xlsx$/i.test(fileName)) ? fileName : 'REBANHO_BASE_DADOS.xlsx';
+}
+
 function _updateOverwriteBtn(){
   var btn = document.getElementById('sb-overwrite-btn');
+  var share = document.getElementById('sb-share-btn');
+  var hint = document.getElementById('sb-share-hint');
+  if(share) share.style.display = 'none';
+  if(hint) hint.style.display = 'none';
   if(!btn) return;
   if(_fileHandle){
     btn.style.display = 'flex';
+    btn.className = 'btn btn-save btn-sm';
     btn.innerHTML = '&#9851; Sobrescrever arquivo';
     btn.title = 'Sobrescreve o mesmo arquivo, sem criar uma versão nova';
   } else if(!_suportaGravacaoDireta()){
-    btn.style.display = 'flex';
-    btn.innerHTML = '&#128190; Salvar (mesmo nome)';
-    btn.title = 'Neste navegador não é possível gravar por cima do arquivo. Baixa uma cópia com o mesmo nome para você substituir o original.';
+    // Celular: não existe gravação por cima. O caminho principal passa a ser o menu de
+    // compartilhamento (Drive / Arquivos); o download com o mesmo nome vira alternativa.
+    if(share && _podeCompartilharArquivos()){
+      share.style.display = 'flex';
+      if(hint) hint.style.display = 'block';
+      btn.style.display = 'flex';
+      btn.className = 'btn btn-ghost btn-sm';
+      btn.innerHTML = '&#128190; Baixar (mesmo nome)';
+      btn.title = 'Baixa uma cópia com o mesmo nome, para você substituir o original manualmente.';
+    } else {
+      btn.style.display = 'flex';
+      btn.className = 'btn btn-save btn-sm';
+      btn.innerHTML = '&#128190; Salvar (mesmo nome)';
+      btn.title = 'Neste navegador não é possível gravar por cima do arquivo. Baixa uma cópia com o mesmo nome para você substituir o original.';
+    }
   } else {
     btn.style.display = 'none';
   }
@@ -2464,13 +2503,42 @@ function _updateOverwriteBtn(){
 // gravar por cima. O nome idêntico facilita substituir o original na pasta ou no Drive.
 function baixarComMesmoNome(){
   var blob = _workbookToBlob(_buildWorkbook());
-  var nome = fileName && /\.xlsx$/i.test(fileName) ? fileName : 'REBANHO_BASE_DADOS.xlsx';
+  var nome = _nomeArquivoAtual();
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url; a.download = nome; a.click();
   setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
   toast('Baixado: '+nome+' — substitua o arquivo original por este.','ok');
   clearDirty();
+}
+
+// ── Envia o banco pelo menu de compartilhamento do aparelho (Google Drive, Salvar em Arquivos…) ──
+// Precisa ser chamada dentro do clique do usuário: o navegador bloqueia navigator.share fora de
+// um gesto. Por isso a planilha é montada de forma síncrona, sem await antes do share.
+function compartilharArquivo(nomeAlternativo){
+  var nome = nomeAlternativo || _nomeArquivoAtual();
+  var arquivo;
+  try{
+    arquivo = new File([_workbookToBlob(_buildWorkbook())], nome, {type:MIME_XLSX});
+  }catch(e){
+    toast('Erro ao gerar o arquivo: '+e.message,'err');
+    return;
+  }
+  if(!navigator.share || !navigator.canShare || !navigator.canShare({files:[arquivo]})){
+    baixarComMesmoNome();
+    return;
+  }
+  navigator.share({
+    files:[arquivo],
+    title: nome,
+    text: 'Banco de dados do Gestor de Rebanho — IBS Agropecuária'
+  }).then(function(){
+    toast('Arquivo enviado. No Drive, substitua a versão anterior por "'+nome+'".','ok');
+    clearDirty();
+  }).catch(function(err){
+    if(err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) return;
+    toast('Não foi possível compartilhar. Use "Baixar (mesmo nome)".','err');
+  });
 }
 
 function goTab(tab){
@@ -3294,7 +3362,7 @@ function _buildWorkbook(){
 
 function _workbookToBlob(wb){
   var wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-  return new Blob([wbout], {type:'application/octet-stream'});
+  return new Blob([wbout], {type: MIME_XLSX});
 }
 
 // Compatibilidade: chamadas antigas a exportXLSX() continuam funcionando.
@@ -3302,8 +3370,6 @@ function exportXLSX(){ salvarComoNovaVersao(); }
 
 // ── Salva uma copia NOVA (nome com data/hora), via "Salvar como" nativo ou download ──
 function salvarComoNovaVersao(){
-  var blob = _workbookToBlob(_buildWorkbook());
-
   // Gerar nome versionado com timestamp
   var _now=new Date();
   var _stamp=_now.getFullYear()+String(_now.getMonth()+1).padStart(2,'0')+String(_now.getDate()).padStart(2,'0')
@@ -3313,6 +3379,7 @@ function salvarComoNovaVersao(){
 
   // Tenta usar showSaveFilePicker (Salvar como nativo) se disponivel
   if(window.showSaveFilePicker){
+    var blob = _workbookToBlob(_buildWorkbook());
     window.showSaveFilePicker({
       suggestedName: _vName,
       types:[{description:'Planilha Excel',accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx']}}]
@@ -3331,9 +3398,12 @@ function salvarComoNovaVersao(){
     }).catch(function(err){
       if(err.name!=='AbortError') toast('Erro ao salvar: '+err.message,'err');
     });
+  } else if(_podeCompartilharArquivos()){
+    // Celular: abre o menu de compartilhamento para mandar a cópia versionada direto pro Drive.
+    compartilharArquivo(_vName);
   } else {
     // Fallback: download normal
-    var url = URL.createObjectURL(blob);
+    var url = URL.createObjectURL(_workbookToBlob(_buildWorkbook()));
     var a = document.createElement('a');
     a.href = url;
     a.download = _vName;
