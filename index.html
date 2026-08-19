@@ -492,12 +492,14 @@ tr:hover td{background:#fafaf7}
       <button class="nb" onclick="goRepTab('historico')" id="nb-rep-historico"><span class="ic">&#128200;</span>Histórico Reprod.</button>
       <button class="nb" onclick="goTab('reprodutores')" id="nb-reprodutores"><span class="ic">&#9878;</span>Cadastro Reprodutores</button>
       <button class="nb" onclick="goRepTab('dash-rep')" id="nb-rep-dash-rep"><span class="ic">&#128293;</span>Dashboard Reprod.</button>
+      <div class="sb-sec">Relatórios</div>
+      <button class="nb" onclick="goTab('relatorios')" id="nb-relatorios"><span class="ic">&#128438;</span>Relatórios</button>
       <div class="sb-sec">Financeiro</div>
       <button class="nb" onclick="goTab('financeiro')" id="nb-financeiro"><span class="ic">&#128176;</span>Controle Financeiro</button>
       <button class="nb" onclick="goTab('fin-dashboard')" id="nb-fin-dashboard"><span class="ic">&#128202;</span>Dashboard Financeiro</button>
     </div>
     <div class="sb-bottom">
-      <button class="btn btn-ghost btn-sm" onclick="gerarRelatorio()" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px">&#128438; Imprimir / PDF</button>
+      <button class="btn btn-ghost btn-sm" onclick="goTab('relatorios')" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px">&#128438; Relatórios / PDF</button>
       <div id="nv-painel" style="display:none;background:rgba(255,255,255,.06);border-radius:var(--rsm);padding:8px 10px;margin-bottom:8px">
         <div id="nv-status" style="font-size:11px;font-weight:600;line-height:1.5">&#9729; Conectando...</div>
         <div id="nv-quem" style="font-size:10px;color:#b0bec5;margin-top:2px;overflow:hidden;text-overflow:ellipsis"></div>
@@ -514,11 +516,23 @@ tr:hover td{background:#fafaf7}
       <div class="sb-file-name" id="sb-file-info"><strong>Nenhum arquivo</strong>Clique em Carregar para começar</div>
       <div id="sb-dirty" style="display:none;font-size:11px;color:#ffb74d;padding:0 8px 4px;line-height:1.4">&#9679; Alterações não salvas — auto-save em 1,5s</div>
       <div id="sb-autosave" style="font-size:10px;padding:0 8px 8px;color:#81c784;line-height:1.5"></div>
-      <button class="btn btn-save btn-sm" id="sb-share-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="compartilharArquivo()" title="Abre o menu de compartilhamento do celular para enviar o arquivo direto ao Google Drive">&#9729; Salvar no Drive</button>
-      <button class="btn btn-save btn-sm" id="sb-overwrite-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="sobrescreverArquivo()" title="Sobrescreve o mesmo arquivo, sem criar uma versão nova">&#9851; Sobrescrever arquivo</button>
-      <button class="btn btn-save btn-sm" id="sb-save-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="salvarComoNovaVersao()" title="Salva uma copia nova com data/hora no nome">&#128190; Salvar nova versão</button>
-      <div id="sb-share-hint" style="display:none;font-size:10px;color:var(--tx2);padding:0 8px 8px;line-height:1.5">No celular: toque em <strong>Salvar no Drive</strong> &rarr; escolha <em>Google Drive</em> ou <em>Salvar em Arquivos</em> e substitua o arquivo anterior.</div>
-      <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="abrirArquivo('fi2')">&#128193; Carregar .xlsx</button>
+
+      <!-- ── Seção Backup ──────────────────────────────────────────────────
+           Com a nuvem ligada, o .xlsx deixa de ser o meio de guardar os dados
+           e vira apenas backup. Fica recolhida para não competir com o painel
+           da nuvem; quando não há nuvem, abre sozinha (é o único jeito de salvar). -->
+      <div id="sb-backup-cab" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 8px;border-radius:var(--rsm);background:rgba(255,255,255,.04);margin-bottom:6px" onclick="toggleBackup()">
+        <span style="font-size:11px;font-weight:600;color:#cfd8dc">&#128190; Backup em arquivo</span>
+        <span id="sb-backup-seta" style="font-size:10px;color:#90a4ae">&#9660;</span>
+      </div>
+      <div id="sb-backup-corpo">
+        <div id="sb-backup-nota" style="display:none;font-size:10px;color:#90a4ae;padding:0 8px 6px;line-height:1.5">Seus dados já estão salvos na nuvem. Isto aqui é só uma cópia extra, para guardar fora do sistema.</div>
+        <button class="btn btn-save btn-sm" id="sb-share-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="compartilharArquivo()" title="Abre o menu de compartilhamento do celular para enviar o arquivo direto ao Google Drive">&#9729; Salvar no Drive</button>
+        <button class="btn btn-save btn-sm" id="sb-overwrite-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="sobrescreverArquivo()" title="Sobrescreve o mesmo arquivo, sem criar uma versão nova">&#9851; Sobrescrever arquivo</button>
+        <button class="btn btn-save btn-sm" id="sb-save-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="salvarComoNovaVersao()" title="Salva uma copia nova com data/hora no nome">&#128190; Salvar nova versão</button>
+        <div id="sb-share-hint" style="display:none;font-size:10px;color:var(--tx2);padding:0 8px 8px;line-height:1.5">No celular: toque em <strong>Salvar no Drive</strong> &rarr; escolha <em>Google Drive</em> ou <em>Salvar em Arquivos</em> e substitua o arquivo anterior.</div>
+        <button class="btn btn-ghost btn-sm" id="sb-carregar-btn" style="width:100%;justify-content:center" onclick="abrirArquivo('fi2')">&#128193; Carregar .xlsx</button>
+      </div>
       <input type="file" id="fi2" accept=".xlsx" style="display:none" onchange="loadXLSX(this)">
     </div>
   </div>
@@ -535,7 +549,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.0.0</span><br>
+              Versão: <span id="app-versao">2.3.1</span><br>
               Data da versão: <span id="app-versao-data">19/08/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -1569,6 +1583,8 @@ tr:hover td{background:#fafaf7}
           </div>
         </div>
 
+        <div id="baixa-painel-reuso" style="display:none;margin-bottom:14px"></div>
+
         <div class="tcard">
           <div class="tbar">
             <span style="font-size:13px;font-weight:600">Histórico de saídas</span>
@@ -1762,6 +1778,62 @@ tr:hover td{background:#fafaf7}
           </div>
         </div>
       </div><!-- /tab-fin-dashboard -->
+
+      <!-- RELATÓRIOS -->
+      <div id="tab-relatorios" style="display:none">
+        <div class="sh">
+          <div class="sh-title">&#128438; Relatórios <small>Escolha o que entra no documento e o período</small></div>
+        </div>
+
+        <div class="grid g2" style="align-items:start;gap:14px">
+
+          <div class="tcard">
+            <div class="tbar"><span style="font-size:13px;font-weight:600">1. O que incluir</span>
+              <span style="display:flex;gap:6px">
+                <button class="btn btn-ghost btn-sm" style="font-size:10px" onclick="relMarcarTodos(true)">Todos</button>
+                <button class="btn btn-ghost btn-sm" style="font-size:10px" onclick="relMarcarTodos(false)">Nenhum</button>
+              </span>
+            </div>
+            <div id="rel-blocos" style="padding:14px 16px"></div>
+          </div>
+
+          <div>
+            <div class="tcard" style="margin-bottom:14px">
+              <div class="tbar"><span style="font-size:13px;font-weight:600">2. Período</span></div>
+              <div style="padding:14px 16px">
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+                  <button class="san-lote-cat" onclick="relDefinirPeriodo('mes')">Este mês</button>
+                  <button class="san-lote-cat" onclick="relDefinirPeriodo('ano')">Este ano</button>
+                  <button class="san-lote-cat" onclick="relDefinirPeriodo('12m')">Últimos 12 meses</button>
+                  <button class="san-lote-cat" onclick="relDefinirPeriodo('tudo')">Tudo</button>
+                </div>
+                <div class="grid g2">
+                  <div class="fg"><label>De</label><input type="text" id="rel-ini" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);relAtualizarResumo()"></div>
+                  <div class="fg"><label>Até</label><input type="text" id="rel-fim" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);relAtualizarResumo()"></div>
+                </div>
+                <div style="font-size:11px;color:var(--tx2);line-height:1.5">
+                  Em branco = todo o histórico. O período só afeta os blocos marcados com <span class="bdg bdg-diag" style="font-size:9px">usa período</span>; os demais mostram sempre a situação atual.
+                </div>
+              </div>
+            </div>
+
+            <div class="tcard">
+              <div class="tbar"><span style="font-size:13px;font-weight:600">3. Gerar</span></div>
+              <div style="padding:14px 16px">
+                <div class="fg"><label>Título do documento</label>
+                  <input type="text" id="rel-titulo" value="Relatório do Rebanho" placeholder="Relatório do Rebanho"></div>
+                <div id="rel-resumo" style="font-size:12px;color:var(--tx2);padding:8px 10px;background:var(--bg2);border-radius:var(--rsm);margin-bottom:12px;line-height:1.5"></div>
+                <button class="btn btn-primary" id="rel-btn-gerar" style="width:100%;justify-content:center" onclick="relGerar()">&#128438; Gerar relatório</button>
+                <div style="font-size:11px;color:var(--tx2);margin-top:10px;line-height:1.5">
+                  Abre numa aba nova, com botão para imprimir ou salvar em PDF. Se nada abrir, libere os pop-ups para este site.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /tab-relatorios -->
+
 
       <!-- IATF -->
 
@@ -2233,7 +2305,7 @@ function parseWB(wb){
     for(var i=3;i<rows.length;i++){
       var r=rows[i]; var b=cl(r[0]); if(!b) continue;
       var baixaTagLoaded=cl(r[6])||undefined;
-      DB_baixas.push({brinco:b,data:xlsxDateToStr(r[1]),tipo:cl(r[2]),motivo:cl(r[3]),comprador:cl(r[4]),valor:cl(r[5]),_baixaTag:baixaTagLoaded});
+      DB_baixas.push({brinco:b,data:xlsxDateToStr(r[1]),tipo:cl(r[2]),motivo:cl(r[3]),comprador:cl(r[4]),valor:cl(r[5]),_baixaTag:baixaTagLoaded,brincoOriginal:cl(r[7])});
       var baixaNum=parseInt(((baixaTagLoaded||'').match(/^baixa-(\d+)$/)||[])[1])||0;
       if(baixaNum>=_baixaNextId) _baixaNextId=baixaNum+1;
     }
@@ -2390,7 +2462,7 @@ function parseWB(wb){
     for(var ii=3;ii<rowsInter.length;ii++){
       var ri=rowsInter[ii]; var bi=cl(ri[0]); if(!bi) continue;
       if(!fcInter[bi]) fcInter[bi]=[];
-      fcInter[bi].push({data:xlsxDateToStr(ri[1]), desc:cl(ri[2])});
+      fcInter[bi].push({data:xlsxDateToStr(ri[1]), desc:cl(ri[2]), _marca:cl(ri[3])});
     }
   }
 }
@@ -2607,6 +2679,7 @@ function renderAll(){
   reconciliarNumPartos();
   reconciliarCondicaoProtocolado();
   reconciliarGeneroTerneiro();
+  reconciliarIntercorrenciasReproducao();
   updateInfo();
   // Render current visible tab immediately
   renderTab(currentTab);
@@ -2631,6 +2704,7 @@ function renderTab(tab){
   else if(tab==='financeiro')   renderFinanceiro();
   else if(tab==='fin-dashboard') renderFinDashboard();
   else if(tab==='dashboard')    renderDash();
+  else if(tab==='relatorios')   renderRelatorios();
   // estoque e ficha só renderizam sob demanda (no goTab)
 }
 
@@ -2817,7 +2891,7 @@ function renderReg(){
       +'<td>'+fmtD(dg.nasc)+'</td>'
       +'<td>'+calcAge(dg.nasc)+'</td>'
       +'<td>'+ultPeso+'</td>'
-      +'<td>'+(dg.mae||'-')+'</td>'
+      +'<td>'+(dg.mae?brincoHistLbl(dg.mae):'-')+'</td>'
       +'<td>'+(dg.pai||'-')+'</td>'
       +'<td>'+(nomeGenealogico(dg.avo)||'-')+'</td>'
       +'<td>'+(nomeGenealogico(dg.avoPat)||'-')+'</td>'
@@ -3252,8 +3326,8 @@ function _buildWorkbook(){
   XLSX.utils.book_append_sheet(wb,wsSd,'Doses Semen');
 
   // Saidas do Rebanho
-  var baixaD=[['SAIDAS DO REBANHO'],['Vendas, mortes, abates e transferencias. Retira o animal da contagem de efetivo ativo.'],['Brinco','Data','Tipo','Motivo','Comprador','Valor (R$)','Tag Vinculo Receita']]
-    .concat(DB_baixas.map(function(r){return[r.brinco,r.data?exDate(r.data):null,r.tipo||'',r.motivo||'',r.comprador||'',r.valor||'',r._baixaTag||''];}));
+  var baixaD=[['SAIDAS DO REBANHO'],['Vendas, mortes, abates e transferencias. Retira o animal da contagem de efetivo ativo.'],['Brinco','Data','Tipo','Motivo','Comprador','Valor (R$)','Tag Vinculo Receita','Brinco Original']]
+    .concat(DB_baixas.map(function(r){return[r.brinco,r.data?exDate(r.data):null,r.tipo||'',r.motivo||'',r.comprador||'',r.valor||'',r._baixaTag||'',r.brincoOriginal||''];}));
   var wsBaixa=XLSX.utils.aoa_to_sheet(baixaD);
   DB_baixas.forEach(function(r,i){var c=wsBaixa[XLSX.utils.encode_cell({r:3+i,c:1})];if(c&&r.data)c.z='dd/mm/yyyy';});
   XLSX.utils.book_append_sheet(wb,wsBaixa,'Saidas do Rebanho');
@@ -3368,10 +3442,10 @@ function _buildWorkbook(){
   // Intercorrências (Ficha do Animal) — inclui registros automáticos de mudança de condição
   var interLinhas = [];
   Object.keys(fcInter).forEach(function(b){
-    (fcInter[b]||[]).forEach(function(it){ interLinhas.push([b,it.data?exDate(it.data):null,it.desc||'']); });
+    (fcInter[b]||[]).forEach(function(it){ interLinhas.push([b,it.data?exDate(it.data):null,it.desc||'',it._marca||'']); });
   });
   if(interLinhas.length){
-    var interD=[['INTERCORRÊNCIAS'],['Anotações da Ficha do Animal, incluindo registros automáticos de mudança de condição.'],['Brinco','Data','Descrição']]
+    var interD=[['INTERCORRÊNCIAS'],['Anotações da Ficha do Animal, incluindo registros automáticos de mudança de condição.'],['Brinco','Data','Descrição','Marcador (uso interno)']]
       .concat(interLinhas);
     var wsInter=XLSX.utils.aoa_to_sheet(interD);
     interLinhas.forEach(function(r,i){
@@ -3550,7 +3624,7 @@ function sanMostrarInfo(rec){
   if(rec.cat)  partes.push('<span><b>Categoria:</b> '+rec.cat+'</span>');
   if(rec.gen)  partes.push('<span><b>Genero:</b> '+rec.gen+'</span>');
   if(dg.nasc)  partes.push('<span><b>Nasc.:</b> '+dg.nasc+'</span>');
-  if(dg.mae)   partes.push('<span><b>Mae:</b> '+dg.mae+'</span>');
+  if(dg.mae)   partes.push('<span><b>Mae:</b> '+brincoHistLbl(dg.mae)+'</span>');
   document.getElementById('san-info-detalhes').innerHTML=partes.join('');
   document.getElementById('san-animal-info').style.display='block';
 }
@@ -4296,6 +4370,17 @@ function renderDash(){
       txt:'<strong>'+cfProx.length+' conta(s) fixa(s)</strong> vencem nos próximos dias: '+cfProx.map(function(s){return s.conta.descricao+' (dia '+s.dia+')';}).join(', ')+'.'});
   }
 
+  // Datas de nascimento em conflito entre o registro do parto e o cadastro do terneiro.
+  // Silenciosas por natureza: o animal aparece numa tela e some de outra.
+  if(typeof divergenciasNascimento === 'function'){
+    var divN = divergenciasNascimento();
+    if(divN.length) alerts.push({ic:'&#128197;',cor:'var(--red)',
+      txt:'<strong>'+divN.length+' nascimento(s) com data divergente</strong>: terneiro '
+        + divN.slice(0,4).map(function(d){ return d.terneiro+' (parto '+fmtD(d.partoData)+' x cadastro '+fmtD(d.nascCadastro)+')'; }).join(', ')
+        + (divN.length>4 ? ' e outros' : '')
+        + '. Some dos relatórios do período — corrija a data errada.'});
+  }
+
   var alertCard = _id('dash-alertas-card');
   if(!alerts.length){
     alertEl.innerHTML='<div class="dash-empty"><div class="dash-empty-ic">&#10003;</div>Rebanho em dia — sem pendências detectadas!</div>';
@@ -4948,7 +5033,11 @@ function condicaoUnificada(brinco){
     ? ('DG '+fmtD(dataUnificada)+(origemUnificada==='IATF'?' &middot; IATF':''))
     : '';
 
-  if(dgRec.condAtual==='Amamentando'){
+  // Amamentando derivado do parto (ver estadoAmamentacao): não depende mais de condAtual,
+  // que era sobrescrito quando a vaca entrava em protocolo durante a lactação.
+  var _amamDer = (typeof estadoAmamentacao==='function') ? estadoAmamentacao(brinco) : {ativo:false};
+  if(_amamDer.ativo){
+    if(!dgRec.dataAmamentacao && _amamDer.desde) dgRec.dataAmamentacao = _amamDer.desde;
     tagCls='fc-tag-amamentando'; tagLbl='Amamentando'; tagSub='';
     if(dgRec.dataAmamentacao){
       var diasAmam = Math.floor((new Date() - toDate(dgRec.dataAmamentacao)) / 86400000);
@@ -5746,10 +5835,13 @@ function salvarBaixa(){
     }
   }
 
-  // Remove todos os dados do animal das demais abas — libera o brinco para novo cadastro.
-  purgarDadosAnimal(b);
+  // Arquiva o animal sob um brinco virtual (V1, V2...) levando junto todo o histórico e
+  // reapontando os descendentes. O número original fica livre, sem resíduo nenhum.
+  var _virtual = arquivarAnimal(b, 'saída do rebanho ('+tipo+')');
+  var _regBaixa = DB_baixas[DB_baixas.length-1];
+  if(_regBaixa){ _regBaixa.brincoOriginal = b; _regBaixa.brinco = _virtual; }
 
-  toast('Saída registrada: '+b+' ('+tipo+')','ok');
+  toast('Saída registrada: '+b+' ('+tipo+') — arquivado como '+_virtual,'ok');
   cancelarBaixa();
   markDirty(); renderBaixas(); renderDash(); renderReg(); renderFinanceiro(); renderFinDashboard();
   renderPes(); renderSan(); renderMi(); renderHistorico(); renderDiagnostico(); renderAgenda(); renderRepDash();
@@ -5804,8 +5896,10 @@ function salvarBaixaLote(){
       valor: tipo==='Venda' ? valorPorAnimal : '',
       _baixaTag: tag
     });
-    // Remove todos os dados do animal das demais abas — libera o brinco para novo cadastro.
-    purgarDadosAnimal(b);
+    // Arquiva sob brinco virtual, preservando histórico e genealogia (ver arquivarAnimal).
+    var _v = arquivarAnimal(b, 'saída em lote ('+tipo+')');
+    var _rb = DB_baixas[DB_baixas.length-1];
+    if(_rb){ _rb.brincoOriginal = b; _rb.brinco = _v; }
   });
 
   if(tipo==='Venda'){
@@ -5871,6 +5965,7 @@ function renderBaixas(){
   var elPerdas=document.getElementById('baixa-kpi-perdas'); if(elPerdas) elPerdas.textContent = (porTipo['Morte']||0)+(porTipo['Abate']||0);
 
   document.getElementById('baixa-cnt').textContent = DB_baixas.length+' registro(s)';
+  renderPainelReuso();
 
   var lista = baixaTipoFiltro ? DB_baixas.filter(function(b){return b.tipo===baixaTipoFiltro;}) : DB_baixas;
   if(!lista.length){
@@ -5886,7 +5981,8 @@ function renderBaixas(){
     var origIdx = DB_baixas.indexOf(r);
     var tipoCor = r.tipo==='Venda' ? 'color:var(--grnt)' : (r.tipo==='Morte'||r.tipo==='Abate') ? 'color:var(--red)' : 'color:var(--tx2)';
     return '<tr>'
-      +'<td><strong>'+r.brinco+'</strong></td>'
+      +'<td><strong>'+(r.brincoOriginal||r.brinco)+'</strong>'
+        +(r.brincoOriginal?'<br><span style="font-size:10px;color:var(--tx3)">arquivo '+r.brinco+'</span>':'')+'</td>'
       +'<td>'+fmtD(r.data)+'</td>'
       +'<td style="'+tipoCor+';font-weight:600">'+r.tipo+'</td>'
       +'<td>'+(r.comprador||'-')+'</td>'
@@ -7513,51 +7609,6 @@ function hasDgDup(protId, brinco){
   });
 }
 
-function gerarRelatorio(){
-  var w=window.open('','_blank');
-  var hoje=todayBR();
-  var cats={};
-  DB.id.forEach(function(r){cats[r.cat||'N/A']=(cats[r.cat||'N/A']||0)+1;});
-  var catRows=Object.keys(cats).sort().map(function(c){
-    return '<tr><td>'+c+'</td><td align="right">'+cats[c]+'</td></tr>';
-  }).join('');
-  var prenhas=DB.rep.filter(function(r){return (r.cond||'').toLowerCase().indexOf('prenh')!==-1;}).length;
-  var vazias=DB.rep.filter(function(r){return (r.cond||'').toLowerCase().indexOf('vazia')!==-1;}).length;
-  var lastPeso={};
-  DB.pes.forEach(function(r){if(!lastPeso[r.brinco]||toDate(r.data)>toDate(lastPeso[r.brinco].data))lastPeso[r.brinco]=r;});
-  var catPesos={};
-  DB.id.forEach(function(r){var p=lastPeso[r.brinco];if(p){var c=r.cat||'N/A';if(!catPesos[c])catPesos[c]=[];catPesos[c].push(parseFloat(p.peso)||0);}});
-  var pesoRows=Object.keys(catPesos).sort().map(function(c){
-    var arr=catPesos[c],avg=Math.round(arr.reduce(function(a,v){return a+v;},0)/arr.length);
-    return '<tr><td>'+c+'</td><td align="right">'+arr.length+'</td><td align="right">'+avg+' kg</td></tr>';
-  }).join('');
-  var gmdCats=calcGMDsByCategory();
-  var gmdRows=Object.keys(gmdCats).sort(function(a,b){return gmdCats[b].avg-gmdCats[a].avg;}).map(function(c){
-    return '<tr><td>'+c+'</td><td align="right">'+gmdCats[c].avg+' g/dia</td><td align="right">'+gmdCats[c].n+'</td></tr>';
-  }).join('');
-  var sanRows=DB.san.slice().sort(function(a,b){var da=toDate(a.data),db=toDate(b.data);if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return db-da;}).slice(0,20).map(function(r){
-    return '<tr><td>'+r.brinco+'</td><td>'+fmtD(r.data)+'</td><td>'+(r.meds||r.desc||'')+'</td><td>'+(r.cond||'')+'</td></tr>';
-  }).join('');
-  var css='body{font-family:Arial,sans-serif;font-size:12px;color:#222;margin:24px}h1{font-size:18px;margin-bottom:4px}h2{font-size:14px;margin:18px 0 8px;border-bottom:1px solid #ccc;padding-bottom:4px}table{border-collapse:collapse;width:100%;margin-bottom:16px}th{background:#f0f0f0;padding:5px 8px;text-align:left;border:1px solid #ccc}td{padding:4px 8px;border:1px solid #ddd}tr:nth-child(even)td{background:#f9f9f9}.footer{font-size:10px;color:#888;margin-top:24px;border-top:1px solid #eee;padding-top:8px}@media print{button{display:none}}';
-  var parts=['<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">'];
-  parts.push('<title>Relatorio Rebanho - '+hoje+'</title>');
-  parts.push('<style>'+css+'</style></head><body>');
-  parts.push('<h1>Relatorio do Rebanho</h1>');
-  parts.push('<p style="color:#666;font-size:11px">Gerado em: '+hoje+' | Total: '+DB.id.length+' animais</p>');
-  parts.push('<button onclick="window.print()" style="padding:6px 14px;background:#2e7d32;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-bottom:16px">Imprimir / Salvar PDF</button>');
-  parts.push('<h2>Composicao do Rebanho</h2><table><tr><th>Categoria</th><th>Qtd</th></tr>'+catRows+'</table>');
-  parts.push('<h2>Situacao Reprodutiva</h2><table><tr><th>Indicador</th><th>Valor</th></tr>');
-  parts.push('<tr><td>Total com dados reprodutivos</td><td>'+DB.rep.length+'</td></tr>');
-  parts.push('<tr><td>Prenhas</td><td>'+prenhas+'</td></tr>');
-  parts.push('<tr><td>Vazias</td><td>'+vazias+'</td></tr></table>');
-  if(pesoRows) parts.push('<h2>Peso Medio por Categoria</h2><table><tr><th>Categoria</th><th>Animais</th><th>Peso Medio</th></tr>'+pesoRows+'</table>');
-  if(gmdRows) parts.push('<h2>GMD Médio por Categoria</h2><table><tr><th>Categoria</th><th>GMD</th><th>Animais</th></tr>'+gmdRows+'</table>');
-  if(sanRows) parts.push('<h2>Ultimos Manejos Sanitarios</h2><table><tr><th>Brinco</th><th>Data</th><th>Medicações</th><th>Condicao</th></tr>'+sanRows+'</table>');
-  parts.push('<div class="footer">Relatorio gerado pelo sistema de Gerenciamento de Rebanho Bovino.</div></body></html>');
-  w.document.write(parts.join(''));
-  w.document.close();
-}
-
 // ─── AUTO-SAVE / RECOVERY ──────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
 // AUTOSAVE — salva TODOS os dados em localStorage após cada alteração
@@ -7595,8 +7646,7 @@ function autoSave(){
       // Faltavam na lista acima e por isso não voltavam numa recuperação de emergência:
       // as contas fixas e as intercorrências da Ficha do Animal.
       DB_contasfixas:(typeof DB_contasfixas!== 'undefined') ? DB_contasfixas: [],
-      fcInter:       (typeof fcInter       !== 'undefined') ? fcInter       : {},
-      _baixaNextId:  (typeof _baixaNextId  !== 'undefined') ? _baixaNextId  : 1
+      fcInter:       (typeof fcInter       !== 'undefined') ? fcInter       : {}
     };
     var json = JSON.stringify(snapshot);
     localStorage.setItem(_autoSaveKey, json);
@@ -8008,7 +8058,9 @@ function reconciliarCondicaoProtocolado(){
     var novaCond = (ultimoDg.resultado||'').toLowerCase().indexOf('prenh')===0 ? 'Prenhe' : 'Vazia';
     dg.condAtual = novaCond;
     dg.dataInterRepro = '';
-    dg.dataAmamentacao = '';
+    // NÃO apagar dataAmamentacao: a vaca pode ter sido protocolada durante a lactação
+    // e continua amamentando até o terneiro ser desmamado. Apagar aqui fazia a condição
+    // "Amamentando" desaparecer para sempre depois do diagnóstico.
     if(novaCond==='Prenhe') dg.previsaoRepro = 'Prenhe';
     corrigidos++;
     fcLogEstado(dg.brinco, 'Condição corrigida automaticamente de Protocolado para '+novaCond+' (DG já registrado)', ultimoDg.dataDG);
@@ -8315,8 +8367,21 @@ function fcBuscar(){
     // (purgarDadosAnimal) — o número está livre para um novo cadastro.
     var baixaHist = DB_baixas.filter(function(r){return r.brinco===v;})
       .sort(function(a,b){ var da=toDate(a.data),db=toDate(b.data); if(!da&&!db)return 0; if(!da)return 1; if(!db)return -1; return db-da; })[0];
+    // Animal arquivado (brinco virtual): o histórico foi preservado, então a ficha
+    // continua consultável — é isso que dá rastreabilidade a quem veio antes.
+    if(brincoEhVirtual(v) && DB.dg.find(function(d){ return d.brinco===v; })){
+      fcRender(v);
+      var _bx = document.getElementById('fc-result');
+      if(_bx) _bx.insertAdjacentHTML('afterbegin',
+        '<div style="background:var(--ambbg);border:1px solid var(--amb);border-radius:var(--rsm);padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--tx)">'
+        +'<strong>&#128230; Animal arquivado.</strong> Saiu do rebanho'
+        +(baixaHist?' em '+fmtD(baixaHist.data)+' ('+baixaHist.tipo+')':'')
+        +(brincoOriginalDe(v)?' — usava o brinco <strong>'+brincoOriginalDe(v)+'</strong>, hoje livre para outro animal':'')
+        +'. Ficha mantida apenas para consulta e rastreabilidade genealógica.</div>');
+      return;
+    }
     document.getElementById('fc-result').innerHTML = baixaHist
-      ? '<div class="fc-nf">Brinco <strong>'+v+'</strong> teve saída registrada em '+fmtD(baixaHist.data)+' ('+baixaHist.tipo+'). Os dados de manejo foram removidos ao dar baixa — consulte o histórico completo na aba <strong>Saída do Rebanho</strong>. Este número já está disponível para um novo cadastro.</div>'
+      ? '<div class="fc-nf">Brinco <strong>'+v+'</strong> teve saída registrada em '+fmtD(baixaHist.data)+' ('+baixaHist.tipo+'). Consulte o histórico na aba <strong>Saída do Rebanho</strong>. Este número já está disponível para um novo cadastro.</div>'
       : '<div class="fc-nf">Brinco <strong>'+v+'</strong> não encontrado. Verifique o cadastro em Identificação.</div>';
     return;
   }
@@ -8342,6 +8407,9 @@ function fcRender(brinco){
   var _condUni = condicaoUnificada(brinco);
   var tagCls = _condUni.cls, tagLbl = _condUni.lbl, tagSub = _condUni.sub;
   var isApta = aptaReproducao(brinco);
+  // Bandeiras simultâneas do cabeçalho (Amamentando + Protocolada + Prenhe, etc.)
+  var _fcBandeiras = condicoesAtuais(brinco);
+  var _fcAmamentando = estadoAmamentacao(brinco);
 
   // Nota: fcRender só é chamado para brincos atualmente presentes em DB.id — animais baixados
   // são removidos do cadastro (purgarDadosAnimal), então qualquer animal exibido aqui está
@@ -8357,7 +8425,10 @@ function fcRender(brinco){
   // desmamado — a condição da vaca continua "Amamentando" até o próximo evento reprodutivo, mas
   // o terneiro em si já não está mais ao pé dela.
   var fieldsTerneiro=[];
-  if(dgRec.condAtual==='Amamentando'){
+  // Antes dependia de condAtual==='Amamentando'. Como protocolar a vaca sobrescrevia esse
+  // campo, os dados do terneiro sumiam da ficha da mãe assim que ela entrava em IATF.
+  // Agora usa o estado derivado do parto, que não se perde.
+  if(_fcAmamentando.ativo){
     var dgPartoAtivo = DB_dg_reg.filter(function(r){ return r.brinco===brinco && r.partoResultado==='pariu'; })
       .sort(function(a,b){
         var da=toDate(a.partoData), db=toDate(b.partoData);
@@ -8383,7 +8454,7 @@ function fcRender(brinco){
     ['Ult. pesagem', lastPeso],
     ['Campo / Categoria', idRec.cat||'—'],
     ['Pai', dgRec.pai||'—'],
-    ['Mãe (brinco)', dgRec.mae||'—'],
+    ['Mãe (brinco)', dgRec.mae ? brincoHistLbl(dgRec.mae) : '—'],
   ];
   if(dgRec.avo) fields.push(['Avô Materno', nomeGenealogico(dgRec.avo)]);
   if(dgRec.avoPat) fields.push(['Avô Paterno', nomeGenealogico(dgRec.avoPat)]);
@@ -8653,9 +8724,17 @@ function fcRender(brinco){
         +'<div><div class="fc-brinco">Brinco '+brinco+'</div>'
         +'<div class="fc-sub">'+(idRec.cat||'—')+' &bull; '+(idRec.raca||'—')+' &bull; Genero: '+(idRec.gen||'—')+'</div></div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">'
-          +'<span class="fc-tag '+tagCls+'">'+tagLbl+'</span>'
-          +(isApta?'<span class="fc-tag fc-tag-apta">&#10003; Apta para reprodução</span>':'')
-          +(tagSub?'<span style="font-size:10px;color:var(--tx3)">'+tagSub+'</span>':'')
+          // Todas as condições em que o animal se enquadra agora. Uma vaca pode estar
+          // Amamentando e Protocolada ao mesmo tempo, e depois Amamentando e Prenhe.
+          +'<div style="display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end">'
+          + _fcBandeiras.map(function(f){
+              return '<span class="fc-tag '+f.cls+'" title="'+String(f.sub||'').replace(/<[^>]*>/g,'')+'">'+f.lbl+'</span>';
+            }).join('')
+          + (isApta?'<span class="fc-tag fc-tag-apta">&#10003; Apta para reprodução</span>':'')
+          +'</div>'
+          + _fcBandeiras.filter(function(f){ return f.sub; }).map(function(f){
+              return '<span style="font-size:10px;color:var(--tx3)">'+f.lbl+': '+f.sub+'</span>';
+            }).join('')
           +'<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;justify-content:flex-end">'
             +'<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="fcAbrirEstado(\''+brinco+'\')">&#128260; Atualizar estado</button>'
             +'<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="fcAbrirTrocaBrinco(\''+brinco+'\')">&#127991; Trocar brinco</button>'
@@ -8699,9 +8778,25 @@ function fcRender(brinco){
                   return db-da;
                 }).map(function(it,i){
                   var origIdx=inters.indexOf(it);
+                  var auto = interEhAutomatica(it);
+                  // Linha em edição: troca o texto por campos, no lugar.
+                  if(fcIntEdit && fcIntEdit.brinco===brinco && fcIntEdit.idx===origIdx){
+                    return '<div class="fc-ev" style="flex-wrap:wrap;gap:6px;background:var(--grnbg)">'
+                      +'<input id="fc-int-edit-data" value="'+(it.data||'')+'" maxlength="10" oninput="maskDate(this)" '
+                        +'style="width:110px;flex:0 0 auto" placeholder="dd/mm/aaaa">'
+                      +'<input id="fc-int-edit-desc" value="'+String(it.desc||'').replace(/"/g,'&quot;')+'" style="flex:1;min-width:160px">'
+                      +'<button class="btn btn-primary btn-sm" onclick="fcSalvarInt(\''+brinco+'\','+origIdx+')">Salvar</button>'
+                      +'<button class="btn btn-ghost btn-sm" onclick="fcCancelarInt(\''+brinco+'\')">Cancelar</button>'
+                      +(auto?'<div style="flex-basis:100%;font-size:10px;color:var(--amb);line-height:1.5">'
+                        +'&#9888; Anotação gerada pelo sistema a partir de um evento registrado (parto, protocolo ou diagnóstico). '
+                        +'Editar o texto não altera o evento em si.</div>':'')
+                      +'</div>';
+                  }
                   return '<div class="fc-ev">'
                     +'<span class="fc-ev-date">'+fmtD(it.data)+'</span>'
-                    +'<span class="fc-ev-desc">'+it.desc+'</span>'
+                    +'<span class="fc-ev-desc">'+it.desc
+                      +(auto?' <span class="bdg bdg-na" style="font-size:9px">automática</span>':'')+'</span>'
+                    +'<button class="btn btn-ghost btn-sm" onclick="fcEditarInt(\''+brinco+'\','+origIdx+')" title="Editar">&#9998;</button>'
                     +'<button class="btn btn-danger btn-sm" onclick="fcDelInt(\''+brinco+'\','+origIdx+')" title="Excluir">&#128465;</button>'
                     +'</div>';
                 }).join('')
@@ -8969,6 +9064,42 @@ function fcAddInt(brinco){
     if(ip) ip.classList.add('active');
   },60);
   toast('Intercorrência registrada!','ok');
+}
+
+// Qual intercorrência está aberta para edição: {brinco, idx}. Uma por vez.
+var fcIntEdit = null;
+
+function fcEditarInt(brinco, idx){
+  fcIntEdit = { brinco:brinco, idx:idx };
+  fcRender(brinco);
+  setTimeout(function(){
+    var el=document.getElementById('fc-int-edit-desc');
+    if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  }, 60);
+}
+
+function fcCancelarInt(brinco){
+  fcIntEdit = null;
+  fcRender(brinco);
+}
+
+function fcSalvarInt(brinco, idx){
+  var lista = fcInter[brinco];
+  if(!lista || !lista[idx]){ fcIntEdit=null; fcRender(brinco); return; }
+  var data = (document.getElementById('fc-int-edit-data')||{}).value || '';
+  var desc = ((document.getElementById('fc-int-edit-desc')||{}).value || '').trim();
+  data = data.trim();
+  if(data && !validDate(data)){ toast('Data inválida. Use dd/mm/aaaa','err'); return; }
+  if(data && dataEhFutura(data)){ toast('Data não pode ser futura','err'); return; }
+  if(!desc){ toast('A descrição não pode ficar vazia','err'); return; }
+  lista[idx].data = data;
+  lista[idx].desc = desc;
+  // _marca é preservado de propósito: mantém o vínculo com o evento de origem, para a
+  // reconciliação não recriar uma cópia da anotação a cada carregamento.
+  fcIntEdit = null;
+  markDirty();
+  fcRender(brinco);
+  toast('Intercorrência atualizada','ok');
 }
 
 function fcDelInt(brinco, idx){
@@ -10740,6 +10871,885 @@ tentarReconectarArquivo();
 })();
 
 
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BRINCO VIRTUAL — arquivamento de animais que saíram do rebanho
+// ═══════════════════════════════════════════════════════════════════════════
+// O brinco é reaproveitado assim que um animal deixa a propriedade. Antes, o
+// histórico do animal antigo era simplesmente APAGADO para liberar o número —
+// e, quando sobrava alguma referência, o animal novo herdava o passado do
+// anterior (pesagens, manejos, diagnósticos, intercorrências).
+//
+// Agora, ao dar baixa, o animal é RENOMEADO para um brinco virtual (V1, V2, V3…)
+// e leva consigo todo o seu histórico. As referências genealógicas nos
+// descendentes são atualizadas junto, então a rastreabilidade continua intacta:
+// um terneiro cuja mãe era a 132 passa a apontar para V7, e V7 guarda o registro
+// de quem era a 132. O número 132 fica realmente livre, sem nenhum resíduo.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function brincoEhVirtual(b){
+  return typeof b === 'string' && /^V\d+$/.test(b);
+}
+
+// Próximo número virtual disponível. Varre tudo que existe (cadastro, baixas e
+// genealogia) para nunca reutilizar um V que já esteja em uso.
+function proximoBrincoVirtual(){
+  var maior = 0;
+  function ver(b){
+    if(!brincoEhVirtual(b)) return;
+    var n = parseInt(b.substring(1), 10);
+    if(!isNaN(n) && n > maior) maior = n;
+  }
+  DB.id.forEach(function(r){ ver(r.brinco); });
+  DB.dg.forEach(function(r){ ver(r.brinco); ver(r.mae); });
+  DB_baixas.forEach(function(r){ ver(r.brinco); });
+  DB_dg_reg.forEach(function(r){ ver(r.brinco); ver(r.terneiroBrinco); });
+  DB_iatf_reg.forEach(function(r){ ver(r.brinco); });
+  Object.keys(fcInter).forEach(ver);
+  return 'V' + (maior + 1);
+}
+
+// Qual era o número real deste animal antes da saída.
+function brincoOriginalDe(virtual){
+  var b = DB_baixas.find(function(r){ return r.brinco===virtual && r.brincoOriginal; });
+  return b ? b.brincoOriginal : '';
+}
+
+// Rótulo para telas de genealogia: "V7 (ex-132)".
+function brincoHistLbl(b){
+  if(!brincoEhVirtual(b)) return b;
+  var orig = brincoOriginalDe(b);
+  return orig ? (b + ' (ex-' + orig + ')') : b;
+}
+
+// ── Arquivamento ───────────────────────────────────────────────────────────
+// Substitui purgarDadosAnimal(). Em vez de apagar, renomeia e tira do cadastro
+// ativo. Devolve o brinco virtual atribuído.
+function arquivarAnimal(brinco, motivo){
+  var virtual = proximoBrincoVirtual();
+
+  // renomearBrinco já cuida de TODAS as referências: cadastro, pesagens, manejos,
+  // sanidade, reprodução, intercorrências, protocolos e — o que mais importa aqui —
+  // o campo "mãe" dos descendentes e o "terneiro" nos registros de parto.
+  renomearBrinco(brinco, virtual, motivo || 'saída do rebanho');
+
+  // Sai do cadastro ativo (DB.id). Todo o resto do histórico permanece,
+  // agora sob o número virtual.
+  DB.id = DB.id.filter(function(r){ return r.brinco!==virtual; });
+
+  fcLogEstado(virtual, 'Animal arquivado como '+virtual+' (brinco '+brinco+' liberado para reuso)', todayBR());
+  return virtual;
+}
+
+// Painel da aba Saída do Rebanho: lista os brincos que ainda carregam registros
+// de um animal anterior e oferece a separação, um a um.
+function renderPainelReuso(){
+  var el = document.getElementById('baixa-painel-reuso');
+  if(!el) return;
+  var lista = brincosComHistoricoAlheio();
+  if(!lista.length){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='block';
+  el.innerHTML =
+    '<div class="tcard" style="border:1px solid var(--amb)">'
+    +'<div class="tbar" style="background:var(--ambbg)"><span style="font-size:13px;font-weight:600;color:var(--tx)">&#9888; Brincos com histórico de outro animal</span></div>'
+    +'<div style="padding:12px 16px">'
+      +'<p style="font-size:12px;color:var(--tx2);line-height:1.6;margin:0 0 10px">'
+      +'Estes brincos foram reaproveitados antes do arquivamento automático existir, e ainda carregam '
+      +'registros anteriores ao nascimento do animal atual — ou seja, do animal que usava o número antes. '
+      +'Separar move esses registros para um brinco de arquivo (V1, V2…), sem apagar nada.</p>'
+      +'<table><thead><tr><th>Brinco</th><th>Nascimento</th><th>Registros alheios</th><th class="tc">Ação</th></tr></thead><tbody>'
+      + lista.map(function(a){
+          return '<tr><td><strong>'+a.brinco+'</strong></td><td>'+fmtD(a.nasc)+'</td><td>'+a.registros+'</td>'
+            +'<td class="tc"><button class="btn btn-ghost btn-sm" onclick="confirmarSeparacao(\''+a.brinco+'\')">Separar</button></td></tr>';
+        }).join('')
+      +'</tbody></table>'
+    +'</div></div>';
+}
+
+function confirmarSeparacao(brinco){
+  var alvo = brincosComHistoricoAlheio().find(function(a){ return a.brinco===brinco; });
+  if(!alvo) return;
+  showConfirm('Separar '+alvo.registros+' registro(s) anteriores ao nascimento do animal '+brinco+'?\n\n'
+    +'Eles vão para um brinco de arquivo e continuam consultáveis. Nada é apagado.', function(){
+    var r = separarHistoricoAlheio(brinco);
+    if(!r){ toast('Nada a separar.','err'); return; }
+    markDirty();
+    renderBaixas(); renderReg(); renderDash(); renderHistorico(); renderDiagnostico();
+    toast(r.movidos+' registro(s) movidos para '+r.virtual+'. O brinco '+brinco+' ficou limpo.','ok');
+  });
+}
+
+// ── Proteção para os brincos já reaproveitados antes desta versão ──────────
+// Os animais baixados no modelo antigo tiveram seus dados apagados, mas em alguns
+// casos sobraram registros presos ao número (foi o que fez terneiras recém-nascidas
+// aparecerem com diagnóstico de 2025). Como nenhum registro pode ser anterior ao
+// nascimento do próprio animal, essa data serve de corte seguro.
+function registroPertenceAoAnimal(brinco, dataRegistro){
+  if(!dataRegistro) return true;
+  var dgRec = DB.dg.find(function(d){ return d.brinco===brinco; });
+  if(!dgRec || !dgRec.nasc) return true;
+  var dn = toDate(dgRec.nasc), dr = toDate(dataRegistro);
+  if(!dn || !dr) return true;
+  // 1 dia de folga para lançamentos feitos no mesmo dia do nascimento.
+  return dr >= new Date(dn.getTime() - 86400000);
+}
+
+// Diagnóstico: aponta brincos que carregam registros anteriores ao próprio
+// nascimento — sinal de reuso feito antes do arquivamento virtual existir.
+function brincosComHistoricoAlheio(){
+  var achados = [];
+  DB.id.forEach(function(r){
+    var dgRec = DB.dg.find(function(d){ return d.brinco===r.brinco; });
+    if(!dgRec || !dgRec.nasc) return;
+    var n = 0;
+    DB.pes.forEach(function(p){ if(p.brinco===r.brinco && !registroPertenceAoAnimal(r.brinco,p.data)) n++; });
+    DB_mi.forEach(function(m){ if(m.brinco===r.brinco && !registroPertenceAoAnimal(r.brinco,m.data)) n++; });
+    DB_dg_reg.forEach(function(d){ if(d.brinco===r.brinco && !registroPertenceAoAnimal(r.brinco,d.dataDG)) n++; });
+    DB_iatf_reg.forEach(function(i){ if(i.brinco===r.brinco && !registroPertenceAoAnimal(r.brinco,i.data)) n++; });
+    (fcInter[r.brinco]||[]).forEach(function(it){ if(!registroPertenceAoAnimal(r.brinco,it.data)) n++; });
+    if(n) achados.push({ brinco:r.brinco, nasc:dgRec.nasc, registros:n });
+  });
+  return achados.sort(function(a,b){ return b.registros-a.registros; });
+}
+
+// Move para um brinco virtual os registros que ficaram presos a um número
+// reaproveitado. Só roda quando o usuário manda, pela tela de Saída do Rebanho —
+// é uma correção de dados, e correção automática em massa já custou caro neste
+// projeto.
+function separarHistoricoAlheio(brinco){
+  var dgRec = DB.dg.find(function(d){ return d.brinco===brinco; });
+  if(!dgRec || !dgRec.nasc) return null;
+  var virtual = proximoBrincoVirtual();
+  var movidos = 0;
+
+  function mover(arr, campoData){
+    arr.forEach(function(r){
+      if(r.brinco!==brinco) return;
+      if(registroPertenceAoAnimal(brinco, r[campoData])) return;
+      r.brinco = virtual; movidos++;
+    });
+  }
+  mover(DB.pes,'data'); mover(DB.san,'data'); mover(DB_mi,'data');
+  mover(DB_dg_reg,'dataDG'); mover(DB_iatf_reg,'data'); mover(DB.rep,'dtdiag');
+
+  var its = fcInter[brinco]||[];
+  var ficam = [], vao = [];
+  its.forEach(function(it){ (registroPertenceAoAnimal(brinco,it.data)?ficam:vao).push(it); });
+  if(vao.length){
+    fcInter[brinco] = ficam;
+    fcInter[virtual] = (fcInter[virtual]||[]).concat(vao);
+    movidos += vao.length;
+  }
+
+  if(!movidos) return null;
+
+  // Guarda o registro de que este brinco pertenceu a outro animal.
+  DB_baixas.push({
+    brinco: virtual, data: '', tipo: 'Arquivo',
+    motivo: 'Histórico separado do brinco '+brinco+' (reuso anterior ao arquivamento virtual)',
+    comprador: '', valor: '', brincoOriginal: brinco, _baixaTag: 'sep-'+virtual
+  });
+  return { virtual: virtual, movidos: movidos };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONDIÇÕES SIMULTÂNEAS DO ANIMAL ("bandeiras")
+// ═══════════════════════════════════════════════════════════════════════════
+// O campo DB.dg.condAtual guarda UMA condição só. Isso quebrava na vida real:
+// a vaca pare (Amamentando), é protocolada no meio da lactação (Protocolada) e
+// depois recebe o diagnóstico (Prenhe ou Vazia) — tudo isso SEM deixar de estar
+// amamentando, até o terneiro ser desmamado. Cada gravação apagava a anterior.
+//
+// A partir daqui as condições são DERIVADAS dos fatos registrados (partos,
+// coberturas, diagnósticos, desmames), e um animal pode estar em várias ao mesmo
+// tempo. condAtual continua existindo para compatibilidade com as telas antigas
+// e com a planilha, mas deixou de ser a fonte da verdade.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Um animal não pode ter evento reprodutivo anterior ao próprio nascimento.
+// Esta checagem é a defesa contra o reuso de brinco: quando um animal sai do
+// rebanho o número é reaproveitado por um terneiro novo, e os registros antigos
+// continuam apontando para aquele número. Sem isso, terneiras recém-nascidas
+// apareciam como "Vazia" por causa de um diagnóstico do animal anterior.
+function _eventoDoAnimal(brinco, dataEvento){
+  if(!dataEvento) return true;
+  var dgRec = DB.dg.find(function(d){ return d.brinco===brinco; });
+  if(!dgRec || !dgRec.nasc) return true;
+  var dn = toDate(dgRec.nasc), de = toDate(dataEvento);
+  if(!dn || !de) return true;
+  return de >= dn;
+}
+
+// ── Amamentando: pariu e o terneiro ainda não foi desmamado ────────────────
+function estadoAmamentacao(brinco){
+  var dgRec = DB.dg.find(function(d){ return d.brinco===brinco; }) || {};
+  var partos = DB_dg_reg.filter(function(r){
+    return r.brinco===brinco && r.partoResultado==='pariu' && _eventoDoAnimal(brinco, r.partoData);
+  }).sort(function(a,b){
+    var da=toDate(a.partoData), db=toDate(b.partoData);
+    if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+    return db-da;
+  });
+  var p = partos[0];
+
+  if(!p){
+    // Sem registro de parto no módulo de reprodução (parto antigo ou lançado à mão):
+    // cai no campo legado.
+    if(dgRec.condAtual==='Amamentando') return {ativo:true, desde:dgRec.dataAmamentacao||'', terneiro:''};
+    return {ativo:false};
+  }
+  if(p.terneiroBrinco){
+    var t = DB.dg.find(function(d){ return d.brinco===p.terneiroBrinco; });
+    if(!t) return {ativo:false, desde:p.partoData, terneiro:p.terneiroBrinco};       // terneiro saiu do rebanho
+    if(t.condAtual==='Desmamado') return {ativo:false, desde:p.partoData, terneiro:p.terneiroBrinco};
+  }
+  return {ativo:true, desde:p.partoData, terneiro:p.terneiroBrinco||''};
+}
+
+// ── Protocolada: entrou em IATF/monta e ainda não recebeu diagnóstico ──────
+function estadoProtocolo(brinco){
+  var pend = DB_iatf_reg.filter(function(r){
+    if(r.brinco!==brinco) return false;
+    if(!_eventoDoAnimal(brinco, r.data)) return false;
+    return !DB_dg_reg.some(function(d){ return d.brinco===brinco && d.protId===r.protId; });
+  }).sort(function(a,b){
+    var da=toDate(a.data), db=toDate(b.data);
+    if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+    return db-da;
+  });
+  if(!pend.length) return {ativo:false};
+  var r = pend[0];
+  var prot = DB_protocolos.find(function(x){ return x.id===r.protId; });
+  return {ativo:true, desde:r.data||'', prot: prot ? prot.nome : ''};
+}
+
+// ── Prenhe / Vazia: resultado do diagnóstico mais recente ──────────────────
+function estadoReprodutivo(brinco){
+  var dgs = DB_dg_reg.filter(function(r){
+      return r.brinco===brinco && r.resultado && _eventoDoAnimal(brinco, r.dataDG);
+    }).sort(function(a,b){
+      var da=toDate(a.dataDG), db=toDate(b.dataDG);
+      if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+      return db-da;
+    });
+  var ult = dgs[0];
+  if(!ult){
+    // Modelo legado (DB.rep) ou condição lançada à mão.
+    var dgRec = DB.dg.find(function(d){ return d.brinco===brinco; }) || {};
+    if(dgRec.condAtual==='Prenhe') return {estado:'prenhe', data:''};
+    if(dgRec.condAtual==='Vazia')  return {estado:'vazia',  data:dgRec.dataInterRepro||''};
+    var repRec = DB.rep.find(function(r){ return r.brinco===brinco; }) || {};
+    var c = (repRec.cond||'').toLowerCase();
+    if(c.indexOf('prenh')===0) return {estado:'prenhe', data:repRec.dtdiag||''};
+    if(c==='vazia')            return {estado:'vazia',  data:repRec.dtdiag||''};
+    return {estado:'', data:''};
+  }
+  // O desfecho da gestação encerra o estado "prenhe".
+  if(ult.partoResultado==='pariu')                                  return {estado:'', data:''};
+  if(ult.partoResultado==='abortou' || ult.partoResultado==='natimorto')
+    return {estado:'vazia', data:ult.partoData||'', motivo:ult.partoResultado};
+  var res = (ult.resultado||'').toLowerCase();
+  if(res.indexOf('prenh')===0) return {estado:'prenhe', data:ult.dataDG||''};
+  if(res==='vazia')            return {estado:'vazia',  data:ult.dataDG||''};
+  return {estado:'', data:''};
+}
+
+// ── Lista de bandeiras ativas, em ordem de destaque ────────────────────────
+function condicoesAtuais(brinco){
+  var dgRec = DB.dg.find(function(d){ return d.brinco===brinco; }) || {};
+  var idRec = DB.id.find(function(r){ return r.brinco===brinco; }) || {};
+  var flags = [];
+
+  // Animais jovens: estado próprio, não reprodutivo.
+  if(dgRec.condAtual==='Terneiro ao pé'){
+    flags.push({id:'terneiroape', cls:'fc-tag-terneiroape', lbl:'Terneiro ao pé', sub:''});
+  } else if(dgRec.condAtual==='Desmamado'){
+    flags.push({id:'desmamado', cls:'fc-tag-desmamado', lbl:'Desmamado',
+                sub: dgRec.dataDesmame ? fmtD(dgRec.dataDesmame) : ''});
+  }
+
+  var amam = estadoAmamentacao(brinco);
+  if(amam.ativo){
+    var sub = '';
+    if(amam.desde){
+      var dias = Math.floor((new Date() - toDate(amam.desde)) / 86400000);
+      if(!isNaN(dias) && dias>=0) sub = 'há '+dias+' dia(s)';
+    }
+    if(amam.terneiro) sub += (sub?' &middot; ':'')+'terneiro '+amam.terneiro;
+    flags.push({id:'amamentando', cls:'fc-tag-amamentando', lbl:'Amamentando', sub:sub});
+  }
+
+  var rep = estadoReprodutivo(brinco);
+  if(rep.estado==='prenhe'){
+    flags.push({id:'prenhe', cls:'fc-tag-prenha', lbl:'Prenhe',
+                sub: rep.data ? 'DG '+fmtD(rep.data) : ''});
+  }
+
+  var prot = estadoProtocolo(brinco);
+  if(prot.ativo){
+    flags.push({id:'protocolada', cls:'fc-tag-protocolado', lbl:'Protocolada',
+                sub: (prot.prot ? prot.prot+' &middot; ' : '') + (prot.desde ? fmtD(prot.desde) : '') + ' &middot; aguardando DG'});
+  }
+
+  // "Vazia" só aparece quando não há nada mais específico acontecendo: estar
+  // protocolada ou prenhe já descreve melhor a situação.
+  if(rep.estado==='vazia' && !prot.ativo){
+    var subV = rep.data ? fmtD(rep.data) : '';
+    if(rep.motivo==='abortou')   subV = 'aborto em '+subV;
+    if(rep.motivo==='natimorto') subV = 'natimorto em '+subV;
+    flags.push({id:'vazia', cls:'fc-tag-vazia', lbl:'Vazia', sub:subV});
+  }
+
+  if(!flags.length){
+    var lbl = dgRec.condAtual || idRec.cat || '—';
+    flags.push({id:'categoria', cls:'fc-tag-na', lbl:lbl, sub:''});
+  }
+  return flags;
+}
+
+// Condição principal (uma só), para as colunas de tabela e filtros que não
+// comportam várias. Amamentando tem prioridade: foi o que o usuário sinalizou
+// como mais relevante no dia a dia da cria.
+function condicaoPrincipal(brinco){
+  var f = condicoesAtuais(brinco);
+  var ordem = ['terneiroape','desmamado','amamentando','prenhe','protocolada','vazia','categoria'];
+  var melhor = f.slice().sort(function(a,b){
+    return ordem.indexOf(a.id) - ordem.indexOf(b.id);
+  })[0];
+  return melhor || {id:'categoria', cls:'fc-tag-na', lbl:'—', sub:''};
+}
+
+// Texto curto com todas as condições, para tabelas e relatórios.
+function condicoesResumo(brinco){
+  return condicoesAtuais(brinco).map(function(f){ return f.lbl; }).join(' · ');
+}
+
+// ═══ Reconstrução do histórico de intercorrências ═══════════════════════════
+// As mudanças de condição eram gravadas só no momento em que aconteciam. Se o
+// registro se perdesse (recuperação de emergência, importação de planilha antiga
+// ou lançamento feito fora do app), o histórico ficava com buracos — foi o que
+// aconteceu com as parições das vacas protocoladas.
+//
+// Estas funções remontam as anotações a partir dos fatos, que continuam
+// guardados em DB_dg_reg e DB_iatf_reg. São idempotentes: rodam a cada
+// carregamento e nunca duplicam o que já existe.
+
+function _interJaTem(brinco, marca){
+  return (fcInter[brinco]||[]).some(function(it){
+    if(it._marca === marca) return true;              // reconhece mesmo se o texto foi editado
+    return (it.desc||'').indexOf(marca) !== -1;
+  });
+}
+// _marca guarda a ORIGEM da anotação automática. Sem isso, bastava o usuário reescrever a
+// descrição para a reconciliação achar que a anotação sumiu e criar outra igual a cada
+// carregamento — uma duplicata renascendo sem fim.
+function _interAdd(brinco, data, desc, marca){
+  if(!fcInter[brinco]) fcInter[brinco] = [];
+  fcInter[brinco].push({data:data||'', desc:desc, _marca:marca||''});
+}
+function interEhAutomatica(it){ return !!(it && it._marca); }
+
+function reconciliarIntercorrenciasReproducao(){
+  var criadas = 0;
+
+  // 1) Partos, abortos e natimortos
+  DB_dg_reg.forEach(function(r){
+    if(!r.brinco || !r.partoResultado) return;
+    var quando = r.partoData || '';
+    if(r.partoResultado==='pariu'){
+      var marca = 'Parto registrado';
+      var det = marca + (r.terneiroBrinco ? ' — terneiro '+r.terneiroBrinco : '')
+              + ' — condição atualizada para Amamentando';
+      if(!_interJaTem(r.brinco, marca) &&
+         !_interJaTem(r.brinco, 'Condição atualizada para Amamentando')){
+        _interAdd(r.brinco, quando, det, marca); criadas++;
+      }
+    } else if(r.partoResultado==='abortou'){
+      if(!_interJaTem(r.brinco,'Aborto registrado')){ _interAdd(r.brinco, quando, 'Aborto registrado — condição atualizada para Vazia', 'Aborto registrado'); criadas++; }
+    } else if(r.partoResultado==='natimorto'){
+      if(!_interJaTem(r.brinco,'Natimorto registrado')){ _interAdd(r.brinco, quando, 'Natimorto registrado (bezerro) — condição atualizada para Vazia', 'Natimorto registrado'); criadas++; }
+    }
+  });
+
+  // 2) Entradas em protocolo de IATF/monta
+  DB_iatf_reg.forEach(function(r){
+    if(!r.brinco || !r.data) return;
+    var prot = DB_protocolos.find(function(x){ return x.id===r.protId; });
+    var marca = 'Entrou em protocolo'+(prot?' ('+prot.nome+')':'')+' em '+fmtD(r.data);
+    if(_interJaTem(r.brinco, marca)) return;
+    // Não duplica o que a tela de registro já anotou no mesmo dia.
+    var jaAnotado = (fcInter[r.brinco]||[]).some(function(it){
+      return it.data===r.data && (it.desc||'').indexOf('Protocolado')!==-1;
+    });
+    if(jaAnotado) return;
+    _interAdd(r.brinco, r.data, marca+' — condição Protocolada', marca);
+    criadas++;
+  });
+
+  // 3) Resultados de diagnóstico
+  DB_dg_reg.forEach(function(r){
+    if(!r.brinco || !r.dataDG || !r.resultado) return;
+    var res = (r.resultado||'').toLowerCase().indexOf('prenh')===0 ? 'Prenhe' : 'Vazia';
+    var marca = 'Diagnóstico de gestação em '+fmtD(r.dataDG);
+    if(_interJaTem(r.brinco, marca)) return;
+    var jaAnotado = (fcInter[r.brinco]||[]).some(function(it){
+      return it.data===r.dataDG && (it.desc||'').indexOf(res)!==-1;
+    });
+    if(jaAnotado) return;
+    _interAdd(r.brinco, r.dataDG, marca+': '+res+' — condição atualizada para '+res, marca);
+    criadas++;
+  });
+
+  return criadas;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// JANELA DE RELATÓRIOS
+// ═══════════════════════════════════════════════════════════════════════════
+// O botão "Relatórios" da barra lateral abre esta tela, onde o usuário escolhe
+// QUAIS blocos quer e para QUAL período. Só então o documento é montado numa
+// aba nova, pronta para imprimir ou salvar em PDF.
+//
+// Cada bloco é uma entrada em REL_BLOCOS com uma função que devolve HTML.
+// Para criar um relatório novo basta acrescentar um item na lista.
+// ═══════════════════════════════════════════════════════════════════════════
+
+var REL_BLOCOS = [
+  { id:'composicao', nome:'Composição do rebanho',        desc:'Quantidade por categoria, raça e gênero.',                      grupo:'Rebanho',    periodo:false },
+  { id:'inventario', nome:'Inventário de animais',        desc:'Lista completa com idade, peso, condição e genealogia.',       grupo:'Rebanho',    periodo:false },
+  { id:'ponderal',   nome:'Desempenho ponderal',          desc:'Peso médio e ganho diário por categoria.',                      grupo:'Rebanho',    periodo:false },
+  { id:'reproducao', nome:'Situação reprodutiva',         desc:'Prenhes, vazias, amamentando e previsões de parto.',            grupo:'Reprodução', periodo:false },
+  { id:'nascimentos',nome:'Nascimentos',                  desc:'Partos ocorridos no período, com sexo e mãe.',                  grupo:'Reprodução', periodo:true  },
+  { id:'iatf',       nome:'Resultado de IATF/Monta',      desc:'Coberturas e diagnósticos do período, com taxa de prenhez.',    grupo:'Reprodução', periodo:true  },
+  { id:'sanitario',  nome:'Manejos sanitários',           desc:'Manejos realizados no período, por animal.',                    grupo:'Sanidade',   periodo:true  },
+  { id:'estoque',    nome:'Estoque',                      desc:'Saldo de medicamentos, materiais e doses de sêmen.',            grupo:'Sanidade',   periodo:false },
+  { id:'saidas',     nome:'Saídas do rebanho',            desc:'Vendas, mortes e demais baixas do período.',                    grupo:'Financeiro', periodo:true  },
+  { id:'financeiro', nome:'Resumo financeiro',            desc:'Despesas e receitas do período, por categoria, com resultado.', grupo:'Financeiro', periodo:true  }
+];
+
+var relSelecionados = ['composicao','reproducao','ponderal'];
+
+// ── Período ────────────────────────────────────────────────────────────────
+function relPeriodo(){
+  var i = (document.getElementById('rel-ini')||{}).value || '';
+  var f = (document.getElementById('rel-fim')||{}).value || '';
+  return { ini: toDate(i), fim: toDate(f), iniTxt:i, fimTxt:f };
+}
+function relNoPeriodo(dataStr, p){
+  if(!p.ini && !p.fim) return true;
+  var d = toDate(dataStr);
+  if(!d) return false;
+  if(p.ini && d < p.ini) return false;
+  if(p.fim && d > p.fim) return false;
+  return true;
+}
+function relDefinirPeriodo(tipo){
+  var hoje = new Date();
+  var ini, fim = hoje;
+  if(tipo==='mes')      ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  else if(tipo==='ano') ini = new Date(hoje.getFullYear(), 0, 1);
+  else if(tipo==='12m'){ ini = new Date(hoje); ini.setFullYear(ini.getFullYear()-1); }
+  else { // tudo
+    document.getElementById('rel-ini').value = '';
+    document.getElementById('rel-fim').value = '';
+    relAtualizarResumo();
+    return;
+  }
+  var br = function(d){ return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); };
+  document.getElementById('rel-ini').value = br(ini);
+  document.getElementById('rel-fim').value = br(fim);
+  relAtualizarResumo();
+}
+
+// ── Tela ───────────────────────────────────────────────────────────────────
+function renderRelatorios(){
+  var box = document.getElementById('rel-blocos');
+  if(!box) return;
+  var grupos = [];
+  REL_BLOCOS.forEach(function(b){ if(grupos.indexOf(b.grupo)===-1) grupos.push(b.grupo); });
+
+  box.innerHTML = grupos.map(function(g){
+    return '<div style="margin-bottom:14px">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+g+'</div>'
+      + REL_BLOCOS.filter(function(b){ return b.grupo===g; }).map(function(b){
+          var sel = relSelecionados.indexOf(b.id)!==-1;
+          return '<label style="display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid '+(sel?'var(--grn)':'var(--bord)')+';'
+            + 'background:'+(sel?'var(--grnbg)':'transparent')+';border-radius:var(--rsm);margin-bottom:6px;cursor:pointer">'
+            + '<input type="checkbox" '+(sel?'checked':'')+' onchange="relToggle(\''+b.id+'\')" style="margin-top:2px;width:16px;height:16px;flex-shrink:0">'
+            + '<span style="flex:1"><span style="font-size:13px;font-weight:600;color:var(--tx)">'+b.nome+'</span>'
+            + (b.periodo?' <span class="bdg bdg-diag" style="font-size:9px">usa período</span>':'')
+            + '<br><span style="font-size:11px;color:var(--tx2)">'+b.desc+'</span></span>'
+            + '</label>';
+        }).join('')
+      + '</div>';
+  }).join('');
+
+  relAtualizarResumo();
+}
+
+function relToggle(id){
+  var i = relSelecionados.indexOf(id);
+  if(i===-1) relSelecionados.push(id); else relSelecionados.splice(i,1);
+  renderRelatorios();
+}
+function relMarcarTodos(v){
+  relSelecionados = v ? REL_BLOCOS.map(function(b){ return b.id; }) : [];
+  renderRelatorios();
+}
+
+function relAtualizarResumo(){
+  var el = document.getElementById('rel-resumo');
+  if(!el) return;
+  var p = relPeriodo();
+  var usaPeriodo = REL_BLOCOS.filter(function(b){ return b.periodo && relSelecionados.indexOf(b.id)!==-1; }).length;
+  var txtP = (!p.iniTxt && !p.fimTxt) ? 'todo o histórico'
+           : ((p.iniTxt||'início') + ' a ' + (p.fimTxt||'hoje'));
+  el.innerHTML = '<strong>' + relSelecionados.length + '</strong> bloco(s) selecionado(s)'
+    + (usaPeriodo ? ' &middot; período: <strong>'+txtP+'</strong>' : ' &middot; nenhum deles usa período');
+  var btn = document.getElementById('rel-btn-gerar');
+  if(btn) btn.disabled = (relSelecionados.length===0);
+}
+
+// ── Blocos ─────────────────────────────────────────────────────────────────
+function relTabela(cabs, linhas){
+  if(!linhas.length) return '<p class="vazio">Nenhum registro para este período.</p>';
+  return '<table><thead><tr>' + cabs.map(function(c){ return '<th>'+c+'</th>'; }).join('') + '</tr></thead><tbody>'
+       + linhas.map(function(l){ return '<tr>' + l.map(function(c){ return '<td>'+(c===null||c===undefined?'':c)+'</td>'; }).join('') + '</tr>'; }).join('')
+       + '</tbody></table>';
+}
+
+function relBloco_composicao(){
+  var porCat={}, porRaca={}, porGen={};
+  DB.id.forEach(function(r){
+    porCat[r.cat||'—']  = (porCat[r.cat||'—']||0)+1;
+    porRaca[r.raca||'—']= (porRaca[r.raca||'—']||0)+1;
+    var g = r.gen==='F'?'Fêmeas':(r.gen==='M'?'Machos':'—');
+    porGen[g] = (porGen[g]||0)+1;
+  });
+  var tot = DB.id.length || 1;
+  function tab(obj, titulo){
+    return '<h3>'+titulo+'</h3>' + relTabela(['Item','Animais','% do rebanho'],
+      Object.keys(obj).sort(function(a,b){ return obj[b]-obj[a]; }).map(function(k){
+        return [k, obj[k], (obj[k]*100/tot).toFixed(1).replace('.',',')+'%'];
+      }));
+  }
+  return '<h2>Composição do rebanho</h2>'
+    + '<p class="nota">Total de <strong>'+DB.id.length+'</strong> animais ativos.</p>'
+    + tab(porCat,'Por categoria') + tab(porRaca,'Por raça') + tab(porGen,'Por gênero');
+}
+
+function relBloco_inventario(){
+  var ultPeso = {};
+  DB.pes.forEach(function(r){
+    if(!ultPeso[r.brinco] || toDate(r.data) > toDate(ultPeso[r.brinco].data)) ultPeso[r.brinco]=r;
+  });
+  var linhas = DB.id.slice().sort(function(a,b){
+    var na=parseInt(a.brinco), nb=parseInt(b.brinco);
+    return (!isNaN(na)&&!isNaN(nb)) ? na-nb : String(a.brinco).localeCompare(String(b.brinco));
+  }).map(function(r){
+    var dg = DB.dg.find(function(d){ return d.brinco===r.brinco; }) || {};
+    var p  = ultPeso[r.brinco];
+    return [r.brinco, r.cat||'—', r.raca||'—', r.gen||'—',
+            dg.nasc?fmtD(dg.nasc):'—', dg.nasc?calcAge(dg.nasc):'—',
+            p?(p.peso+' kg'):'—',
+            (typeof condicaoUnificada==='function' ? (condicaoUnificada(r.brinco).lbl||'—') : (dg.condAtual||'—')),
+            dg.mae?brincoHistLbl(dg.mae):'—', nomeGenealogico(dg.pai||'')||'—'];
+  });
+  return '<h2>Inventário de animais</h2>'
+    + relTabela(['Brinco','Categoria','Raça','Sexo','Nascimento','Idade','Últ. peso','Condição','Mãe','Pai'], linhas);
+}
+
+function relBloco_ponderal(){
+  var ultPeso={};
+  DB.pes.forEach(function(r){
+    if(!ultPeso[r.brinco] || toDate(r.data) > toDate(ultPeso[r.brinco].data)) ultPeso[r.brinco]=r;
+  });
+  var porCat={};
+  DB.id.forEach(function(r){
+    var p=ultPeso[r.brinco]; if(!p) return;
+    var c=r.cat||'—'; (porCat[c]=porCat[c]||[]).push(parseFloat(p.peso)||0);
+  });
+  var linhasPeso = Object.keys(porCat).sort().map(function(c){
+    var a=porCat[c], soma=a.reduce(function(s,v){return s+v;},0);
+    return [c, a.length, Math.round(soma/a.length)+' kg', Math.min.apply(null,a)+' kg', Math.max.apply(null,a)+' kg'];
+  });
+  var gmd = (typeof calcGMDsByCategory==='function') ? calcGMDsByCategory() : {};
+  var linhasGmd = Object.keys(gmd).sort(function(a,b){ return gmd[b].avg-gmd[a].avg; }).map(function(c){
+    return [c, gmd[c].n, gmd[c].avg+' g/dia'];
+  });
+  return '<h2>Desempenho ponderal</h2>'
+    + '<h3>Peso por categoria (última pesagem)</h3>'
+    + relTabela(['Categoria','Animais','Peso médio','Mínimo','Máximo'], linhasPeso)
+    + '<h3>Ganho médio diário</h3>'
+    + relTabela(['Categoria','Animais','GMD'], linhasGmd);
+}
+
+function relBloco_reproducao(){
+  var cont={}, femeas=0;
+  DB.id.forEach(function(r){
+    if((r.gen||'').toUpperCase()!=='F') return;
+    femeas++;
+    var c = (typeof condicaoUnificada==='function') ? (condicaoUnificada(r.brinco).lbl||'—') : '—';
+    cont[c]=(cont[c]||0)+1;
+  });
+  var linhas = Object.keys(cont).sort(function(a,b){ return cont[b]-cont[a]; }).map(function(k){
+    return [k, cont[k], (cont[k]*100/(femeas||1)).toFixed(1).replace('.',',')+'%'];
+  });
+
+  // Previsão de partos: prenhes com data de diagnóstico conhecida (+ ~280 dias)
+  var prev = [];
+  DB_dg_reg.filter(function(r){ return (r.resultado||'').toLowerCase()==='prenhe' && !r.partoResultado; })
+    .forEach(function(r){
+      var iatf = DB_iatf_reg.find(function(x){ return x.protId===r.protId && x.brinco===r.brinco; });
+      var base = toDate(iatf && iatf.data) || toDate(r.dataDG);
+      if(!base) return;
+      var d = new Date(base); d.setDate(d.getDate()+280);
+      prev.push([r.brinco, fmtD(iatf && iatf.data ? iatf.data : r.dataDG),
+                 String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()]);
+    });
+  prev.sort(function(a,b){ return toDate(a[2]) - toDate(b[2]); });
+
+  return '<h2>Situação reprodutiva</h2>'
+    + '<p class="nota"><strong>'+femeas+'</strong> fêmeas no rebanho.</p>'
+    + relTabela(['Condição','Fêmeas','% das fêmeas'], linhas)
+    + '<h3>Previsão de partos</h3>'
+    + '<p class="nota">Estimativa de 280 dias a partir da cobertura.</p>'
+    + relTabela(['Brinco','Cobertura','Parto previsto'], prev);
+}
+
+function relBloco_nascimentos(p){
+  var linhas = DB_dg_reg.filter(function(r){
+    return r.partoResultado==='pariu' && relNoPeriodo(r.partoData, p);
+  }).sort(function(a,b){ return toDate(b.partoData) - toDate(a.partoData); })
+    .map(function(r){
+      var g = (typeof generoTerneiroReal==='function') ? generoTerneiroReal(r) : (r.terneiroGenero||'');
+      return [fmtD(r.partoData), r.brinco, r.terneiroBrinco||'—',
+              g==='M'?'Macho':(g==='F'?'Fêmea':'—'), r.partoObs||''];
+    });
+  var m = linhas.filter(function(l){ return l[3]==='Macho'; }).length;
+  var f = linhas.filter(function(l){ return l[3]==='Fêmea'; }).length;
+
+  // Aviso de datas divergentes: o relatório conta pela data do PARTO, enquanto o
+  // Registro de Animais mostra a categoria calculada pela data de NASCIMENTO do
+  // terneiro. Quando as duas discordam (normalmente erro de digitação no ano), o
+  // animal aparece num lugar e some do outro — sem nada explicando o porquê.
+  var div = divergenciasNascimento();
+  var aviso = '';
+  if(div.length){
+    aviso = '<div class="aviso"><strong>&#9888; '+div.length+' nascimento(s) com data divergente.</strong> '
+      + 'A data registrada no parto não bate com a data de nascimento do terneiro no cadastro. '
+      + 'Estes animais podem não aparecer no período esperado — corrija em Registro de Animais ou no Diagnóstico.'
+      + relTabela(['Terneiro','Mãe','Data no parto','Nascimento no cadastro','Diferença'],
+          div.map(function(d){
+            return [d.terneiro, d.mae, fmtD(d.partoData), fmtD(d.nascCadastro), d.dias+' dia(s)'];
+          }))
+      + '</div>';
+  }
+
+  return '<h2>Nascimentos</h2>'
+    + '<p class="nota"><strong>'+linhas.length+'</strong> nascimento(s) &middot; '+m+' macho(s), '+f+' fêmea(s). '
+    + 'Contagem pela data do parto.</p>'
+    + aviso
+    + relTabela(['Data','Mãe','Terneiro','Sexo','Observação'], linhas);
+}
+
+// ── Datas de nascimento em conflito ────────────────────────────────────────
+// O mesmo evento fica gravado em dois lugares: a data do parto (no registro de
+// diagnóstico da mãe) e a data de nascimento (no cadastro do terneiro). Elas
+// deveriam ser iguais. Quando não são, o animal é contado num relatório e some
+// de outro. Esta função encontra os casos, sem alterar nada — qual das duas
+// datas está certa é uma decisão que só o usuário pode tomar.
+function divergenciasNascimento(toleranciaDias){
+  var tol = (toleranciaDias===undefined) ? 2 : toleranciaDias;
+  var achados = [];
+  DB_dg_reg.forEach(function(r){
+    if(r.partoResultado!=='pariu' || !r.terneiroBrinco) return;
+    var dgT = DB.dg.find(function(d){ return d.brinco===r.terneiroBrinco; });
+    if(!dgT || !dgT.nasc) return;
+    // Só compara se o cadastro for mesmo daquele terneiro (mãe confere) — o
+    // brinco é reaproveitado quando um animal sai do rebanho.
+    if(r.brinco && dgT.mae && dgT.mae !== r.brinco) return;
+    var dp = toDate(r.partoData), dn = toDate(dgT.nasc);
+    if(!dp || !dn) return;
+    var dias = Math.round(Math.abs(dn - dp) / 86400000);
+    if(dias > tol){
+      achados.push({ terneiro:r.terneiroBrinco, mae:r.brinco, partoData:r.partoData,
+                     nascCadastro:dgT.nasc, dias:dias });
+    }
+  });
+  return achados.sort(function(a,b){ return b.dias - a.dias; });
+}
+
+function relBloco_iatf(p){
+  var linhas = DB_iatf_reg.filter(function(r){ return relNoPeriodo(r.data, p); })
+    .sort(function(a,b){ return toDate(b.data) - toDate(a.data); })
+    .map(function(r){
+      var dg = DB_dg_reg.find(function(d){ return d.protId===r.protId && d.brinco===r.brinco; });
+      var res = dg ? (dg.resultado||'—') : 'aguardando DG';
+      return [fmtD(r.data), r.brinco, nomeGenealogico(r.touro||'')||'—', r.inseminador||'—', res];
+    });
+  var comDG   = linhas.filter(function(l){ return l[4]!=='aguardando DG'; }).length;
+  var prenhes = linhas.filter(function(l){ return (l[4]||'').toLowerCase()==='prenhe'; }).length;
+  var taxa = comDG ? (prenhes*100/comDG).toFixed(1).replace('.',',')+'%' : '—';
+  return '<h2>Resultado de IATF / Monta</h2>'
+    + '<p class="nota"><strong>'+linhas.length+'</strong> cobertura(s) &middot; '+comDG+' com diagnóstico &middot; '
+    + prenhes+' prenhe(s) &middot; taxa de prenhez: <strong>'+taxa+'</strong></p>'
+    + relTabela(['Data','Animal','Touro/Sêmen','Inseminador','Resultado'], linhas);
+}
+
+function relBloco_sanitario(p){
+  var linhas = DB_mi.filter(function(r){ return relNoPeriodo(r.data, p); })
+    .sort(function(a,b){ return toDate(b.data) - toDate(a.data); })
+    .map(function(r){
+      var meds = Array.isArray(r.meds) ? r.meds.join(', ') : (r.meds||'');
+      return [fmtD(r.data), r.brinco, r.peso?(r.peso+' kg'):'—', meds||'—', r.obs||''];
+    });
+  return '<h2>Manejos sanitários</h2>'
+    + '<p class="nota"><strong>'+linhas.length+'</strong> registro(s) no período.</p>'
+    + relTabela(['Data','Animal','Peso','Medicações / procedimentos','Observação'], linhas);
+}
+
+function relBloco_estoque(){
+  function saldo(cat){
+    var s={};
+    DB_estoque.filter(function(r){ return (r.categoria||'medicamento')===cat; }).forEach(function(r){
+      var q = parseFloat(String(r.qtd).replace(',','.'))||0;
+      s[r.insumo] = (s[r.insumo]||0) + ((r.tipo||'').toLowerCase()==='saida'||(r.tipo||'').toLowerCase()==='saída' ? -q : q);
+    });
+    return Object.keys(s).sort().map(function(k){ return [k, s[k].toString().replace('.',',')]; });
+  }
+  var sem={};
+  DB_semendoses.forEach(function(r){
+    var q=parseFloat(String(r.qtd).replace(',','.'))||0;
+    sem[r.semen]=(sem[r.semen]||0)+((r.tipo||'').toLowerCase()==='baixa'?-q:q);
+  });
+  var linhasSem = Object.keys(sem).sort().map(function(k){ return [k, sem[k]]; });
+  return '<h2>Estoque</h2>'
+    + '<h3>Medicamentos</h3>' + relTabela(['Insumo','Saldo'], saldo('medicamento'))
+    + '<h3>Materiais</h3>'    + relTabela(['Insumo','Saldo'], saldo('material'))
+    + '<h3>Doses de sêmen</h3>'+ relTabela(['Sêmen','Doses'], linhasSem);
+}
+
+function relBloco_saidas(p){
+  var linhas = DB_baixas.filter(function(r){ return relNoPeriodo(r.data, p); })
+    .sort(function(a,b){ return toDate(b.data) - toDate(a.data); })
+    .map(function(r){
+      return [fmtD(r.data), r.brinco, r.tipo||'—', r.motivo||'—', r.comprador||'—',
+              r.valor?fmtValorBR(r.valor):'—'];
+    });
+  var total = DB_baixas.filter(function(r){ return relNoPeriodo(r.data, p); })
+    .reduce(function(s,r){ var v=parseValorBR(r.valor); return s+(isNaN(v)?0:v); },0);
+  var porTipo={};
+  DB_baixas.filter(function(r){ return relNoPeriodo(r.data,p); }).forEach(function(r){ porTipo[r.tipo||'—']=(porTipo[r.tipo||'—']||0)+1; });
+  return '<h2>Saídas do rebanho</h2>'
+    + '<p class="nota"><strong>'+linhas.length+'</strong> saída(s) &middot; '
+    + Object.keys(porTipo).map(function(k){ return porTipo[k]+' '+k; }).join(', ')
+    + ' &middot; valor total: <strong>'+fmtValorBR(total)+'</strong></p>'
+    + relTabela(['Data','Animal','Tipo','Motivo','Comprador','Valor'], linhas);
+}
+
+function relBloco_financeiro(p){
+  var desp = DB_financeiro.filter(function(r){ return relNoPeriodo(r.data,p); });
+  var rec  = DB_receitas.filter(function(r){ return relNoPeriodo(r.data,p); });
+  function soma(a){ return a.reduce(function(s,r){ var v=parseValorBR(r.valor); return s+(isNaN(v)?0:v); },0); }
+  var totD=soma(desp), totR=soma(rec);
+  var prod = soma(rec.filter(function(r){ return r.categoria==='Producao'; }));
+
+  var porCatD={};
+  desp.forEach(function(r){ var v=parseValorBR(r.valor)||0; var k=(r.grupo==='Producao'?'Produção: ':'Geral: ')+r.categoria; porCatD[k]=(porCatD[k]||0)+v; });
+  var linhasD = Object.keys(porCatD).sort(function(a,b){ return porCatD[b]-porCatD[a]; })
+    .map(function(k){ return [k, fmtValorBR(porCatD[k]), (porCatD[k]*100/(totD||1)).toFixed(1).replace('.',',')+'%']; });
+
+  var porCatR={};
+  rec.forEach(function(r){ var v=parseValorBR(r.valor)||0; var k=(typeof recLabel==='function'?recLabel(r.categoria):r.categoria); porCatR[k]=(porCatR[k]||0)+v; });
+  var linhasR = Object.keys(porCatR).sort(function(a,b){ return porCatR[b]-porCatR[a]; })
+    .map(function(k){ return [k, fmtValorBR(porCatR[k]), (porCatR[k]*100/(totR||1)).toFixed(1).replace('.',',')+'%']; });
+
+  var resultado = prod - totD;
+  return '<h2>Resumo financeiro</h2>'
+    + relTabela(['Indicador','Valor'], [
+        ['Total de despesas', fmtValorBR(totD)],
+        ['Total de receitas', fmtValorBR(totR)],
+        ['Receitas de produção', fmtValorBR(prod)],
+        ['<strong>Resultado (produção − despesas)</strong>', '<strong style="color:'+(resultado>=0?'#2e7d32':'#c62828')+'">'+fmtValorBR(resultado)+'</strong>']
+      ])
+    + '<h3>Despesas por categoria</h3>' + relTabela(['Categoria','Valor','% do total'], linhasD)
+    + '<h3>Receitas por categoria</h3>' + relTabela(['Categoria','Valor','% do total'], linhasR);
+}
+
+// ── Montagem do documento ──────────────────────────────────────────────────
+function relGerar(){
+  if(!relSelecionados.length){ toast('Selecione ao menos um bloco.','err'); return; }
+  var p = relPeriodo();
+  // validDate() em vez de só toDate(): o construtor de datas do JavaScript aceita
+  // 31/31/2026 e "rola" para julho de 2028 em silêncio, o que geraria um relatório
+  // de período errado sem nenhum aviso.
+  if(p.iniTxt && !validDate(p.iniTxt)){ toast('Data inicial inválida. Use dd/mm/aaaa.','err'); return; }
+  if(p.fimTxt && !validDate(p.fimTxt)){ toast('Data final inválida. Use dd/mm/aaaa.','err'); return; }
+  if(p.iniTxt && !p.ini){ toast('Data inicial inválida. Use dd/mm/aaaa.','err'); return; }
+  if(p.fimTxt && !p.fim){ toast('Data final inválida. Use dd/mm/aaaa.','err'); return; }
+  if(p.ini && p.fim && p.ini > p.fim){ toast('A data inicial é posterior à final.','err'); return; }
+
+  var w = window.open('', '_blank');
+  if(!w){ toast('O navegador bloqueou a nova aba. Libere os pop-ups para este site.','err'); return; }
+
+  var titulo = (document.getElementById('rel-titulo')||{}).value || 'Relatório do Rebanho';
+  var geradores = {
+    composicao: relBloco_composicao, inventario: relBloco_inventario, ponderal: relBloco_ponderal,
+    reproducao: relBloco_reproducao, nascimentos: relBloco_nascimentos, iatf: relBloco_iatf,
+    sanitario: relBloco_sanitario, estoque: relBloco_estoque, saidas: relBloco_saidas,
+    financeiro: relBloco_financeiro
+  };
+  // Mantém sempre a ordem de REL_BLOCOS, não a ordem em que o usuário clicou.
+  var corpo = REL_BLOCOS.filter(function(b){ return relSelecionados.indexOf(b.id)!==-1; })
+    .map(function(b){
+      try{ return '<section>' + geradores[b.id](p) + '</section>'; }
+      catch(e){ return '<section><h2>'+b.nome+'</h2><p class="vazio">Não foi possível montar este bloco: '+e.message+'</p></section>'; }
+    }).join('');
+
+  var periodoTxt = (!p.iniTxt && !p.fimTxt) ? 'todo o histórico' : ((p.iniTxt||'início') + ' a ' + (p.fimTxt||'hoje'));
+  var logo = (document.getElementById('load-screen-logo')||{}).src || '';
+
+  var css = 'body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#222;margin:0;padding:28px 32px}'
+    + 'header{display:flex;align-items:center;gap:14px;border-bottom:3px solid #2e7d32;padding-bottom:12px;margin-bottom:6px}'
+    + 'header img{height:52px;width:auto}'
+    + 'h1{font-size:19px;margin:0;color:#1b5e20}'
+    + '.sub{font-size:11px;color:#666;margin:2px 0 0}'
+    + 'h2{font-size:15px;margin:26px 0 10px;color:#1b5e20;border-bottom:1px solid #cfd8cf;padding-bottom:5px}'
+    + 'h3{font-size:12.5px;margin:16px 0 6px;color:#33691e}'
+    + '.nota{font-size:11px;color:#555;margin:0 0 8px}'
+    + '.vazio{font-size:11px;color:#999;font-style:italic;margin:4px 0 12px}'
+    + 'table{border-collapse:collapse;width:100%;margin-bottom:14px;font-size:11px}'
+    + 'th{background:#eef3ee;padding:6px 8px;text-align:left;border:1px solid #c8d6c8;font-weight:600}'
+    + 'td{padding:5px 8px;border:1px solid #dde5dd;vertical-align:top}'
+    + 'tbody tr:nth-child(even) td{background:#fafcfa}'
+    + 'section{page-break-inside:auto}'
+    + 'h2{page-break-after:avoid}'
+    + 'tr{page-break-inside:avoid}'
+    + '.aviso{background:#fff8e1;border:1px solid #ffb300;border-left:4px solid #ffb300;border-radius:4px;padding:10px 12px;margin:8px 0 14px;font-size:11px;line-height:1.6;color:#5d4037}'
+    + '.aviso table{margin:8px 0 0}'
+    + '.rodape{font-size:10px;color:#888;margin-top:26px;border-top:1px solid #eee;padding-top:8px}'
+    + '.barra{position:sticky;top:0;background:#fff;padding:10px 0 14px;margin-bottom:4px}'
+    + '@media print{.barra{display:none}body{padding:0}}';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">'
+    + '<title>'+titulo+' — '+todayBR()+'</title><style>'+css+'</style></head><body>'
+    + '<div class="barra"><button onclick="window.print()" style="padding:8px 18px;background:#2e7d32;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px">Imprimir / Salvar em PDF</button></div>'
+    + '<header>' + (logo?'<img src="'+logo+'" alt="">':'')
+    + '<div><h1>'+titulo+'</h1>'
+    + '<p class="sub">IBS Agropecuária &middot; gerado em '+todayBR()+' &middot; período: '+periodoTxt+'</p></div></header>'
+    + corpo
+    + '<div class="rodape">Gestor de Rebanho — IBS Agropecuária.</div></body></html>';
+
+  w.document.write(doc);
+  w.document.close();
+}
+
+// Compatibilidade: quem chamava gerarRelatorio() agora cai na tela de escolha.
+function gerarRelatorio(){ goTab('relatorios'); }
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SINCRONIZAÇÃO COM O BANCO ONLINE (Supabase)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -11056,6 +12066,8 @@ function nvStatus(estado){
   var m = mapa[estado] || mapa.ok;
   el.style.color = m[0];
   el.innerHTML   = m[1];
+  if(typeof aplicarEstadoBackup === 'function') aplicarEstadoBackup();
+  if(typeof atualizarAvisosLocais === 'function') atualizarAvisosLocais();
 }
 
 // ── Verificação periódica: alguém mais gravou? ─────────────────────────────
@@ -11293,8 +12305,46 @@ function nvIniciarSessao(){
   });
 }
 
+// ── Seção "Backup em arquivo" ──────────────────────────────────────────────
+// Recolhida quando a nuvem está cuidando dos dados; aberta quando não está,
+// porque aí o arquivo volta a ser o único jeito de guardar.
+var nvBackupAberto = null;   // null = ainda não decidido pelo usuário
+
+function toggleBackup(){
+  var corpo = document.getElementById('sb-backup-corpo');
+  if(!corpo) return;
+  nvBackupAberto = (corpo.style.display === 'none');
+  aplicarEstadoBackup();
+}
+
+function aplicarEstadoBackup(){
+  var corpo = document.getElementById('sb-backup-corpo');
+  var seta  = document.getElementById('sb-backup-seta');
+  var nota  = document.getElementById('sb-backup-nota');
+  if(!corpo) return;
+  var naNuvem = (typeof nvLigado === 'function') && nvLigado();
+  var aberto  = (nvBackupAberto === null) ? !naNuvem : nvBackupAberto;
+  corpo.style.display = aberto ? 'block' : 'none';
+  if(seta) seta.innerHTML = aberto ? '&#9660;' : '&#9654;';
+  if(nota) nota.style.display = (aberto && naNuvem) ? 'block' : 'none';
+}
+
+// Com a nuvem ligada, o rascunho local vira detalhe interno: mostrar
+// "auto-save em 1,5s" ao lado de "Sincronizado" só confunde.
+function atualizarAvisosLocais(){
+  var naNuvem = (typeof nvLigado === 'function') && nvLigado();
+  var auto = document.getElementById('sb-autosave');
+  if(auto && naNuvem) auto.style.display = 'none';
+  else if(auto) auto.style.display = '';
+  var dirty = document.getElementById('sb-dirty');
+  if(dirty && naNuvem) dirty.innerHTML = '&#9679; Enviando para a nuvem...';
+  else if(dirty) dirty.innerHTML = '&#9679; Alterações não salvas — auto-save em 1,5s';
+}
+
 function nvAtualizarPainel(){
   var painel = document.getElementById('nv-painel');
+  aplicarEstadoBackup();
+  atualizarAvisosLocais();
   if(!painel) return;
   painel.style.display = nvConfigurado() ? 'block' : 'none';
 
