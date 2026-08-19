@@ -498,6 +498,19 @@ tr:hover td{background:#fafaf7}
     </div>
     <div class="sb-bottom">
       <button class="btn btn-ghost btn-sm" onclick="gerarRelatorio()" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px">&#128438; Imprimir / PDF</button>
+      <div id="nv-painel" style="display:none;background:rgba(255,255,255,.06);border-radius:var(--rsm);padding:8px 10px;margin-bottom:8px">
+        <div id="nv-status" style="font-size:11px;font-weight:600;line-height:1.5">&#9729; Conectando...</div>
+        <div id="nv-quem" style="font-size:10px;color:#b0bec5;margin-top:2px;overflow:hidden;text-overflow:ellipsis"></div>
+        <button class="btn btn-primary btn-sm" id="nv-btn-abrir-login" style="width:100%;justify-content:center;margin-top:8px;display:none" onclick="nvAbrirLogin()">Entrar na nuvem</button>
+        <button class="btn btn-save btn-sm" id="nv-btn-carga" style="width:100%;justify-content:center;margin-top:8px;display:none" onclick="nvPrimeiraCarga()">&#8679; Enviar para a nuvem</button>
+        <div id="nv-botoes" style="display:none;margin-top:8px">
+          <button class="btn btn-save btn-sm" style="width:100%;justify-content:center;margin-bottom:5px" onclick="nvSalvarAgora()">&#9729; Salvar na nuvem</button>
+          <div style="display:flex;gap:5px">
+            <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;font-size:10px" onclick="nvAbrirVersoes()">Versões</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;font-size:10px" onclick="nvSair()">Sair</button>
+          </div>
+        </div>
+      </div>
       <div class="sb-file-name" id="sb-file-info"><strong>Nenhum arquivo</strong>Clique em Carregar para começar</div>
       <div id="sb-dirty" style="display:none;font-size:11px;color:#ffb74d;padding:0 8px 4px;line-height:1.4">&#9679; Alterações não salvas — auto-save em 1,5s</div>
       <div id="sb-autosave" style="font-size:10px;padding:0 8px 8px;color:#81c784;line-height:1.5"></div>
@@ -522,8 +535,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">1.3.0</span><br>
-              Data da versão: <span id="app-versao-data">22/07/2026</span><br>
+              Versão: <span id="app-versao">2.0.0</span><br>
+              Data da versão: <span id="app-versao-data">19/08/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -1958,6 +1971,7 @@ function showData(){
   setDefaults();
   renderAll();
   goTab('dashboard');
+  if(typeof nvAtualizarPainel === 'function') nvAtualizarPainel();
 }
 
 document.getElementById('dropzone').addEventListener('dragover', function(e){ e.preventDefault(); this.classList.add('over'); });
@@ -7577,7 +7591,12 @@ function autoSave(){
       DB_baixas:     (typeof DB_baixas     !== 'undefined') ? DB_baixas     : [],
       _baixaNextId:  (typeof _baixaNextId  !== 'undefined') ? _baixaNextId  : 1,
       DB_financeiro: (typeof DB_financeiro !== 'undefined') ? DB_financeiro : [],
-      DB_receitas:   (typeof DB_receitas   !== 'undefined') ? DB_receitas   : []
+      DB_receitas:   (typeof DB_receitas   !== 'undefined') ? DB_receitas   : [],
+      // Faltavam na lista acima e por isso não voltavam numa recuperação de emergência:
+      // as contas fixas e as intercorrências da Ficha do Animal.
+      DB_contasfixas:(typeof DB_contasfixas!== 'undefined') ? DB_contasfixas: [],
+      fcInter:       (typeof fcInter       !== 'undefined') ? fcInter       : {},
+      _baixaNextId:  (typeof _baixaNextId  !== 'undefined') ? _baixaNextId  : 1
     };
     var json = JSON.stringify(snapshot);
     localStorage.setItem(_autoSaveKey, json);
@@ -7631,6 +7650,9 @@ function autoLoad(){
     if(typeof _baixaNextId  !== 'undefined') _baixaNextId  = snap._baixaNextId  || 1;
     if(typeof DB_financeiro !== 'undefined') DB_financeiro = snap.DB_financeiro || [];
     if(typeof DB_receitas   !== 'undefined') DB_receitas   = snap.DB_receitas   || [];
+    // Contas fixas e intercorrências (ausentes nas versões anteriores do autosave)
+    if(typeof DB_contasfixas!== 'undefined') DB_contasfixas= snap.DB_contasfixas|| [];
+    if(typeof fcInter       !== 'undefined' && snap.fcInter) fcInter = snap.fcInter;
 
     if(snap.fileName) fileName = snap.fileName;
     return snap.ts;
@@ -7775,6 +7797,8 @@ function markDirty(){
   // Debounced auto-save to localStorage
   if(_autoSaveTimer) clearTimeout(_autoSaveTimer);
   _autoSaveTimer = setTimeout(autoSave, 1500);
+  // Envio automático para a nuvem (também com atraso, para não gravar a cada tecla)
+  if(typeof nvAgendarEnvio === 'function') nvAgendarEnvio();
 }
 function clearDirty(){
   autoClear(); // data safely exported to XLSX, clear autosave
@@ -10701,6 +10725,8 @@ tentarReconectarArquivo();
     destino.style.display = '';
     if(emoji) emoji.style.display = 'none';
   }
+  var logoLogin = document.getElementById('nv-login-logo');
+  if(logoLogin){ logoLogin.src = logoSrc; logoLogin.style.display = ''; }
 
   document.querySelectorAll('.sh').forEach(function(sh){
     if(sh.querySelector('.logo-header')) return;
@@ -10713,6 +10739,609 @@ tentarReconectarArquivo();
   });
 })();
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SINCRONIZAÇÃO COM O BANCO ONLINE (Supabase)
+// ═══════════════════════════════════════════════════════════════════════════
+// Comunicação por fetch puro, sem bibliotecas externas — mantém a regra do
+// projeto de não depender de CDN e de o app continuar sendo um arquivo só.
+//
+// Modelo de dados (ver banco de dados/supabase_setup.sql):
+//   rebanho_versoes  — uma linha por gravação, nunca sobrescrita. A coluna
+//                      "versao" é chave primária: é isso que impede duas
+//                      pessoas de gravarem em cima uma da outra.
+//   rebanho_ponteiro — uma linha só, dizendo qual é a versão mais recente.
+//                      Consultada de minuto em minuto; custa alguns bytes.
+// ═══════════════════════════════════════════════════════════════════════════
+
+var NUVEM = {
+  url: 'https://ironnkgdeoyynlffjmqy.supabase.co',
+  key: 'sb_publishable_9FMAOPYOvwG1C1CmdTFi9Q_ci1XgcYH',
+  chaveSessao: 'rebanho_sessao_v1',
+  chaveCache:  'rebanho_cache_nuvem_v1'
+};
+
+// Estado em memória
+var nvSessao      = null;   // {access_token, refresh_token, expira_em, email, uid}
+var nvVersaoBase  = 0;      // versão que este aparelho carregou
+var nvAutorBase   = '';
+var nvPendente    = false;  // há alterações locais ainda não enviadas
+var nvEnviando    = false;
+var nvTimerPoll   = null;
+var nvTimerAuto   = null;
+var nvModoLocal   = false;  // usuário optou por trabalhar sem nuvem nesta sessão
+
+function nvConfigurado(){
+  return !!(NUVEM.url && NUVEM.key && /^https?:\/\//.test(NUVEM.url));
+}
+function nvLigado(){
+  return nvConfigurado() && !nvModoLocal && !!(nvSessao && nvSessao.access_token);
+}
+
+// ── Sessão (fica no aparelho, para não pedir senha todo dia) ───────────────
+function nvCarregarSessao(){
+  try{
+    var raw = localStorage.getItem(NUVEM.chaveSessao);
+    nvSessao = raw ? JSON.parse(raw) : null;
+  }catch(e){ nvSessao = null; }
+  return nvSessao;
+}
+function nvGravarSessao(s){
+  nvSessao = s;
+  try{
+    if(s) localStorage.setItem(NUVEM.chaveSessao, JSON.stringify(s));
+    else  localStorage.removeItem(NUVEM.chaveSessao);
+  }catch(e){}
+}
+
+// ── Chamadas HTTP ──────────────────────────────────────────────────────────
+function nvCabecalhos(comAuth, extras){
+  var h = { 'apikey': NUVEM.key, 'Content-Type': 'application/json' };
+  if(comAuth && nvSessao && nvSessao.access_token){
+    h['Authorization'] = 'Bearer ' + nvSessao.access_token;
+  }
+  if(extras) Object.keys(extras).forEach(function(k){ h[k] = extras[k]; });
+  return h;
+}
+
+function nvReq(caminho, opcoes, comAuth, jaRenovou){
+  opcoes = opcoes || {};
+  return fetch(NUVEM.url + caminho, {
+    method:  opcoes.method || 'GET',
+    headers: nvCabecalhos(comAuth !== false, opcoes.headers),
+    body:    opcoes.body
+  }).then(function(r){
+    // Token expirado: renova uma vez e repete a chamada.
+    if(r.status === 401 && comAuth !== false && !jaRenovou && nvSessao && nvSessao.refresh_token){
+      return nvRenovarToken().then(function(ok){
+        if(!ok) return r;
+        return nvReq(caminho, opcoes, comAuth, true);
+      });
+    }
+    return r;
+  });
+}
+
+function nvJson(r){
+  return r.text().then(function(t){
+    var d = null;
+    try{ d = t ? JSON.parse(t) : null; }catch(e){ d = null; }
+    return { ok:r.ok, status:r.status, dados:d, texto:t };
+  });
+}
+
+// ── Autenticação ───────────────────────────────────────────────────────────
+function nvEntrar(email, senha){
+  return nvReq('/auth/v1/token?grant_type=password', {
+    method:'POST', body: JSON.stringify({ email:email, password:senha })
+  }, false).then(nvJson).then(function(res){
+    if(!res.ok || !res.dados || !res.dados.access_token){
+      var msg = (res.dados && (res.dados.error_description || res.dados.msg || res.dados.message)) || '';
+      if(/invalid login/i.test(msg) || res.status === 400) msg = 'E-mail ou senha incorretos.';
+      else if(/email not confirmed/i.test(msg)) msg = 'Usuário não confirmado. No Supabase, recrie-o com "Auto Confirm User" marcado.';
+      else if(!msg) msg = 'Não foi possível entrar (erro ' + res.status + ').';
+      throw new Error(msg);
+    }
+    var d = res.dados;
+    nvGravarSessao({
+      access_token:  d.access_token,
+      refresh_token: d.refresh_token,
+      expira_em:     Date.now() + ((d.expires_in || 3600) * 1000),
+      email:         (d.user && d.user.email) || email,
+      uid:           (d.user && d.user.id) || ''
+    });
+    return nvSessao;
+  });
+}
+
+function nvRenovarToken(){
+  if(!nvSessao || !nvSessao.refresh_token) return Promise.resolve(false);
+  return fetch(NUVEM.url + '/auth/v1/token?grant_type=refresh_token', {
+    method:'POST',
+    headers: nvCabecalhos(false),
+    body: JSON.stringify({ refresh_token: nvSessao.refresh_token })
+  }).then(nvJson).then(function(res){
+    if(!res.ok || !res.dados || !res.dados.access_token) return false;
+    var d = res.dados;
+    nvGravarSessao({
+      access_token:  d.access_token,
+      refresh_token: d.refresh_token || nvSessao.refresh_token,
+      expira_em:     Date.now() + ((d.expires_in || 3600) * 1000),
+      email:         (d.user && d.user.email) || nvSessao.email,
+      uid:           (d.user && d.user.id) || nvSessao.uid
+    });
+    return true;
+  }).catch(function(){ return false; });
+}
+
+function nvSair(){
+  nvGravarSessao(null);
+  nvVersaoBase = 0; nvPendente = false;
+  if(nvTimerPoll) clearInterval(nvTimerPoll);
+  location.reload();
+}
+
+// ── Snapshot dos dados ─────────────────────────────────────────────────────
+// Lista explícita das estruturas que representam os dados do rebanho. É a
+// mesma coisa que as abas da planilha exportada.
+var NV_CHAVES = ['DB','DB_med','DB_mi','DB_repr','DB_estoque','DB_mat','DB_semendoses',
+  'DB_baixas','DB_financeiro','DB_contasfixas','DB_receitas','DB_iatf','DB_protocolos',
+  'DB_iatf_reg','DB_dg_reg','fcInter','calEventos',
+  '_miNextId','_protNextId','_baixaNextId'];
+
+function nvColetar(){
+  var s = {};
+  NV_CHAVES.forEach(function(k){
+    if(typeof window[k] !== 'undefined') s[k] = window[k];
+  });
+  // Rede de segurança: qualquer estrutura DB_* criada no futuro entra sozinha,
+  // mesmo que eu esqueça de acrescentar na lista acima. Foi justamente esse tipo
+  // de esquecimento que deixou "Contas Fixas" e "Intercorrências" de fora do
+  // auto-save antigo.
+  try{
+    Object.keys(window).forEach(function(k){
+      if(/^DB_/.test(k) && !(k in s) && window[k] && typeof window[k] === 'object') s[k] = window[k];
+    });
+  }catch(e){}
+  return s;
+}
+
+function nvAplicar(s){
+  if(!s) return false;
+  var aplicou = 0;
+  Object.keys(s).forEach(function(k){
+    if(k === '_meta') return;
+    if(!/^(DB|fcInter|calEventos|_miNextId|_protNextId|_baixaNextId)/.test(k)) return;
+    try{ window[k] = s[k]; aplicou++; }catch(e){}
+  });
+  return aplicou > 0;
+}
+
+function nvResumo(s){
+  s = s || nvColetar();
+  var db = s.DB || {};
+  return {
+    animais:   (db.id || []).length,
+    pesagens:  (db.pes || []).length,
+    financeiro:(s.DB_financeiro || []).length + (s.DB_receitas || []).length
+  };
+}
+
+// ── Cache local (permite abrir sem internet) ───────────────────────────────
+function nvGravarCache(versao, dados, autor){
+  try{
+    localStorage.setItem(NUVEM.chaveCache, JSON.stringify({
+      versao: versao, autor: autor || '', ts: Date.now(), dados: dados
+    }));
+  }catch(e){}
+}
+function nvLerCache(){
+  try{
+    var raw = localStorage.getItem(NUVEM.chaveCache);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+// ── Leitura ────────────────────────────────────────────────────────────────
+function nvLerPonteiro(){
+  return nvReq('/rest/v1/rebanho_ponteiro?select=versao_atual,autor,atualizado_em&id=eq.1')
+    .then(nvJson).then(function(res){
+      if(!res.ok) throw new Error('Falha ao consultar o banco (erro ' + res.status + ').');
+      var linha = (res.dados && res.dados[0]) || null;
+      if(!linha) throw new Error('Sem permissão de leitura. Confira se você está logado.');
+      return linha;
+    });
+}
+
+function nvBaixar(){
+  return nvReq('/rest/v1/rebanho_versoes?select=versao,dados,autor,criado_em&order=versao.desc&limit=1')
+    .then(nvJson).then(function(res){
+      if(!res.ok) throw new Error('Falha ao baixar os dados (erro ' + res.status + ').');
+      var linha = (res.dados && res.dados[0]) || null;
+      if(!linha) return null;              // nuvem ainda vazia
+      return linha;
+    });
+}
+
+function nvListarVersoes(limite){
+  return nvReq('/rest/v1/rebanho_versoes?select=versao,autor,criado_em,observacao&order=versao.desc&limit=' + (limite || 50))
+    .then(nvJson).then(function(res){
+      if(!res.ok) throw new Error('Falha ao listar versões (erro ' + res.status + ').');
+      return res.dados || [];
+    });
+}
+
+// ── Gravação ───────────────────────────────────────────────────────────────
+function nvEnviar(observacao){
+  if(!nvLigado()) return Promise.reject(new Error('Você não está conectado à nuvem.'));
+  if(nvEnviando)  return Promise.reject(new Error('Já existe um envio em andamento.'));
+  nvEnviando = true;
+  nvStatus('enviando');
+
+  var dados = nvColetar();
+  var alvo  = (nvVersaoBase || 0) + 1;
+
+  return nvReq('/rest/v1/rebanho_versoes', {
+    method:'POST',
+    headers:{ 'Prefer':'return=representation' },
+    body: JSON.stringify({
+      versao:     alvo,
+      dados:      dados,
+      autor:      (nvSessao && nvSessao.email) || '',
+      autor_id:   (nvSessao && nvSessao.uid) || '',
+      observacao: observacao || null
+    })
+  }).then(nvJson).then(function(res){
+    nvEnviando = false;
+    if(res.status === 409 || (res.dados && res.dados.code === '23505')){
+      // Chave duplicada: alguém gravou a versão "alvo" antes de nós.
+      nvStatus('conflito');
+      nvAbrirConflito();
+      throw new Error('CONFLITO');
+    }
+    if(!res.ok){
+      nvStatus('erro');
+      var m = (res.dados && (res.dados.message || res.dados.hint)) || ('erro ' + res.status);
+      throw new Error('Não foi possível salvar na nuvem: ' + m);
+    }
+    nvVersaoBase = alvo;
+    nvAutorBase  = (nvSessao && nvSessao.email) || '';
+    nvPendente   = false;
+    nvGravarCache(alvo, dados, nvAutorBase);
+    nvStatus('ok');
+    return alvo;
+  }).catch(function(err){
+    nvEnviando = false;
+    if(err && err.message === 'CONFLITO') throw err;
+    nvStatus(navigator.onLine ? 'erro' : 'offline');
+    throw err;
+  });
+}
+
+function nvSalvarAgora(){
+  if(!nvLigado()){ toast('Você não está conectado à nuvem.','err'); return; }
+  nvEnviar(null).then(function(v){
+    toast('Salvo na nuvem (versão ' + v + ').','ok');
+  }).catch(function(err){
+    if(err && err.message !== 'CONFLITO') toast(err.message, 'err');
+  });
+}
+
+// Envio automático, com atraso — evita uma gravação por tecla digitada.
+function nvAgendarEnvio(){
+  if(!nvLigado()) return;
+  nvPendente = true;
+  nvStatus('pendente');
+  if(nvTimerAuto) clearTimeout(nvTimerAuto);
+  nvTimerAuto = setTimeout(function(){
+    nvEnviar(null).catch(function(){ /* silencioso: o indicador já mostra o estado */ });
+  }, 4000);
+}
+
+// ── Indicador de estado na barra lateral ───────────────────────────────────
+function nvStatus(estado){
+  var el = document.getElementById('nv-status');
+  if(!el) return;
+  var mapa = {
+    ok:        ['#81c784', '&#9729; Sincronizado' + (nvVersaoBase ? ' (v' + nvVersaoBase + ')' : '')],
+    pendente:  ['#ffb74d', '&#9679; Alterações não enviadas'],
+    enviando:  ['#64b5f6', '&#8635; Enviando...'],
+    baixando:  ['#64b5f6', '&#8635; Baixando...'],
+    offline:   ['#e0e0e0', '&#9888;&#65039; Sem internet — trabalhando offline'],
+    erro:      ['#e57373', '&#9888;&#65039; Falha ao sincronizar'],
+    conflito:  ['#e57373', '&#9888;&#65039; Conflito — veja o aviso'],
+    novos:     ['#ffb74d', '&#8681; Novos dados na nuvem'],
+    local:     ['#e0e0e0', '&#128187; Modo local (sem nuvem)']
+  };
+  var m = mapa[estado] || mapa.ok;
+  el.style.color = m[0];
+  el.innerHTML   = m[1];
+}
+
+// ── Verificação periódica: alguém mais gravou? ─────────────────────────────
+function nvVerificarNovidade(){
+  if(!nvLigado() || nvEnviando) return;
+  nvLerPonteiro().then(function(p){
+    if(p.versao_atual > nvVersaoBase){
+      nvStatus('novos');
+      nvMostrarBanner(p.autor, p.versao_atual);
+    }
+  }).catch(function(){
+    if(!navigator.onLine) nvStatus('offline');
+  });
+}
+
+function nvMostrarBanner(autor, versao){
+  var b = document.getElementById('nv-banner');
+  if(!b) return;
+  document.getElementById('nv-banner-txt').innerHTML =
+    '<strong>' + (autor || 'Outro usuário') + '</strong> salvou uma versão mais nova (v' + versao + ').' +
+    (nvPendente ? ' <span style="color:var(--red)">Você tem alterações não enviadas — envie ou anote antes de recarregar.</span>' : '');
+  b.style.display = 'flex';
+}
+function nvFecharBanner(){
+  var b = document.getElementById('nv-banner');
+  if(b) b.style.display = 'none';
+}
+
+function nvRecarregarDaNuvem(){
+  nvStatus('baixando');
+  nvBaixar().then(function(linha){
+    if(!linha){ toast('A nuvem ainda está vazia.','err'); nvStatus('ok'); return; }
+    nvAplicar(linha.dados);
+    nvVersaoBase = linha.versao;
+    nvAutorBase  = linha.autor || '';
+    nvPendente   = false;
+    nvGravarCache(linha.versao, linha.dados, linha.autor);
+    nvFecharBanner();
+    nvFecharConflito();
+    renderAll();
+    nvStatus('ok');
+    var r = nvResumo();
+    toast('Dados atualizados (v' + linha.versao + ', por ' + (linha.autor || '—') + ') — ' + r.animais + ' animais.','ok');
+  }).catch(function(err){
+    nvStatus('erro');
+    toast(err.message,'err');
+  });
+}
+
+// ── Conflito ───────────────────────────────────────────────────────────────
+function nvAbrirConflito(){
+  var m = document.getElementById('nv-modal-conflito');
+  if(m) m.style.display = 'flex';
+}
+function nvFecharConflito(){
+  var m = document.getElementById('nv-modal-conflito');
+  if(m) m.style.display = 'none';
+}
+
+// ── Versões salvas ─────────────────────────────────────────────────────────
+function nvAbrirVersoes(){
+  var m = document.getElementById('nv-modal-versoes');
+  if(!m) return;
+  m.style.display = 'flex';
+  var box = document.getElementById('nv-versoes-lista');
+  box.innerHTML = '<div style="padding:20px;text-align:center;color:var(--tx2)">Carregando...</div>';
+  nvListarVersoes(100).then(function(lista){
+    if(!lista.length){ box.innerHTML = '<div style="padding:20px;text-align:center;color:var(--tx2)">Nenhuma versão salva ainda.</div>'; return; }
+    box.innerHTML = '<table style="width:100%"><thead><tr><th>Versão</th><th>Quando</th><th>Quem</th><th class="tc">Ação</th></tr></thead><tbody>'
+      + lista.map(function(v){
+          var d = new Date(v.criado_em);
+          var quando = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear()
+                     + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+          var atual = (v.versao === nvVersaoBase);
+          return '<tr' + (atual ? ' style="background:var(--grnbg)"' : '') + '>'
+            + '<td><strong>v' + v.versao + '</strong>' + (atual ? ' <span class="bdg bdg-prenha">atual</span>' : '') + '</td>'
+            + '<td>' + quando + '</td>'
+            + '<td style="font-size:11px">' + (v.autor || '—') + '</td>'
+            + '<td class="tc">' + (atual ? '—'
+                : '<button class="btn btn-ghost btn-sm" onclick="nvRestaurar(' + v.versao + ')">Restaurar</button>') + '</td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table>';
+  }).catch(function(err){
+    box.innerHTML = '<div style="padding:20px;color:var(--red)">' + err.message + '</div>';
+  });
+}
+function nvFecharVersoes(){
+  var m = document.getElementById('nv-modal-versoes');
+  if(m) m.style.display = 'none';
+}
+
+function nvRestaurar(versao){
+  if(!confirm('Restaurar a versão ' + versao + '?\n\nOs dados atuais na tela serão substituídos. Nada é apagado da nuvem: a restauração cria uma versão nova a partir daquele conteúdo.')) return;
+  nvReq('/rest/v1/rebanho_versoes?select=versao,dados,autor&versao=eq.' + versao)
+    .then(nvJson).then(function(res){
+      var linha = (res.dados && res.dados[0]) || null;
+      if(!linha) throw new Error('Versão não encontrada.');
+      nvAplicar(linha.dados);
+      renderAll();
+      nvFecharVersoes();
+      toast('Versão ' + versao + ' carregada na tela. Confira e clique em "Salvar na nuvem" para confirmar.','ok');
+      nvPendente = true;
+      nvStatus('pendente');
+    }).catch(function(err){ toast(err.message,'err'); });
+}
+
+// ── Primeira carga: sobe a planilha atual para a nuvem ─────────────────────
+function nvPrimeiraCarga(){
+  var r = nvResumo();
+  if(!r.animais){ toast('Carregue a planilha antes de enviar para a nuvem.','err'); return; }
+  if(!confirm('Enviar estes dados para a nuvem como versão inicial?\n\n' +
+              r.animais + ' animais\n' + r.pesagens + ' pesagens\n' + r.financeiro + ' lançamentos financeiros')) return;
+  nvEnviar('Carga inicial a partir da planilha').then(function(v){
+    toast('Pronto! Dados enviados (versão ' + v + '). A partir de agora tudo sincroniza sozinho.','ok');
+    nvAtualizarPainel();
+  }).catch(function(err){
+    if(err && err.message !== 'CONFLITO') toast(err.message,'err');
+  });
+}
+
+// ── Diagnóstico (roda no navegador do usuário) ─────────────────────────────
+function nvDiagnostico(){
+  var box = document.getElementById('nv-diag');
+  if(!box) return;
+  box.style.display = 'block';
+  box.innerHTML = 'Testando...';
+  var linhas = [];
+  function reg(nome, ok, detalhe){
+    linhas.push('<div style="margin:3px 0">' + (ok ? '<span style="color:var(--grnt)">&#10003;</span> ' : '<span style="color:var(--red)">&#10007;</span> ')
+      + nome + (detalhe ? ' <span style="color:var(--tx2)">— ' + detalhe + '</span>' : '') + '</div>');
+    box.innerHTML = linhas.join('');
+  }
+  fetch(NUVEM.url + '/rest/v1/rpc/rebanho_ping', { method:'POST', headers: nvCabecalhos(false), body:'{}' })
+    .then(function(r){ reg('Projeto responde', r.ok, 'HTTP ' + r.status); })
+    .catch(function(e){ reg('Projeto responde', false, e.message); })
+    .then(function(){
+      return fetch(NUVEM.url + '/rest/v1/rebanho_ponteiro?select=versao_atual', { headers: nvCabecalhos(false) })
+        .then(function(r){ return r.text().then(function(t){
+          var vazio = (t || '').trim() === '[]';
+          reg('Tabelas criadas e protegidas', r.ok && vazio, vazio ? 'anônimo não enxerga nada, como deve ser' : 'HTTP ' + r.status + ' ' + t.slice(0,80));
+        });})
+        .catch(function(e){ reg('Tabelas criadas e protegidas', false, e.message); });
+    })
+    .then(function(){
+      if(!nvSessao) { reg('Login', false, 'ainda não conectado'); return; }
+      return nvLerPonteiro()
+        .then(function(p){ reg('Login e leitura autenticada', true, 'versão atual na nuvem: ' + p.versao_atual); })
+        .catch(function(e){ reg('Login e leitura autenticada', false, e.message); });
+    });
+}
+
+// ── Tela de login ──────────────────────────────────────────────────────────
+function nvAbrirLogin(){
+  var el = document.getElementById('nv-login');
+  if(el) el.style.display = 'flex';
+  var i = document.getElementById('nv-email');
+  if(i && nvSessao && nvSessao.email) i.value = nvSessao.email;
+}
+function nvFecharLogin(){
+  var el = document.getElementById('nv-login');
+  if(el) el.style.display = 'none';
+}
+function nvErroLogin(msg){
+  var e = document.getElementById('nv-login-erro');
+  if(!e) return;
+  e.textContent = msg || '';
+  e.style.display = msg ? 'block' : 'none';
+}
+
+function nvSubmeterLogin(){
+  var email = (document.getElementById('nv-email').value || '').trim();
+  var senha = document.getElementById('nv-senha').value || '';
+  if(!email || !senha){ nvErroLogin('Preencha e-mail e senha.'); return; }
+  var btn = document.getElementById('nv-btn-entrar');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  nvErroLogin('');
+  nvEntrar(email, senha).then(function(){
+    btn.disabled = false; btn.textContent = 'Entrar';
+    nvFecharLogin();
+    nvIniciarSessao();
+  }).catch(function(err){
+    btn.disabled = false; btn.textContent = 'Entrar';
+    nvErroLogin(err.message);
+  });
+}
+
+function nvTrabalharLocal(){
+  nvModoLocal = true;
+  nvFecharLogin();
+  nvStatus('local');
+  nvAtualizarPainel();
+}
+
+// ── Arranque ───────────────────────────────────────────────────────────────
+// Depois do login: baixa a versão mais recente. Se a nuvem estiver vazia,
+// mantém a tela de carregamento para o usuário subir a planilha (primeira carga).
+function nvIniciarSessao(){
+  nvStatus('baixando');
+  nvAtualizarPainel();
+  return nvBaixar().then(function(linha){
+    if(!linha){
+      nvVersaoBase = 0;
+      nvStatus('ok');
+      nvAtualizarPainel();
+      toast('Conectado. A nuvem ainda está vazia — carregue a planilha e clique em "Enviar para a nuvem".','ok');
+      return false;
+    }
+    nvAplicar(linha.dados);
+    nvVersaoBase = linha.versao;
+    nvAutorBase  = linha.autor || '';
+    nvGravarCache(linha.versao, linha.dados, linha.autor);
+    if(typeof showData === 'function') showData();
+    nvStatus('ok');
+    nvAtualizarPainel();
+    var r = nvResumo();
+    toast('Conectado — ' + r.animais + ' animais carregados da nuvem (v' + linha.versao + ').','ok');
+    return true;
+  }).catch(function(err){
+    // Sem internet: tenta o cache local
+    var c = nvLerCache();
+    if(c && c.dados){
+      nvAplicar(c.dados);
+      nvVersaoBase = c.versao || 0;
+      if(typeof showData === 'function') showData();
+      nvStatus('offline');
+      nvAtualizarPainel();
+      toast('Sem conexão. Abrindo a última cópia baixada (v' + nvVersaoBase + ').','err');
+      return true;
+    }
+    nvStatus('erro');
+    nvAtualizarPainel();
+    toast(err.message,'err');
+    return false;
+  });
+}
+
+function nvAtualizarPainel(){
+  var painel = document.getElementById('nv-painel');
+  if(!painel) return;
+  painel.style.display = nvConfigurado() ? 'block' : 'none';
+
+  var quem = document.getElementById('nv-quem');
+  if(quem) quem.textContent = nvLigado() ? ((nvSessao && nvSessao.email) || '') : (nvModoLocal ? 'modo local' : 'não conectado');
+
+  var btns = document.getElementById('nv-botoes');
+  if(btns) btns.style.display = nvLigado() ? 'block' : 'none';
+
+  var btnEntrar = document.getElementById('nv-btn-abrir-login');
+  if(btnEntrar) btnEntrar.style.display = nvLigado() ? 'none' : 'block';
+
+  // Botão de primeira carga: só aparece quando há dados na tela e a nuvem está vazia.
+  var carga = document.getElementById('nv-btn-carga');
+  if(carga){
+    var temDados = !!(DB && DB.id && DB.id.length);
+    carga.style.display = (nvLigado() && nvVersaoBase === 0 && temDados) ? 'block' : 'none';
+  }
+}
+
+function nvArrancar(){
+  if(!nvConfigurado()) return;
+  nvCarregarSessao();
+  nvAtualizarPainel();
+
+  if(nvSessao && nvSessao.access_token){
+    nvIniciarSessao();
+  } else {
+    nvAbrirLogin();
+  }
+
+  if(nvTimerPoll) clearInterval(nvTimerPoll);
+  nvTimerPoll = setInterval(nvVerificarNovidade, 60000);
+
+  window.addEventListener('online',  function(){ if(nvLigado()){ nvStatus(nvPendente ? 'pendente' : 'ok'); nvVerificarNovidade(); } });
+  window.addEventListener('offline', function(){ if(nvLigado()) nvStatus('offline'); });
+}
+
+// Enter no campo de senha envia o formulário
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Enter') return;
+  var el = document.getElementById('nv-login');
+  if(el && el.style.display === 'flex') nvSubmeterLogin();
+});
+
+window.addEventListener('load', function(){ setTimeout(nvArrancar, 300); });
+
 // ── PWA: registra o service worker para permitir instalação/uso offline ──
 // (silenciosamente ignorado se o arquivo for aberto localmente via file:// ou sem HTTPS,
 //  onde Service Worker não é suportado — o app continua funcionando normalmente)
@@ -10722,5 +11351,71 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
   });
 }
 </script>
+<!-- ═══ NUVEM: tela de login ═══ -->
+<div id="nv-login" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(20,25,20,.92);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg);border-radius:var(--r);max-width:400px;width:100%;padding:26px 24px;box-shadow:0 10px 40px rgba(0,0,0,.4)">
+    <div style="text-align:center;margin-bottom:18px">
+      <img id="nv-login-logo" alt="IBS Agropecuária" style="height:56px;width:auto;margin-bottom:8px;display:none">
+      <div style="font-size:17px;font-weight:700;color:var(--tx)">Gestor de Rebanho</div>
+      <div style="font-size:12px;color:var(--tx2);margin-top:2px">IBS Agropecuária</div>
+    </div>
+
+    <div class="fg"><label>E-mail</label>
+      <input type="email" id="nv-email" placeholder="seu@email.com" autocomplete="username" autocapitalize="off" spellcheck="false"></div>
+    <div class="fg"><label>Senha</label>
+      <input type="password" id="nv-senha" placeholder="Sua senha" autocomplete="current-password"></div>
+
+    <div id="nv-login-erro" style="display:none;background:var(--redbg);border:1px solid var(--red);border-radius:var(--rsm);padding:8px 10px;font-size:12px;color:var(--red);margin-bottom:10px"></div>
+
+    <button class="btn btn-primary" id="nv-btn-entrar" style="width:100%;justify-content:center" onclick="nvSubmeterLogin()">Entrar</button>
+
+    <div style="text-align:center;margin-top:14px;font-size:11px;line-height:1.7">
+      <a href="javascript:void(0)" onclick="nvTrabalharLocal()" style="color:var(--tx2)">Trabalhar sem a nuvem (só neste aparelho)</a><br>
+      <a href="javascript:void(0)" onclick="nvDiagnostico()" style="color:var(--tx2)">Testar conexão com o banco</a>
+    </div>
+    <div id="nv-diag" style="display:none;margin-top:12px;padding:10px;background:var(--bg2);border-radius:var(--rsm);font-size:11px;line-height:1.6"></div>
+  </div>
+</div>
+
+<!-- ═══ NUVEM: aviso de versão mais nova ═══ -->
+<div id="nv-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:8500;background:#fff3e0;border-bottom:2px solid #ffb74d;padding:10px 14px;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:#5d4037">
+  <span id="nv-banner-txt" style="flex:1;min-width:200px"></span>
+  <button class="btn btn-primary btn-sm" onclick="nvRecarregarDaNuvem()">Recarregar agora</button>
+  <button class="btn btn-ghost btn-sm" onclick="nvFecharBanner()">Depois</button>
+</div>
+
+<!-- ═══ NUVEM: conflito de gravação ═══ -->
+<div id="nv-modal-conflito" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(20,25,20,.9);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg);border-radius:var(--r);max-width:470px;width:100%;padding:24px">
+    <div style="font-size:16px;font-weight:700;color:var(--red);margin-bottom:10px">&#9888;&#65039; Alguém salvou antes de você</div>
+    <p style="font-size:13px;line-height:1.6;color:var(--tx);margin:0 0 12px">
+      Outra pessoa gravou uma versão enquanto você editava. Para não apagar o trabalho dela,
+      <strong>sua gravação foi recusada</strong> — nada foi perdido nos dois lados, mas suas alterações
+      ainda estão só nesta tela.
+    </p>
+    <p style="font-size:13px;line-height:1.6;color:var(--tx);margin:0 0 16px">
+      Recomendo: <strong>baixe um backup</strong> das suas alterações, recarregue os dados da nuvem
+      e refaça os lançamentos que faltarem.
+    </p>
+    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-bottom:8px" onclick="salvarComoNovaVersao()">1. Baixar backup .xlsx das minhas alterações</button>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:8px" onclick="nvRecarregarDaNuvem()">2. Recarregar os dados da nuvem</button>
+    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="nvFecharConflito()">Fechar e decidir depois</button>
+  </div>
+</div>
+
+<!-- ═══ NUVEM: versões salvas ═══ -->
+<div id="nv-modal-versoes" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(20,25,20,.9);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg);border-radius:var(--r);max-width:620px;width:100%;max-height:82vh;display:flex;flex-direction:column">
+    <div class="tbar" style="border-radius:var(--r) var(--r) 0 0">
+      <span style="font-size:14px;font-weight:700">&#128337; Versões salvas na nuvem</span>
+      <button class="btn btn-ghost btn-sm" onclick="nvFecharVersoes()">Fechar</button>
+    </div>
+    <div style="padding:10px 16px;font-size:11px;color:var(--tx2);border-bottom:1px solid var(--bord)">
+      As 100 gravações mais recentes. Restaurar carrega o conteúdo daquela versão na tela — nada é apagado da nuvem.
+    </div>
+    <div id="nv-versoes-lista" class="tscroll" style="overflow:auto;flex:1"></div>
+  </div>
+</div>
+
 </body>
 </html>
