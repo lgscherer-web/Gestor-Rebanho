@@ -549,7 +549,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.4.0</span><br>
+              Versão: <span id="app-versao">2.4.1</span><br>
               Data da versão: <span id="app-versao-data">19/08/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -2667,7 +2667,13 @@ function closeMobileNav(){
   if(ov) ov.classList.remove('open');
 }
 
+// Ligada durante a varredura completa de telas. Desenhar não é alterar: sem esta trava,
+// basta uma função de render chamar markDirty por engano para o app gravar uma versão
+// nova na nuvem a cada abertura — foi exatamente o que aconteceu com renderMi().
+var _renderizandoTudo = false;
+
 function renderAll(){
+  _renderizandoTudo = true;
   atualizarCategorias();
   normalizarCondAtual();
   migrarCondicoesAbortoNatimorto();
@@ -2688,6 +2694,8 @@ function renderAll(){
   allTabs.forEach(function(t){
     if(t !== currentTab) setTimeout(function(){ renderTab(t); }, 0);
   });
+  // Enfileirado por último com o mesmo atraso: roda depois de todas as abas acima.
+  setTimeout(function(){ _renderizandoTudo = false; }, 0);
 }
 function renderTab(tab){
   if(tab==='registro')     renderReg();
@@ -4942,7 +4950,9 @@ function renderMi(){
   }
   document.getElementById('mi-total').textContent = sorted.length+' registro(s)';
   paginateTable('tbl-manejo-ind', true);
-  markDirty();
+  // Nada de markDirty aqui: esta função apenas DESENHA a tabela. A chamada que existia
+  // marcava o banco como alterado a cada abertura do app (renderAll desenha todas as abas),
+  // criando uma versão nova na nuvem sem que nada tivesse mudado.
 }
 
 function actsMi(idx){
@@ -7837,6 +7847,7 @@ function focusField(id){
 function today(){return new Date().toISOString().split('T')[0];}
 function todayBR(){ var d=new Date(); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
 function markDirty(){
+  if(_renderizandoTudo) return;   // ver comentário em renderAll
   var el=document.getElementById('sb-dirty');
   if(el) el.style.display='block';
   // Auto-refresh dashboard KPIs silently
