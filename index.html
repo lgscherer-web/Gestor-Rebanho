@@ -549,7 +549,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.4.1</span><br>
+              Versão: <span id="app-versao">2.4.2</span><br>
               Data da versão: <span id="app-versao-data">19/08/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -2677,7 +2677,6 @@ function renderAll(){
   atualizarCategorias();
   normalizarCondAtual();
   migrarCondicoesAbortoNatimorto();
-  migrarDataAmamentacao();
   migrarRacaCruzadoParaCareta();
   migrarAvoPaternoEmObs();
   reconciliarIntercorrenciasDesmame();
@@ -2686,6 +2685,9 @@ function renderAll(){
   reconciliarCondicaoProtocolado();
   reconciliarGeneroTerneiro();
   reconciliarIntercorrenciasReproducao();
+  // Depois das demais: depende de estadoAmamentacao, que lê os registros de parto já
+  // reconciliados acima.
+  migrarDataAmamentacao();
   updateInfo();
   // Render current visible tab immediately
   renderTab(currentTab);
@@ -5046,8 +5048,17 @@ function condicaoUnificada(brinco){
   // Amamentando derivado do parto (ver estadoAmamentacao): não depende mais de condAtual,
   // que era sobrescrito quando a vaca entrava em protocolo durante a lactação.
   var _amamDer = (typeof estadoAmamentacao==='function') ? estadoAmamentacao(brinco) : {ativo:false};
+  // Mesmo motivo do comentário em condicoesAtuais: condAtual='Amamentando' sobrevive ao
+  // desmame do terneiro. Se a lactação não se confirma pelos registros, o rótulo cai
+  // para a categoria do animal.
+  if(!_amamDer.ativo && dgRec.condAtual==='Amamentando' && tagLbl==='Amamentando'){
+    tagLbl = idRec.cat || '—'; tagCls = 'fc-tag-na'; tagSub = '';
+  }
   if(_amamDer.ativo){
-    if(!dgRec.dataAmamentacao && _amamDer.desde) dgRec.dataAmamentacao = _amamDer.desde;
+    // A data vem do registro do parto. A cópia em dgRec.dataAmamentacao só entra quando
+    // não existe parto registrado (lançamento antigo ou feito à mão).
+    var _inicioAmam = _amamDer.desde || dgRec.dataAmamentacao || '';
+    if(_inicioAmam && dgRec.dataAmamentacao !== _inicioAmam) dgRec.dataAmamentacao = _inicioAmam;
     tagCls='fc-tag-amamentando'; tagLbl='Amamentando'; tagSub='';
     if(dgRec.dataAmamentacao){
       var diasAmam = Math.floor((new Date() - toDate(dgRec.dataAmamentacao)) / 86400000);
@@ -8113,8 +8124,25 @@ function migrarCondicoesAbortoNatimorto(){
 // saber que a carência de 30 dias já passou. Busca o parto mais recente em DB_dg_reg; se não achar
 // nenhum registro, assume hoje como início da carência (mais seguro que presumir apta imediatamente
 // ou deixá-la travada para sempre). Autocorretiva a cada carregamento.
+// Antes esta função só preenchia dataAmamentacao quando ela estava VAZIA. Consequência:
+// corrigir a data de um parto lançado errado não chegava aqui, e a vaca seguia "amamentando
+// desde" a data antiga para sempre. Agora o registro do parto é a fonte da verdade e este
+// campo é apenas um espelho dele — mesma lógica que já aplicamos ao sexo do terneiro.
 function migrarDataAmamentacao(){
   var migrados = 0;
+
+  // (a) Realinha quem tem parto registrado: a data do parto manda.
+  DB.dg.forEach(function(dg){
+    if(typeof estadoAmamentacao !== 'function') return;
+    var amam = estadoAmamentacao(dg.brinco);
+    if(!amam.ativo || !amam.desde) return;
+    if(dg.dataAmamentacao === amam.desde) return;
+    dg.dataAmamentacao = amam.desde;
+    migrados++;
+  });
+
+  // (b) Casos sem registro de parto (lançamento antigo ou feito à mão): mantém o
+  //     preenchimento por aproximação, só quando não há nada gravado.
   DB.dg.forEach(function(dg){
     if(dg.condAtual!=='Amamentando' || dg.dataAmamentacao) return;
     var registros = DB_dg_reg.filter(function(r){
@@ -9022,7 +9050,8 @@ function aptaReproducao(brinco, dataRef){
     // parto (dataAmamentacao), não da data de hoje. Cai para o histórico de intercorrências como
     // reforço (dataInicioCondAtual) apenas se dataAmamentacao não estiver definida — cadastro
     // antigo/importado que nunca passou por fcConfirmarParto (ver migrarDataAmamentacao).
-    var inicio = dgRec.dataAmamentacao || dataInicioCondAtual(brinco, 'Amamentando');
+    var _amamApta = (typeof estadoAmamentacao==='function') ? estadoAmamentacao(brinco) : {};
+    var inicio = (_amamApta.ativo && _amamApta.desde) || dgRec.dataAmamentacao || dataInicioCondAtual(brinco, 'Amamentando');
     if(!inicio) return false;
     var dias = (refDate - toDate(inicio)) / 86400000;
     return dias >= 30;
@@ -11186,7 +11215,8 @@ function condicoesAtuais(brinco){
     var sub = '';
     if(amam.desde){
       var dias = Math.floor((new Date() - toDate(amam.desde)) / 86400000);
-      if(!isNaN(dias) && dias>=0) sub = 'há '+dias+' dia(s)';
+      sub = 'desde '+fmtD(amam.desde);
+      if(!isNaN(dias) && dias>=0) sub += ' ('+dias+' dia(s))';
     }
     if(amam.terneiro) sub += (sub?' &middot; ':'')+'terneiro '+amam.terneiro;
     flags.push({id:'amamentando', cls:'fc-tag-amamentando', lbl:'Amamentando', sub:sub});
@@ -11214,8 +11244,14 @@ function condicoesAtuais(brinco){
   }
 
   if(!flags.length){
-    var lbl = dgRec.condAtual || idRec.cat || '—';
-    flags.push({id:'categoria', cls:'fc-tag-na', lbl:lbl, sub:''});
+    // O campo condAtual é herança do modelo de condição única e fica desatualizado:
+    // a vaca continua gravada como "Amamentando" depois que o terneiro desmamou, porque
+    // o desmame mexe no registro do TERNEIRO, não no dela. Se o valor gravado é uma das
+    // condições que acabamos de avaliar e nenhuma se confirmou, ele não vale mais.
+    var DERIVADAS = ['Amamentando','Prenhe','Prenha','Vazia','Protocolado','Protocolada'];
+    var lbl = dgRec.condAtual || '';
+    if(DERIVADAS.indexOf(lbl) !== -1) lbl = '';
+    flags.push({id:'categoria', cls:'fc-tag-na', lbl: lbl || idRec.cat || '—', sub:''});
   }
   return flags;
 }
