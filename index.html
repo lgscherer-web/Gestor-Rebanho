@@ -549,7 +549,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.3.1</span><br>
+              Versão: <span id="app-versao">2.4.0</span><br>
               Data da versão: <span id="app-versao-data">19/08/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -11776,6 +11776,12 @@ var nvSessao      = null;   // {access_token, refresh_token, expira_em, email, u
 var nvVersaoBase  = 0;      // versão que este aparelho carregou
 var nvAutorBase   = '';
 var nvPendente    = false;  // há alterações locais ainda não enviadas
+// Contadores de sequência. Sem eles, uma alteração feita enquanto um envio estava em voo
+// era marcada como "enviada" ao fim daquele envio — e sumia em silêncio, com o app
+// exibindo "Sincronizado". Comparar as duas contagens diz a verdade.
+var nvSeqAlteracao = 0;   // sobe a cada alteração local
+var nvSeqEnviada   = 0;   // última alteração efetivamente confirmada pela nuvem
+var nvTentativas   = 0;   // falhas seguidas, para espaçar as novas tentativas
 var nvEnviando    = false;
 var nvTimerPoll   = null;
 var nvTimerAuto   = null;
@@ -11990,6 +11996,7 @@ function nvEnviar(observacao){
 
   var dados = nvColetar();
   var alvo  = (nvVersaoBase || 0) + 1;
+  var seqEnviando = nvSeqAlteracao;   // fotografa o estado que está subindo
 
   return nvReq('/rest/v1/rebanho_versoes', {
     method:'POST',
@@ -12016,9 +12023,11 @@ function nvEnviar(observacao){
     }
     nvVersaoBase = alvo;
     nvAutorBase  = (nvSessao && nvSessao.email) || '';
-    nvPendente   = false;
+    nvSeqEnviada = seqEnviando;
+    // Só está sincronizado se nada mudou depois da foto que acabou de subir.
+    nvPendente   = (nvSeqAlteracao > nvSeqEnviada);
     nvGravarCache(alvo, dados, nvAutorBase);
-    nvStatus('ok');
+    nvStatus(nvPendente ? 'pendente' : 'ok');
     return alvo;
   }).catch(function(err){
     nvEnviando = false;
@@ -12037,15 +12046,47 @@ function nvSalvarAgora(){
   });
 }
 
-// Envio automático, com atraso — evita uma gravação por tecla digitada.
+// ── Fila de envio ──────────────────────────────────────────────────────────
+// Toda alteração entra na fila. A fila só se dá por vencida quando a nuvem
+// confirma; até lá ela insiste sozinha, com espera crescente. É o que faltava:
+// antes, um envio que falhasse ou esbarrasse em outro em andamento era
+// simplesmente descartado.
 function nvAgendarEnvio(){
   if(!nvLigado()) return;
+  nvSeqAlteracao++;
   nvPendente = true;
   nvStatus('pendente');
+  nvAgendarFila(4000);
+}
+
+function nvAgendarFila(ms){
   if(nvTimerAuto) clearTimeout(nvTimerAuto);
-  nvTimerAuto = setTimeout(function(){
-    nvEnviar(null).catch(function(){ /* silencioso: o indicador já mostra o estado */ });
-  }, 4000);
+  nvTimerAuto = setTimeout(nvProcessarFila, ms);
+}
+
+function nvProcessarFila(){
+  if(!nvLigado()) return;
+  if(nvSeqAlteracao <= nvSeqEnviada){ nvPendente = false; return; }  // nada a enviar
+  // Envio em andamento: espera ele terminar em vez de desistir.
+  if(nvEnviando){ nvAgendarFila(1500); return; }
+
+  nvEnviar(null).then(function(){
+    nvTentativas = 0;
+    // Mudou algo durante o envio? Sobe de novo, logo.
+    if(nvSeqAlteracao > nvSeqEnviada) nvAgendarFila(1200);
+  }).catch(function(err){
+    if(err && err.message === 'CONFLITO') return;   // depende de decisão do usuário
+    nvTentativas++;
+    // 3s, 6s, 12s, 24s, 48s, depois de minuto em minuto.
+    var espera = Math.min(60000, 3000 * Math.pow(2, Math.min(nvTentativas - 1, 5)));
+    nvAgendarFila(espera);
+  });
+}
+
+// Conexão de volta: não espera o próximo lançamento para tentar de novo.
+function nvRetomarFila(){
+  if(!nvLigado()) return;
+  if(nvSeqAlteracao > nvSeqEnviada){ nvTentativas = 0; nvAgendarFila(500); }
 }
 
 // ── Indicador de estado na barra lateral ───────────────────────────────────
@@ -12379,7 +12420,7 @@ function nvArrancar(){
   if(nvTimerPoll) clearInterval(nvTimerPoll);
   nvTimerPoll = setInterval(nvVerificarNovidade, 60000);
 
-  window.addEventListener('online',  function(){ if(nvLigado()){ nvStatus(nvPendente ? 'pendente' : 'ok'); nvVerificarNovidade(); } });
+  window.addEventListener('online',  function(){ if(nvLigado()){ nvStatus(nvPendente ? 'pendente' : 'ok'); nvVerificarNovidade(); nvRetomarFila(); } });
   window.addEventListener('offline', function(){ if(nvLigado()) nvStatus('offline'); });
 }
 
