@@ -550,7 +550,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.6.0</span><br>
+              Versão: <span id="app-versao">2.6.1</span><br>
               Data da versão: <span id="app-versao-data">19/08/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -12052,7 +12052,11 @@ function nvReq(caminho, opcoes, comAuth, jaRenovou){
   return fetch(NUVEM.url + caminho, {
     method:  opcoes.method || 'GET',
     headers: nvCabecalhos(comAuth !== false, opcoes.headers),
-    body:    opcoes.body
+    body:    opcoes.body,
+    // Consulta ao banco nunca pode vir de cache. Além do service worker (já corrigido para
+    // não tocar em outras origens), o próprio navegador guarda respostas GET — o Safari do
+    // iPhone é especialmente agressivo nisso.
+    cache:   'no-store'
   }).then(function(r){
     // Token expirado: renova uma vez e repete a chamada.
     if(r.status === 401 && comAuth !== false && !jaRenovou && nvSessao && nvSessao.refresh_token){
@@ -12501,7 +12505,7 @@ function nvDiagnostico(){
     .then(function(r){ reg('Projeto responde', r.ok, 'HTTP ' + r.status); })
     .catch(function(e){ reg('Projeto responde', false, e.message); })
     .then(function(){
-      return fetch(NUVEM.url + '/rest/v1/rebanho_ponteiro?select=versao_atual', { headers: nvCabecalhos(false) })
+      return fetch(NUVEM.url + '/rest/v1/rebanho_ponteiro?select=versao_atual', { headers: nvCabecalhos(false), cache:'no-store' })
         .then(function(r){ return r.text().then(function(t){
           var vazio = (t || '').trim() === '[]';
           reg('Tabelas criadas e protegidas', r.ok && vazio, vazio ? 'anônimo não enxerga nada, como deve ser' : 'HTTP ' + r.status + ' ' + t.slice(0,80));

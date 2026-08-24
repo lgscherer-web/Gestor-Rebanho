@@ -5,7 +5,7 @@
 
 // IMPORTANTE: aumente este número a cada nova versão do app, senão os aparelhos que já
 // instalaram continuam abrindo o HTML antigo guardado em cache.
-var CACHE_NAME = 'rebanho-v20';
+var CACHE_NAME = 'rebanho-v21';
 
 var FILES_TO_CACHE = [
   './index.html',
@@ -39,6 +39,16 @@ self.addEventListener('activate', function(evt){
 
 self.addEventListener('fetch', function(evt){
   if(evt.request.method !== 'GET') return;
+
+  // SÓ cuidamos dos arquivos do próprio app. Sem esta checagem, as consultas ao banco de
+  // dados (outra origem, e também GET) caíam no cache-first lá embaixo e o aparelho passava
+  // a ler versões guardadas em vez de perguntar ao servidor — o app abria com dados antigos
+  // e a lista de versões nunca mostrava as mais recentes. Gravar continuava funcionando
+  // porque gravação é POST, e POST já saía na primeira linha desta função.
+  var mesmaOrigem;
+  try { mesmaOrigem = (new URL(evt.request.url)).origin === self.location.origin; }
+  catch(e){ mesmaOrigem = false; }
+  if(!mesmaOrigem) return;
 
   // O HTML principal usa NETWORK-FIRST: sempre tenta baixar a versão mais recente e só cai
   // para o cache se estiver sem internet. Antes ele era cache-first como o resto, e por isso
