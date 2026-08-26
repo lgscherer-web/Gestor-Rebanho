@@ -1,0 +1,79 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# MANTER O BANCO DE DADOS ACORDADO
+# ═══════════════════════════════════════════════════════════════════════════
+# O plano gratuito do Supabase suspende o projeto após 7 dias sem nenhuma
+# consulta ao banco. Abrir o painel do Supabase NÃO conta — só consulta de
+# verdade conta.
+#
+# Esta rotina chama a função rebanho_ping() uma vez por dia. Ela devolve apenas
+# a hora do servidor, sem tocar em nenhum dado do rebanho.
+#
+# Rodar todo dia (e não a cada 3) é de propósito: o GitHub pode atrasar ou pular
+# execuções agendadas em horários de pico, e assim sobram 6 chances de folga
+# antes do prazo de 7 dias.
+#
+# ONDE ESTE ARQUIVO DEVE FICAR NO REPOSITÓRIO:
+#   .github/workflows/manter-banco-ativo.yml
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: Manter banco de dados ativo
+
+on:
+  schedule:
+    # Todo dia às 12:00 UTC (9h da manhã no horário de Brasília)
+    - cron: '0 12 * * *'
+    # Todo dia 1º do mês: além do ping, grava um commit de manutenção.
+    # Motivo no passo "Commit de manutenção", lá embaixo.
+    - cron: '15 12 1 * *'
+  workflow_dispatch:        # permite rodar na hora, pelo botão "Run workflow"
+
+permissions:
+  contents: write           # necessário só para o commit mensal de manutenção
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar o banco
+        env:
+          # Estes dois valores são públicos por natureza — são os mesmos que já
+          # ficam dentro do index.html. Quem protege os dados é o login e as
+          # regras de segurança do banco, não o sigilo da chave.
+          SUPABASE_URL: https://ironnkgdeoyynlffjmqy.supabase.co
+          SUPABASE_KEY: sb_publishable_9FMAOPYOvwG1C1CmdTFi9Q_ci1XgcYH
+        run: |
+          set -u
+          echo "Chamando rebanho_ping() em $SUPABASE_URL"
+          codigo=$(curl -sS -o resposta.txt -w '%{http_code}' \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/rebanho_ping" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Content-Type: application/json" \
+            --max-time 30 \
+            -d '{}') || codigo="000"
+          echo "HTTP $codigo"
+          echo "Resposta: $(cat resposta.txt)"
+          rm -f resposta.txt
+          if [ "$codigo" != "200" ]; then
+            echo "::error::O banco nao respondeu como esperado (HTTP $codigo). O projeto pode estar suspenso — abra o painel do Supabase e clique em Restore."
+            exit 1
+          fi
+          echo "Banco respondeu. Contagem dos 7 dias reiniciada."
+
+      # ── Por que este passo existe ───────────────────────────────────────────
+      # O GitHub desativa sozinho as rotinas agendadas de repositórios públicos
+      # após 60 dias sem nenhum commit. Se isso acontecesse, o ping pararia em
+      # silêncio e o banco seria suspenso sem ninguém perceber.
+      #
+      # Uma vez por mês esta rotina grava a data da última verificação num
+      # arquivo e faz o commit. Isso reinicia a contagem dos 60 dias, e de
+      # quebra deixa registrado que a checagem está de pé.
+      - name: Commit de manutenção
+        if: github.event.schedule == '15 12 1 * *'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --ff-only origin "${GITHUB_REF_NAME}" || true
+          echo "Ultima verificacao automatica do banco: $(date -u '+%Y-%m-%d %H:%M UTC')" > MANUTENCAO.txt
+          git add MANUTENCAO.txt
+          git commit -m "Manutencao automatica: banco de dados verificado" || exit 0
+          git push
