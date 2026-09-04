@@ -550,7 +550,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.6.1</span><br>
+              Versão: <span id="app-versao">2.7.0</span><br>
               Data da versão: <span id="app-versao-data">19/08/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -2330,7 +2330,7 @@ function parseWB(wb){
       var grp = (cl(r[1])||'').toLowerCase()==='producao' ? 'Producao' : 'Geral';
       // r[5] ('Registrado em') só existe em arquivos gravados a partir da v1.1.2; nos antigos
       // vem vazio e a ordenação do histórico cai para a ordem de inserção.
-      DB_financeiro.push({data:xlsxDateToStr(r[0]),grupo:grp,categoria:cat,valor:cl(r[3]),obs:cl(r[4]),_ts:cl(r[5])||undefined});
+      DB_financeiro.push({data:xlsxDateToStr(r[0]),grupo:grp,categoria:cat,valor:cl(r[3]),obs:cl(r[4]),_ts:cl(r[5])||undefined,_cfId:cl(r[6])||undefined});
     }
   }
   // Receitas
@@ -2354,7 +2354,8 @@ function parseWB(wb){
       DB_contasfixas.push({
         descricao:d, grupo:cl(r[1])==='Producao'?'Producao':'Geral', categoria:cl(r[2]),
         diaVenc:parseInt(cl(r[3]))||1, valorEstimado:cl(r[4]),
-        ativa: cl(r[5]).toLowerCase()!=='nao'
+        ativa: cl(r[5]).toLowerCase()!=='nao',
+        cfId: cl(r[6])
       });
     }
   }
@@ -3398,8 +3399,8 @@ function _buildWorkbook(){
   // 'Registrado em' entra como ÚLTIMA coluna de propósito: acrescentar no fim é a única forma
   // segura de evoluir o formato, porque não desloca nenhuma coluna existente. Versões antigas
   // do app simplesmente ignoram a coluna extra, e a leitura das demais continua idêntica.
-  var finD=[['CONTROLE FINANCEIRO'],['Lancamentos de despesas por categoria (Geral/Producao).'],['Data','Grupo','Categoria','Valor (R$)','Observacao','Registrado em']]
-    .concat(DB_financeiro.map(function(r){return[r.data?exDate(r.data):null,r.grupo==='Producao'?'Producao':'Geral',r.categoria||'',r.valor||'',r.obs||'',r._ts||''];}));
+  var finD=[['CONTROLE FINANCEIRO'],['Lancamentos de despesas por categoria (Geral/Producao).'],['Data','Grupo','Categoria','Valor (R$)','Observacao','Registrado em','Conta Fixa (ID)']]
+    .concat(DB_financeiro.map(function(r){return[r.data?exDate(r.data):null,r.grupo==='Producao'?'Producao':'Geral',r.categoria||'',r.valor||'',r.obs||'',r._ts||'',r._cfId||''];}));
   var wsFin=XLSX.utils.aoa_to_sheet(finD);
   DB_financeiro.forEach(function(r,i){var c=wsFin[XLSX.utils.encode_cell({r:3+i,c:0})];if(c&&r.data)c.z='dd/mm/yyyy';});
   XLSX.utils.book_append_sheet(wb,wsFin,'Financeiro');
@@ -3414,10 +3415,10 @@ function _buildWorkbook(){
   // Contas fixas mensais (lembrete). Guarda só o cadastro — a baixa é derivada dos
   // lançamentos de despesa, então não há estado de "pago" para persistir.
   var cfD=[['CONTAS FIXAS MENSAIS'],['Lembrete de contas recorrentes. A baixa e automatica: conta paga = despesa lancada no mes na mesma categoria.'],
-           ['Descricao','Grupo','Categoria','Dia Vencimento','Valor Estimado','Ativa']]
+           ['Descricao','Grupo','Categoria','Dia Vencimento','Valor Estimado','Ativa','ID']]
     .concat(DB_contasfixas.map(function(r){
       return[r.descricao||'', r.grupo==='Producao'?'Producao':'Geral', r.categoria||'',
-             r.diaVenc||'', r.valorEstimado||'', r.ativa===false?'Nao':'Sim'];
+             r.diaVenc||'', r.valorEstimado||'', r.ativa===false?'Nao':'Sim', r.cfId||''];
     }));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cfD),'Contas Fixas');
 
@@ -6074,7 +6075,45 @@ function renderBaixas(){
 // reconciliações do app.
 //
 // Retorna, para o mês/ano informados, a situação de cada conta fixa ativa.
+// Identificador estável de cada conta fixa. Sem ele, três contas na mesma categoria
+// (DARF, FGTS e FETAR em "FGTS Eberson") eram indistinguíveis: pagar uma marcava as três.
+// Gerado sob demanda para os cadastros que vieram de antes desta versão.
+function cfGarantirIds(){
+  var maior = 0;
+  DB_contasfixas.forEach(function(c){
+    var n = parseInt(String(c.cfId||'').replace('CF',''), 10);
+    if(!isNaN(n) && n>maior) maior = n;
+  });
+  DB_contasfixas.forEach(function(c){ if(!c.cfId) c.cfId = 'CF' + (++maior); });
+}
+
+// Quais lançamentos pertencem a ESTA conta fixa, e não a uma irmã de mesma categoria.
+// Três critérios, do mais firme ao mais tolerante:
+//   1. o lançamento carrega o identificador da conta (foi lançado pelo botão dela);
+//   2. mesma categoria E a observação corresponde à descrição da conta;
+//   3. mesma categoria, quando ela é a ÚNICA conta fixa daquela categoria — assim
+//      um lançamento digitado à mão continua dando baixa, como sempre funcionou.
+function cfLancamentosDaConta(conta, lancsDaCategoria, contasNaCategoria){
+  var comId = lancsDaCategoria.filter(function(r){ return r._cfId && r._cfId===conta.cfId; });
+  if(comId.length) return comId;
+
+  var desc = String(conta.descricao||'').trim().toLowerCase();
+  if(desc){
+    var porDesc = lancsDaCategoria.filter(function(r){
+      if(r._cfId) return false;                       // já pertence a outra conta
+      return String(r.obs||'').trim().toLowerCase() === desc;
+    });
+    if(porDesc.length) return porDesc;
+  }
+
+  if(contasNaCategoria === 1){
+    return lancsDaCategoria.filter(function(r){ return !r._cfId; });
+  }
+  return [];
+}
+
 function cfSituacaoDoMes(ano, mes){
+  cfGarantirIds();
   var hoje = new Date();
   var ehMesCorrente = (hoje.getFullYear()===ano && hoje.getMonth()===mes);
   var ultimoDia = new Date(ano, mes+1, 0).getDate();
@@ -6089,8 +6128,14 @@ function cfSituacaoDoMes(ano, mes){
     pagasPorCat[c].push(r);
   });
 
-  return DB_contasfixas.filter(function(c){ return c.ativa!==false; }).map(function(c){
-    var lancs = pagasPorCat[c.categoria]||[];
+  // Quantas contas fixas ativas dividem cada categoria — define o quanto o
+  // casamento pode ser tolerante.
+  var ativas = DB_contasfixas.filter(function(c){ return c.ativa!==false; });
+  var porCategoria = {};
+  ativas.forEach(function(c){ porCategoria[c.categoria] = (porCategoria[c.categoria]||0)+1; });
+
+  return ativas.map(function(c){
+    var lancs = cfLancamentosDaConta(c, pagasPorCat[c.categoria]||[], porCategoria[c.categoria]||1);
     var pago = lancs.length>0;
     var valorPago = lancs.reduce(function(s,r){ var n=parseValorBR(r.valor); return s+(isNaN(n)?0:n); },0);
     // Dia 31 numa competência de 30 dias cai no último dia do mês.
@@ -6180,6 +6225,9 @@ function renderContasFixas(){
 }
 
 // Abre o formulário de lançamento já preenchido com os dados da conta fixa pendente.
+// Conta fixa que originou o lançamento em preparo no formulário (limpo ao salvar).
+var _cfLancandoId = '';
+
 function cfLancar(idx){
   var s = (window._cfSitAtual||[])[idx];
   if(!s) return;
@@ -6197,6 +6245,10 @@ function cfLancar(idx){
     if(!existe) s_('fin-categoria-outra', s.conta.categoria);
   }
   s_('fin-obs', s.conta.descricao||'');
+  // Carimba a conta de origem: é o que garante a baixa individual quando várias
+  // contas dividem a mesma categoria.
+  cfGarantirIds();
+  _cfLancandoId = s.conta.cfId || '';
   var card = document.getElementById('lanc-form-title');
   if(card) card.scrollIntoView({behavior:'smooth', block:'center'});
   toast('Confira o valor e salve para dar baixa em "'+(s.conta.descricao||s.conta.categoria)+'"','ok');
@@ -6397,8 +6449,12 @@ function salvarLancamento(){
     if(erros) return;
     var isEditD = lancEditTipo==='fin' && lancEditIdx!==null && DB_financeiro[lancEditIdx];
     var despRec = { data:data, grupo:grupo, categoria:categoria, valor:valor, obs:obs, _ts: nowTS() };
+    // Vínculo com a conta fixa que originou o lançamento (botão "Lançar"). É o que
+    // permite dar baixa numa conta sem marcar as irmãs de mesma categoria.
+    if(_cfLancandoId) despRec._cfId = _cfLancandoId;
     if(isEditD){
       despRec._ts = DB_financeiro[lancEditIdx]._ts || despRec._ts;  // editar não muda a ordem
+      if(!despRec._cfId && DB_financeiro[lancEditIdx]._cfId) despRec._cfId = DB_financeiro[lancEditIdx]._cfId;
       DB_financeiro[lancEditIdx] = despRec;
       toast('Despesa atualizada: '+categoria+' ('+fmtValorBR(valor)+')','ok');
     } else {
@@ -6407,6 +6463,7 @@ function salvarLancamento(){
     }
   }
 
+  _cfLancandoId = '';
   cancelarLancamento();
   // renderFinanceiro já redesenha o painel de contas fixas (a baixa é derivada dos
   // lançamentos); renderDash atualiza os alertas da tela inicial.
