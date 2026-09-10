@@ -15,6 +15,383 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   CAPTURA GLOBAL DE ERROS
+   ═══════════════════════════════════════════════════════════════════════════
+   Até aqui, um erro de JavaScript era invisível: a tela simplesmente parava de
+   responder, sem mensagem, e quem estava no curral não tinha como saber se
+   devia esperar, recarregar ou desistir. Pior: recarregar sem salvar joga fora
+   tudo o que foi digitado desde a última gravação.
+
+   Este bloco resolve as três partes do problema:
+     1. AVISA  — mostra um painel dizendo que houve um erro, em português;
+     2. SALVA  — oferece baixar uma cópia dos dados que estão na memória ANTES
+                 de recarregar, e essa cópia sai em .xlsx (que o app relê);
+     3. REGISTRA — guarda os últimos erros no aparelho, para que uma falha de
+                 ontem ainda possa ser diagnosticada hoje.
+
+   Três decisões de projeto que valem explicação:
+
+   • Ele fica no <head>, ANTES das bibliotecas e antes do script principal.
+     Se estivesse junto do resto do código, um erro de sintaxe no script
+     principal impediria o próprio capturador de existir — justamente no caso
+     em que ele é mais necessário.
+
+   • Ele NÃO interrompe a nuvem nem o salvamento automático. A tentação é
+     "congelar tudo até entender o que houve", mas a falha que este recurso
+     existe para tratar é perder o que foi digitado; travar a gravação faria
+     exatamente isso acontecer.
+
+   • Ele NÃO recarrega sozinho. Boa parte dos erros de JavaScript atinge uma
+     tela só — recarregar por conta própria custaria as alterações em aberto
+     por um problema que talvez nem afete o que o usuário está fazendo.
+     Quem decide é o usuário, com o botão de baixar cópia ao lado.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function(){
+  var CHAVE_LOG = 'rebanho_erros_v1';
+  var MAX_LOG   = 20;      // erros guardados no aparelho, entre sessões
+  var MAX_ABRIR = 3;       // painéis distintos por sessão (evita enxurrada)
+
+  var registros = [];      // erros desta sessão
+  var vistos    = {};      // assinatura -> repetições (um erro em laço repete muito)
+  var aberturas = 0;
+  var painelAberto = false;
+
+  function d2(n){ return (n<10?'0':'')+n; }
+  function carimbo(){
+    var d = new Date();
+    return d2(d.getDate())+'/'+d2(d.getMonth()+1)+'/'+d.getFullYear()+' '
+         + d2(d.getHours())+':'+d2(d.getMinutes())+':'+d2(d.getSeconds());
+  }
+  function carimboArq(){
+    var d = new Date();
+    return d.getFullYear()+'-'+d2(d.getMonth()+1)+'-'+d2(d.getDate())+'-'
+         + d2(d.getHours())+d2(d.getMinutes());
+  }
+  function versaoApp(){
+    try{ var el = document.getElementById('app-versao'); return el ? el.textContent : '?'; }
+    catch(e){ return '?'; }
+  }
+  // Nada de mensagem de erro entrando por innerHTML: a mensagem pode conter < e >
+  // vindos do próprio código, e escapar errado aqui seria um erro dentro do
+  // tratador de erros. Todo texto vindo da falha entra por textContent.
+
+  // ── Ruído que não é problema do app ──────────────────────────────────────
+  // "Script error." sem arquivo nem linha vem de extensão do navegador ou de
+  // script de outra origem — o app é todo de mesma origem, então isso não é
+  // nosso. "ResizeObserver loop" é aviso conhecido do próprio navegador.
+  function ehRuido(reg){
+    if(/ResizeObserver loop/i.test(reg.msg)) return true;
+    if(/^Script error\.?$/i.test(reg.msg) && !reg.arquivo && !reg.pilha) return true;
+    return false;
+  }
+
+  // ── Registro persistente ─────────────────────────────────────────────────
+  function lerLog(){
+    try{
+      var t = localStorage.getItem(CHAVE_LOG);
+      var a = t ? JSON.parse(t) : [];
+      return Object.prototype.toString.call(a)==='[object Array]' ? a : [];
+    }catch(e){ return []; }
+  }
+  function gravarLog(reg){
+    try{
+      var log = lerLog();
+      log.push({ quando:reg.quando, tipo:reg.tipo, msg:reg.msg, arquivo:reg.arquivo,
+                 linha:reg.linha, coluna:reg.coluna, pilha:(reg.pilha||'').slice(0,900),
+                 versao:reg.versao, tela:reg.tela });
+      if(log.length > MAX_LOG) log = log.slice(log.length - MAX_LOG);
+      localStorage.setItem(CHAVE_LOG, JSON.stringify(log));
+    }catch(e){ /* cota cheia: o painel na tela continua funcionando */ }
+  }
+
+  function telaAtual(){
+    try{
+      var t = document.querySelector('.tab.active, .nav-item.active, [data-tab].active');
+      return t ? (t.textContent||'').trim().slice(0,40) : '';
+    }catch(e){ return ''; }
+  }
+
+  // ── Coleta dos dados em memória ──────────────────────────────────────────
+  // Mesma ideia da coleta usada pela nuvem, mas escrita aqui de forma
+  // independente: se a falha estiver no módulo da nuvem, chamar a função de lá
+  // seria disparar o mesmo erro no meio do socorro.
+  function coletar(){
+    var s = {}, achou = false;
+    try{
+      Object.keys(window).forEach(function(k){
+        if(!/^(DB($|_)|fcInter$|calEventos$|_miNextId$|_protNextId$|_baixaNextId$)/.test(k)) return;
+        var v = window[k];
+        if(v === undefined || typeof v === 'function') return;
+        s[k] = v; achou = true;
+      });
+    }catch(e){}
+    return achou ? s : null;
+  }
+  function temAnimais(s){
+    try{ return !!(s && s.DB && s.DB.id && s.DB.id.length); }catch(e){ return false; }
+  }
+
+  function baixarBlob(blob, nome){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+  }
+
+  // Preferência pelo .xlsx: é o formato que o app relê. O .json só serve para
+  // recuperação manual, então fica como rede de segurança e não como primeira
+  // opção. Se a própria montagem da planilha for o que quebrou, cai no .json.
+  function salvarCopia(aviso){
+    var dados = coletar();
+    if(!temAnimais(dados)){
+      // Memória vazia ou perdida: resta o salvamento automático do aparelho.
+      var bruto = null;
+      try{ bruto = localStorage.getItem('rebanho_autosave_v3') || localStorage.getItem('rebanho_autosave_v2'); }catch(e){}
+      if(!bruto){
+        aviso('Não há dados carregados na memória para salvar.', 'erro');
+        return;
+      }
+      baixarBlob(new Blob([bruto], {type:'application/json'}),
+                 'rebanho-emergencia-'+carimboArq()+'.json');
+      aviso('Baixado o último salvamento automático (.json). Guarde este arquivo.', 'ok');
+      return;
+    }
+
+    try{
+      if(typeof window._buildWorkbook === 'function' && typeof window._workbookToBlob === 'function' && window.XLSX){
+        baixarBlob(window._workbookToBlob(window._buildWorkbook()),
+                   'rebanho-emergencia-'+carimboArq()+'.xlsx');
+        aviso('Cópia baixada em .xlsx — o app consegue reabrir este arquivo.', 'ok');
+        return;
+      }
+    }catch(e){ /* segue para o .json */ }
+
+    try{
+      var pacote = { origem:'captura-de-erro', versao:versaoApp(), quando:carimbo(), dados:dados };
+      baixarBlob(new Blob([JSON.stringify(pacote)], {type:'application/json'}),
+                 'rebanho-emergencia-'+carimboArq()+'.json');
+      aviso('Cópia baixada em .json. Guarde o arquivo e me envie para recuperação.', 'ok');
+    }catch(e){
+      aviso('Não foi possível gerar a cópia: '+(e && e.message ? e.message : e), 'erro');
+    }
+  }
+
+  // ── Texto técnico ────────────────────────────────────────────────────────
+  function detalhes(){
+    var linhas = ['Gestor de Rebanho — relatório de erro',
+                  'Versão: '+versaoApp(),
+                  'Aparelho: '+(navigator.userAgent||'?'),
+                  'Erros nesta sessão: '+registros.length, ''];
+    registros.forEach(function(r, i){
+      linhas.push('['+(i+1)+'] '+r.quando+' — '+r.tipo);
+      linhas.push('    '+r.msg);
+      if(r.arquivo) linhas.push('    em '+r.arquivo+':'+r.linha+':'+r.coluna);
+      if(r.tela)    linhas.push('    tela: '+r.tela);
+      if(r.repetiu) linhas.push('    repetiu '+r.repetiu+'x');
+      if(r.pilha)   linhas.push('    '+String(r.pilha).split('\n').slice(0,6).join('\n    '));
+      linhas.push('');
+    });
+    return linhas.join('\n');
+  }
+
+  // ── Painel ───────────────────────────────────────────────────────────────
+  // Estilos escritos à mão, sem as variáveis de cor do app: se a falha for no
+  // carregamento da folha de estilo, um painel que depende dela não aparece.
+  function abrirPainel(reg){
+    if(painelAberto) { atualizarContador(); return; }
+    if(!document.body){
+      document.addEventListener('DOMContentLoaded', function(){ abrirPainel(reg); });
+      return;
+    }
+    painelAberto = true; aberturas++;
+
+    var d = document.createElement('div');
+    d.id = 'err-painel';
+    d.setAttribute('style', 'position:fixed;inset:0;z-index:99999;background:rgba(20,25,20,.93);'
+      + 'display:flex;align-items:center;justify-content:center;padding:16px;'
+      + 'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif');
+
+    d.innerHTML =
+      '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;'
+    +      'max-height:92vh;overflow:auto;box-shadow:0 18px 48px rgba(0,0,0,.4)">'
+    +   '<div style="background:#b3261e;color:#fff;padding:16px 20px;border-radius:14px 14px 0 0">'
+    +     '<div style="font-size:17px;font-weight:700">&#9888; O aplicativo encontrou um erro</div>'
+    +     '<div id="err-contador" style="font-size:12px;opacity:.9;margin-top:3px">1 ocorrência</div>'
+    +   '</div>'
+    +   '<div style="padding:18px 20px;color:#26302a;font-size:14px;line-height:1.65">'
+    +     '<p style="margin-bottom:12px">Alguma parte da tela pode ter parado de funcionar. '
+    +       '<strong>Os dados que você digitou continuam na memória</strong> — mas se recarregar o app '
+    +       'sem salvar, o que ainda não foi gravado se perde.</p>'
+    +     '<p style="margin-bottom:16px;color:#5b6660;font-size:13px">Baixe uma cópia antes de recarregar. '
+    +       'É a única ação que não dá para desfazer depois.</p>'
+
+    +     '<button id="err-salvar" style="width:100%;padding:13px;border:0;border-radius:9px;'
+    +       'background:#2e7d32;color:#fff;font-size:15px;font-weight:600;cursor:pointer">'
+    +       '&#128190; Baixar cópia de segurança dos dados</button>'
+    +     '<div id="err-aviso" style="display:none;font-size:12.5px;margin-top:9px;padding:9px 11px;border-radius:7px"></div>'
+
+    +     '<div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap">'
+    +       '<button id="err-continuar" style="flex:1;min-width:150px;padding:11px;border:1px solid #ccc7bb;'
+    +         'border-radius:9px;background:#fff;color:#26302a;font-size:14px;cursor:pointer">Continuar mesmo assim</button>'
+    +       '<button id="err-recarregar" style="flex:1;min-width:150px;padding:11px;border:1px solid #ccc7bb;'
+    +         'border-radius:9px;background:#f0ede6;color:#26302a;font-size:14px;cursor:pointer">Recarregar o app</button>'
+    +     '</div>'
+
+    +     '<div style="margin-top:16px;border-top:1px solid #e3dfd5;padding-top:12px">'
+    +       '<button id="err-tecnico" style="border:0;background:none;color:#5b6660;font-size:12.5px;'
+    +         'cursor:pointer;padding:0;text-decoration:underline">Ver detalhes técnicos</button>'
+    +       '<div id="err-caixa" style="display:none;margin-top:9px">'
+    +         '<pre id="err-texto" style="background:#f5f3ef;border:1px solid #e3dfd5;border-radius:7px;'
+    +           'padding:10px;font-size:11px;line-height:1.5;max-height:230px;overflow:auto;'
+    +           'white-space:pre-wrap;word-break:break-word;color:#3d4a42"></pre>'
+    +         '<button id="err-copiar" style="margin-top:8px;padding:8px 13px;border:1px solid #ccc7bb;'
+    +           'border-radius:7px;background:#fff;font-size:12.5px;cursor:pointer">Copiar detalhes</button>'
+    +       '</div>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>';
+
+    document.body.appendChild(d);
+
+    function aviso(txt, tipo){
+      var a = document.getElementById('err-aviso');
+      if(!a) return;
+      a.style.display = 'block';
+      a.style.background = (tipo==='erro') ? '#fdecea' : '#e7f4e8';
+      a.style.color      = (tipo==='erro') ? '#8c1d18' : '#1b5e20';
+      a.textContent = txt;
+    }
+
+    document.getElementById('err-salvar').onclick     = function(){ salvarCopia(aviso); };
+    document.getElementById('err-continuar').onclick  = function(){ fecharPainel(); };
+    document.getElementById('err-recarregar').onclick = function(){ location.reload(); };
+    document.getElementById('err-tecnico').onclick    = function(){
+      var c = document.getElementById('err-caixa');
+      var aberto = c.style.display !== 'none';
+      c.style.display = aberto ? 'none' : 'block';
+      this.textContent = aberto ? 'Ver detalhes técnicos' : 'Ocultar detalhes técnicos';
+      if(!aberto) document.getElementById('err-texto').textContent = detalhes();
+    };
+    document.getElementById('err-copiar').onclick = function(){
+      var t = detalhes(), btn = this;
+      function ok(){ btn.textContent = 'Copiado!'; setTimeout(function(){ btn.textContent='Copiar detalhes'; }, 2000); }
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(t).then(ok, function(){ selecionar(); });
+        } else selecionar();
+      }catch(e){ selecionar(); }
+      function selecionar(){
+        try{
+          var pre = document.getElementById('err-texto');
+          var r = document.createRange(); r.selectNodeContents(pre);
+          var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+          btn.textContent = 'Selecionado — use copiar do aparelho';
+        }catch(e2){}
+      }
+    };
+  }
+
+  function atualizarContador(){
+    try{
+      var c = document.getElementById('err-contador');
+      if(c) c.textContent = registros.length + (registros.length===1 ? ' ocorrência' : ' ocorrências');
+      var t = document.getElementById('err-texto');
+      if(t && t.offsetParent !== null) t.textContent = detalhes();
+    }catch(e){}
+  }
+
+  function fecharPainel(){
+    painelAberto = false;
+    var d = document.getElementById('err-painel');
+    if(d) d.remove();
+    mostrarSelo();
+  }
+
+  // Depois de dispensado, fica um selo discreto: o usuário precisa lembrar que
+  // alguma coisa falhou naquela sessão, senão vai atribuir o comportamento
+  // estranho a outra causa.
+  function mostrarSelo(){
+    try{
+      if(document.getElementById('err-selo')) { atualizarSelo(); return; }
+      var s = document.createElement('button');
+      s.id = 'err-selo';
+      s.setAttribute('style','position:fixed;left:12px;bottom:12px;z-index:9500;border:0;'
+        + 'border-radius:20px;background:#b3261e;color:#fff;font-size:12px;font-weight:600;'
+        + 'padding:8px 14px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.28);'
+        + 'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif');
+      s.onclick = function(){ this.remove(); abrirPainel(registros[registros.length-1]); };
+      document.body.appendChild(s);
+      atualizarSelo();
+    }catch(e){}
+  }
+  function atualizarSelo(){
+    var s = document.getElementById('err-selo');
+    if(s) s.textContent = '⚠ ' + registros.length + (registros.length===1?' erro':' erros') + ' — ver';
+  }
+
+  // ── Entrada ──────────────────────────────────────────────────────────────
+  function registrar(tipo, msg, arquivo, linha, coluna, erro){
+    var reg = {
+      quando:  carimbo(),
+      tipo:    tipo,
+      msg:     String(msg || 'erro sem mensagem').slice(0, 400),
+      arquivo: arquivo ? String(arquivo).split('/').pop() : '',
+      linha:   linha || 0,
+      coluna:  coluna || 0,
+      pilha:   (erro && erro.stack) ? String(erro.stack) : '',
+      versao:  versaoApp(),
+      tela:    telaAtual(),
+      repetiu: 0
+    };
+    if(ehRuido(reg)) return;
+
+    // Um erro dentro de um laço de desenho dispara centenas de vezes por
+    // segundo. Guardamos o primeiro e apenas contamos os iguais.
+    var assin = reg.tipo+'|'+reg.msg+'|'+reg.arquivo+'|'+reg.linha;
+    if(vistos[assin]){
+      vistos[assin]++;
+      for(var i=0;i<registros.length;i++){
+        if(registros[i]._assin === assin){ registros[i].repetiu = vistos[assin]-1; break; }
+      }
+      atualizarContador(); atualizarSelo();
+      return;
+    }
+    vistos[assin] = 1;
+    reg._assin = assin;
+    registros.push(reg);
+    gravarLog(reg);
+
+    if(painelAberto){ atualizarContador(); return; }
+    if(document.getElementById('err-selo')){ atualizarSelo(); return; }
+    if(aberturas >= MAX_ABRIR){ mostrarSelo(); return; }
+    abrirPainel(reg);
+  }
+
+  window.onerror = function(msg, arquivo, linha, coluna, erro){
+    try{ registrar('erro', msg, arquivo, linha, coluna, erro); }catch(e){}
+    return false;   // deixa o navegador registrar no console também
+  };
+
+  // Falha em promessa não tratada: é assim que aparecem os erros da nuvem e de
+  // qualquer chamada de rede que ninguém pegou com .catch().
+  window.addEventListener('unhandledrejection', function(ev){
+    try{
+      var r = ev && ev.reason;
+      var m = (r && r.message) ? r.message : String(r);
+      registrar('promessa', m, '', 0, 0, (r && r.stack) ? r : null);
+    }catch(e){}
+  });
+
+  // Consulta pelo console do navegador quando for preciso diagnosticar depois:
+  // errosGuardados() traz também os erros de sessões anteriores.
+  window.errosGuardados = function(){ return lerLog(); };
+  window.errosDaSessao  = function(){ return registros.slice(); };
+})();
+</script>
+
 <!-- Bibliotecas locais (pasta libs/) — o app funciona sem internet a partir daqui.
      Se por algum motivo a pasta libs/ nao estiver presente, troque as duas linhas abaixo
      pelos links de CDN originais:
@@ -493,6 +870,7 @@ tr:hover td{background:#fafaf7}
       <button class="nb" onclick="goRepTab('historico')" id="nb-rep-historico"><span class="ic">&#128200;</span>Histórico Reprod.</button>
       <button class="nb" onclick="goTab('reprodutores')" id="nb-reprodutores"><span class="ic">&#9878;</span>Cadastro Reprodutores</button>
       <button class="nb" onclick="goRepTab('dash-rep')" id="nb-rep-dash-rep"><span class="ic">&#128293;</span>Dashboard Reprod.</button>
+      <button class="nb" onclick="goTab('indicadores')" id="nb-indicadores"><span class="ic">&#127919;</span>Indicadores de Cria</button>
       <div class="sb-sec">Relatórios</div>
       <button class="nb" onclick="goTab('relatorios')" id="nb-relatorios"><span class="ic">&#128438;</span>Relatórios</button>
       <div class="sb-sec">Financeiro</div>
@@ -550,8 +928,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.8.0</span><br>
-              Data da versão: <span id="app-versao-data">19/08/2026</span><br>
+              Versão: <span id="app-versao">2.10.0</span><br>
+              Data da versão: <span id="app-versao-data">10/09/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -1841,6 +2219,19 @@ tr:hover td{background:#fafaf7}
         </div>
       </div><!-- /tab-relatorios -->
 
+      <!-- INDICADORES DE CICLO DE CRIA -->
+      <div id="tab-indicadores" style="display:none">
+        <div class="sh">
+          <div class="sh-title">&#127919; Indicadores de Cria <small>Os números que sustentam a decisão</small></div>
+        </div>
+        <div class="tcard" style="margin-bottom:14px">
+          <div class="tbar"><span style="font-size:13px;font-weight:600">Safra</span></div>
+          <div id="ind-safra-tabs" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px"></div>
+        </div>
+        <div id="ind-conteudo"></div>
+      </div><!-- /tab-indicadores -->
+
+
 
       <!-- IATF -->
 
@@ -2770,6 +3161,7 @@ function renderTab(tab){
   else if(tab==='fin-dashboard') renderFinDashboard();
   else if(tab==='dashboard')    renderDash();
   else if(tab==='relatorios')   renderRelatorios();
+  else if(tab==='indicadores')  renderIndicadores();
   // estoque e ficha só renderizam sob demanda (no goTab)
 }
 
@@ -11635,6 +12027,355 @@ function reconciliarIntercorrenciasReproducao(){
   return criadas;
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INDICADORES DE CICLO DE CRIA
+// ═══════════════════════════════════════════════════════════════════════════
+// O software registrava bem os eventos, mas não produzia os números que se usam
+// para decidir. Aqui ficam os índices clássicos da cria, todos derivados dos
+// registros que já existem — nada precisa ser digitado de novo.
+//
+// Uma escolha de projeto atravessa tudo: a safra em andamento é sinalizada como
+// PARCIAL. Sem isso, uma taxa de parição de 37% assusta, quando na verdade
+// significa "ainda faltam 31 nascimentos acontecer ou serem lançados".
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Safra de um protocolo. O campo gravado tem prioridade; se estiver vazio ou
+// fora do padrão "2025/2026", deriva da data de início.
+function safraDoProtocolo(p){
+  if(!p) return '';
+  var a = String(p.ano||'').trim();
+  if(/^\d{4}\/\d{4}$/.test(a)) return a;
+  return anoReproFromD0(protDataInicio(p)) || '';
+}
+
+function safrasDisponiveis(){
+  var lista = [];
+  DB_protocolos.forEach(function(p){
+    var sf = safraDoProtocolo(p);
+    if(sf && lista.indexOf(sf)===-1) lista.push(sf);
+  });
+  return lista.sort().reverse();
+}
+
+// ── Núcleo: todos os índices de uma safra ─────────────────────────────────
+function indicadoresSafra(safra){
+  var protsDaSafra = DB_protocolos.filter(function(p){ return safraDoProtocolo(p)===safra; });
+  var ids = protsDaSafra.map(function(p){ return p.id; });
+
+  var expostas = {};      // fêmeas que entraram em algum protocolo da safra
+  DB_iatf_reg.forEach(function(r){
+    if(ids.indexOf(r.protId)!==-1 && r.brinco) expostas[r.brinco] = true;
+  });
+
+  var prenhes={}, vazias={}, partos=0, perdas=0, desmamados=0;
+  var aguardandoParto=[], aguardandoDesmame=[], pesosDesmame=[], idadesDesmame=[];
+
+  DB_dg_reg.forEach(function(r){
+    if(ids.indexOf(r.protId)===-1 || !r.brinco) return;
+    var res = String(r.resultado||'').toLowerCase();
+    if(res.indexOf('prenh')===0) prenhes[r.brinco]=true;
+    else if(res==='vazia')       vazias[r.brinco]=true;
+
+    if(r.partoResultado==='pariu'){
+      partos++;
+      var t = DB.dg.find(function(d){ return d.brinco===r.terneiroBrinco; });
+      var desmamou = !!(t && (t.dataDesmame || t.condAtual==='Desmamado'));
+      if(desmamou){
+        desmamados++;
+        var pd = pesoAoDesmame(r.terneiroBrinco, t.dataDesmame);
+        if(pd) pesosDesmame.push(pd);
+        var idade = diasEntre(t.nasc, t.dataDesmame);
+        if(idade>0) idadesDesmame.push(idade);
+      } else if(t){
+        aguardandoDesmame.push({ mae:r.brinco, terneiro:r.terneiroBrinco, nasc:t.nasc });
+      }
+    } else if(r.partoResultado==='abortou' || r.partoResultado==='natimorto'){
+      perdas++;
+    } else if(res.indexOf('prenh')===0){
+      // Prenhe e ainda sem desfecho: o parto está por vir (ou por lançar).
+      var iatf = DB_iatf_reg.find(function(x){ return x.protId===r.protId && x.brinco===r.brinco; });
+      var base = (iatf && iatf.data) || r.dataDG;
+      aguardandoParto.push({ brinco:r.brinco, cobertura:base, previsto:somaDias(base, 280) });
+    }
+  });
+
+  var nExp = Object.keys(expostas).length;
+  var pct = function(n){ return nExp ? (n*100/nExp) : 0; };
+  var pesoMedio = pesosDesmame.length
+    ? pesosDesmame.reduce(function(a,b){return a+b;},0)/pesosDesmame.length : 0;
+
+  return {
+    safra: safra,
+    expostas: nExp,
+    prenhes: Object.keys(prenhes).length,
+    vazias: Object.keys(vazias).length,
+    partos: partos,
+    perdas: perdas,
+    desmamados: desmamados,
+    aguardandoParto: aguardandoParto,
+    aguardandoDesmame: aguardandoDesmame,
+    taxaPrenhez: pct(Object.keys(prenhes).length),
+    taxaParicao: pct(partos),
+    taxaDesmame: pct(desmamados),
+    taxaPerda: partos+perdas ? (perdas*100/(partos+perdas)) : 0,
+    pesoMedioDesmame: pesoMedio,
+    idadeMediaDesmame: idadesDesmame.length
+      ? Math.round(idadesDesmame.reduce(function(a,b){return a+b;},0)/idadesDesmame.length) : 0,
+    kgPorVacaExposta: nExp ? (pesoMedio*desmamados/nExp) : 0,
+    // A safra está fechada quando não há mais nada pendente de acontecer.
+    parcial: aguardandoParto.length>0 || aguardandoDesmame.length>0
+  };
+}
+
+// ── Apoio ──────────────────────────────────────────────────────────────────
+function diasEntre(dataA, dataB){
+  var a=toDate(dataA), b=toDate(dataB);
+  if(!a||!b) return 0;
+  return Math.round((b-a)/86400000);
+}
+function somaDias(data, dias){
+  var d=toDate(data);
+  if(!d) return '';
+  var x=new Date(d.getTime()); x.setDate(x.getDate()+dias);
+  return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();
+}
+
+// Peso do terneiro na pesagem mais próxima do desmame (tolerância de 60 dias).
+// Sem essa tolerância, quase nenhum desmame teria peso: a pesagem raramente cai
+// no mesmo dia da anotação de desmame.
+function pesoAoDesmame(brinco, dataDesmame){
+  if(!brinco) return 0;
+  var dd = toDate(dataDesmame);
+  var cands = DB.pes.filter(function(p){
+    if(p.brinco!==brinco) return false;
+    var v = parseFloat(String(p.peso).replace(',','.'));
+    if(!(v>0)) return false;
+    if(!dd) return true;
+    var pd = toDate(p.data);
+    return pd && Math.abs(pd-dd) <= 60*86400000;
+  }).sort(function(a,b){ return toDate(b.data)-toDate(a.data); });
+  return cands.length ? (parseFloat(String(cands[0].peso).replace(',','.'))||0) : 0;
+}
+
+// ── Intervalo entre partos, do rebanho e por matriz ────────────────────────
+function intervalosEntrePartos(){
+  var porVaca = {};
+  DB_dg_reg.forEach(function(r){
+    if(r.partoResultado!=='pariu' || !r.partoData || !r.brinco) return;
+    (porVaca[r.brinco] = porVaca[r.brinco] || []).push(r.partoData);
+  });
+  var todos = [], porMatriz = {};
+  Object.keys(porVaca).forEach(function(b){
+    var datas = porVaca[b].slice().sort(function(x,y){ return toDate(x)-toDate(y); });
+    var ints = [];
+    for(var i=1;i<datas.length;i++){
+      var dias = diasEntre(datas[i-1], datas[i]);
+      // Descarta intervalos impossíveis: gestação bovina não permite menos de ~280 dias.
+      if(dias >= 280 && dias <= 1200){ ints.push(dias); todos.push(dias); }
+    }
+    if(ints.length) porMatriz[b] = Math.round(ints.reduce(function(a,c){return a+c;},0)/ints.length);
+  });
+  return {
+    medio: todos.length ? Math.round(todos.reduce(function(a,b){return a+b;},0)/todos.length) : 0,
+    n: todos.length,
+    porMatriz: porMatriz
+  };
+}
+
+// ── Ranking de matrizes: apoio à decisão de descarte ───────────────────────
+function rankingMatrizes(){
+  var iep = intervalosEntrePartos();
+  var linhas = [];
+  DB.id.forEach(function(a){
+    if((a.gen||'').toUpperCase()!=='F') return;
+    if(['Matriz','Primipara'].indexOf(a.cat)===-1) return;
+    var dg = DB.dg.find(function(d){ return d.brinco===a.brinco; }) || {};
+
+    var partos=0, perdas=0, desmamados=0, kg=0;
+    DB_dg_reg.forEach(function(r){
+      if(r.brinco!==a.brinco) return;
+      if(r.partoResultado==='pariu'){
+        partos++;
+        var t = DB.dg.find(function(d){ return d.brinco===r.terneiroBrinco; });
+        if(t && (t.dataDesmame || t.condAtual==='Desmamado')){
+          desmamados++;
+          kg += pesoAoDesmame(r.terneiroBrinco, t.dataDesmame);
+        }
+      } else if(r.partoResultado==='abortou' || r.partoResultado==='natimorto') perdas++;
+    });
+
+    var idade = dg.nasc ? (new Date() - toDate(dg.nasc))/(365.25*86400000) : 0;
+    linhas.push({
+      brinco: a.brinco, categoria: a.cat, idade: idade,
+      partos: Math.max(partos, parseInt(dg.numPartos)||0),
+      perdas: perdas, desmamados: desmamados, kgDesmamados: Math.round(kg),
+      iep: iep.porMatriz[a.brinco] || 0,
+      condicao: (typeof condicoesResumo==='function') ? condicoesResumo(a.brinco) : (dg.condAtual||'')
+    });
+  });
+  // Pior desempenho primeiro: quem menos entregou terneiro é candidata a descarte.
+  return linhas.sort(function(x,y){
+    if(x.desmamados!==y.desmamados) return x.desmamados-y.desmamados;
+    if(x.perdas!==y.perdas) return y.perdas-x.perdas;
+    return y.idade-x.idade;
+  });
+}
+
+
+// ── Tela de Indicadores ────────────────────────────────────────────────────
+var indSafraSel = '';
+
+function renderIndicadores(){
+  var box = document.getElementById('ind-conteudo');
+  if(!box) return;
+
+  var safras = safrasDisponiveis();
+  if(!safras.length){
+    box.innerHTML = '<div class="empty"><div class="empty-ic">&#128202;</div>'
+      + 'Ainda não há protocolos de IATF ou monta cadastrados.<br>'
+      + '<span style="font-size:12px">Os indicadores nascem dos protocolos: são eles que definem quantas fêmeas foram expostas.</span></div>';
+    return;
+  }
+  if(!indSafraSel || safras.indexOf(indSafraSel)===-1) indSafraSel = safras[0];
+
+  var abas = document.getElementById('ind-safra-tabs');
+  if(abas){
+    abas.innerHTML = safras.map(function(s){
+      return '<button class="san-lote-cat'+(s===indSafraSel?' sel':'')+'" onclick="indSetSafra(\''+s+'\')">'+s+'</button>';
+    }).join('');
+  }
+
+  var i = indicadoresSafra(indSafraSel);
+  var iep = intervalosEntrePartos();
+
+  function kpi(rotulo, valor, sub, cor){
+    return '<div class="dash-card" style="padding:14px 16px">'
+      + '<div style="font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">'+rotulo+'</div>'
+      + '<div style="font-size:26px;font-weight:700;color:'+(cor||'var(--tx)')+';line-height:1.25">'+valor+'</div>'
+      + (sub?'<div style="font-size:11px;color:var(--tx3);line-height:1.5">'+sub+'</div>':'')
+      + '</div>';
+  }
+  var pc = function(v){ return v.toFixed(1).replace('.',',')+'%'; };
+  // Faixas de referência usuais para cria a pasto no Sul.
+  var corTaxa = function(v, bom, medio){ return v>=bom?'var(--grnt)':(v>=medio?'var(--amb)':'var(--red)'); };
+
+  var aviso = '';
+  if(i.parcial){
+    aviso = '<div style="background:var(--ambbg);border:1px solid var(--amb);border-radius:var(--rsm);padding:11px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:var(--tx)">'
+      + '<strong>&#9888; Safra em andamento.</strong> As taxas de parição e desmame ainda vão subir: '
+      + (i.aguardandoParto.length ? '<strong>'+i.aguardandoParto.length+'</strong> fêmea(s) prenhe(s) sem parto lançado' : '')
+      + (i.aguardandoParto.length && i.aguardandoDesmame.length ? ' e ' : '')
+      + (i.aguardandoDesmame.length ? '<strong>'+i.aguardandoDesmame.length+'</strong> terneiro(s) ainda ao pé' : '')
+      + '. Compare com safras fechadas, não com estas parciais.</div>';
+  }
+
+  box.innerHTML = aviso
+    + '<div class="dash-grid" style="margin-bottom:16px">'
+      + kpi('Fêmeas expostas', i.expostas, 'entraram em protocolo nesta safra')
+      + kpi('Taxa de prenhez', pc(i.taxaPrenhez), i.prenhes+' prenhe(s) &middot; '+i.vazias+' vazia(s)', corTaxa(i.taxaPrenhez,85,70))
+      + kpi('Taxa de parição', pc(i.taxaParicao), i.partos+' parto(s)'+(i.parcial?' &middot; parcial':''), corTaxa(i.taxaParicao,80,65))
+      + kpi('Taxa de desmame', pc(i.taxaDesmame), i.desmamados+' desmamado(s)'+(i.parcial?' &middot; parcial':''), corTaxa(i.taxaDesmame,80,65))
+    + '</div>'
+    + '<div class="dash-grid" style="margin-bottom:16px">'
+      + kpi('kg de terneiro / vaca exposta', i.kgPorVacaExposta.toFixed(0), 'a medida real de produtividade')
+      + kpi('Peso médio ao desmame', i.pesoMedioDesmame ? i.pesoMedioDesmame.toFixed(0)+' kg' : '—',
+            i.idadeMediaDesmame ? 'aos '+i.idadeMediaDesmame+' dias de idade' : 'sem pesagem próxima ao desmame')
+      + kpi('Perda gestacional', pc(i.taxaPerda), i.perdas+' aborto(s)/natimorto(s)', i.taxaPerda<=3?'var(--grnt)':'var(--red)')
+      + kpi('Intervalo entre partos', iep.medio ? iep.medio+' dias' : '—',
+            iep.n ? iep.n+' intervalo(s) medido(s)' : 'precisa de 2 partos da mesma vaca')
+    + '</div>'
+
+    + (i.aguardandoParto.length ? cardTabela('Prenhes aguardando parto',
+        'Previsão a 280 dias da cobertura. Se a data já passou, o parto pode estar por lançar.',
+        ['Animal','Cobertura','Parto previsto'],
+        i.aguardandoParto.slice().sort(function(a,b){ return toDate(a.previsto)-toDate(b.previsto); })
+          .map(function(x){
+            var atrasado = toDate(x.previsto) && toDate(x.previsto) < new Date();
+            return [x.brinco, fmtD(x.cobertura),
+                    (atrasado?'<span style="color:var(--red);font-weight:600">':'<span>')+fmtD(x.previsto)+(atrasado?' &#9888;':'')+'</span>'];
+          })) : '')
+
+    + (i.aguardandoDesmame.length ? cardTabela('Terneiros ainda ao pé',
+        'Contam para a taxa de desmame assim que forem desmamados.',
+        ['Mãe','Terneiro','Nascimento','Idade'],
+        i.aguardandoDesmame.map(function(x){
+          return [x.mae, x.terneiro, fmtD(x.nasc), x.nasc ? calcAge(x.nasc) : '—'];
+        })) : '')
+
+    + cardRanking();
+}
+
+function cardTabela(titulo, nota, cabs, linhas){
+  return '<div class="tcard" style="margin-bottom:16px">'
+    + '<div class="tbar"><span style="font-size:13px;font-weight:600">'+titulo+'</span>'
+    + '<span class="tcnt">'+linhas.length+'</span></div>'
+    + (nota?'<div style="font-size:11px;color:var(--tx2);padding:9px 16px;border-bottom:1px solid var(--bord)">'+nota+'</div>':'')
+    + '<div class="tscroll"><table><thead><tr>'+cabs.map(function(c){return '<th>'+c+'</th>';}).join('')
+    + '</tr></thead><tbody>'
+    + linhas.map(function(l){ return '<tr>'+l.map(function(c){return '<td>'+c+'</td>';}).join('')+'</tr>'; }).join('')
+    + '</tbody></table></div></div>';
+}
+
+function cardRanking(){
+  var r = rankingMatrizes();
+  if(!r.length) return '';
+  return '<div class="tcard">'
+    + '<div class="tbar"><span style="font-size:13px;font-weight:600">Desempenho das matrizes</span>'
+    + '<span class="tcnt">'+r.length+' matriz(es)</span></div>'
+    + '<div style="font-size:11px;color:var(--tx2);padding:9px 16px;border-bottom:1px solid var(--bord)">'
+    + 'Ordenado do menor para o maior desempenho — as primeiras linhas são as candidatas a descarte. '
+    + 'Confira a condição antes de decidir: uma primípara sem desmame ainda não teve chance.</div>'
+    + '<div class="tscroll"><table><thead><tr>'
+    + '<th>Brinco</th><th>Categoria</th><th>Idade</th><th>Partos</th><th>Perdas</th>'
+    + '<th>Desmamados</th><th>kg desmamados</th><th>IEP</th><th>Condição</th></tr></thead><tbody>'
+    + r.map(function(m){
+        return '<tr>'
+          + '<td><strong>'+m.brinco+'</strong></td><td>'+m.categoria+'</td>'
+          + '<td>'+(m.idade?m.idade.toFixed(1)+' anos':'—')+'</td>'
+          + '<td>'+m.partos+'</td>'
+          + '<td'+(m.perdas?' style="color:var(--red);font-weight:600"':'')+'>'+m.perdas+'</td>'
+          + '<td>'+m.desmamados+'</td>'
+          + '<td>'+(m.kgDesmamados||'—')+'</td>'
+          + '<td>'+(m.iep?m.iep+' d':'—')+'</td>'
+          + '<td style="font-size:11px">'+(m.condicao||'—')+'</td>'
+          + '</tr>';
+      }).join('')
+    + '</tbody></table></div></div>';
+}
+
+function indSetSafra(s){ indSafraSel = s; renderIndicadores(); }
+
+// ── Bloco correspondente nos Relatórios ────────────────────────────────────
+function relBloco_indicadores(){
+  var safras = safrasDisponiveis();
+  if(!safras.length) return '<h2>Indicadores de ciclo de cria</h2><p class="vazio">Sem protocolos cadastrados.</p>';
+  var iep = intervalosEntrePartos();
+  var pc = function(v){ return v.toFixed(1).replace('.',',')+'%'; };
+
+  var linhas = safras.map(function(s){
+    var i = indicadoresSafra(s);
+    return [s + (i.parcial?' (parcial)':''), i.expostas, pc(i.taxaPrenhez), pc(i.taxaParicao),
+            pc(i.taxaDesmame), i.pesoMedioDesmame?i.pesoMedioDesmame.toFixed(0)+' kg':'—',
+            i.kgPorVacaExposta.toFixed(0)];
+  });
+
+  var rank = rankingMatrizes().slice(0,15).map(function(m){
+    return [m.brinco, m.categoria, m.idade?m.idade.toFixed(1):'—', m.partos, m.perdas,
+            m.desmamados, m.kgDesmamados||'—', m.iep?m.iep+' d':'—'];
+  });
+
+  return '<h2>Indicadores de ciclo de cria</h2>'
+    + '<p class="nota">Safras marcadas como <em>parcial</em> ainda têm partos ou desmames por acontecer — '
+    + 'as taxas vão subir. Intervalo entre partos do rebanho: '
+    + (iep.medio ? '<strong>'+iep.medio+' dias</strong> ('+iep.n+' medições)' : 'ainda sem duas parições da mesma vaca')
+    + '.</p>'
+    + relTabela(['Safra','Expostas','Prenhez','Parição','Desmame','Peso desmame','kg/vaca'], linhas)
+    + '<h3>Matrizes de menor desempenho</h3>'
+    + '<p class="nota">As 15 primeiras da fila de descarte, da pior para a melhor.</p>'
+    + relTabela(['Brinco','Categoria','Idade','Partos','Perdas','Desmamados','kg desm.','IEP'], rank);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // JANELA DE RELATÓRIOS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -11650,6 +12391,7 @@ var REL_BLOCOS = [
   { id:'composicao', nome:'Composição do rebanho',        desc:'Quantidade por categoria, raça e gênero.',                      grupo:'Rebanho',    periodo:false },
   { id:'inventario', nome:'Inventário de animais',        desc:'Lista completa com idade, peso, condição e genealogia.',       grupo:'Rebanho',    periodo:false },
   { id:'ponderal',   nome:'Desempenho ponderal',          desc:'Peso médio e ganho diário por categoria.',                      grupo:'Rebanho',    periodo:false },
+  { id:'indicadores',nome:'Indicadores de ciclo de cria', desc:'Prenhez, parição, desmame, kg por vaca exposta e ranking de matrizes.', grupo:'Reprodução', periodo:false },
   { id:'reproducao', nome:'Situação reprodutiva',         desc:'Prenhes, vazias, amamentando e previsões de parto.',            grupo:'Reprodução', periodo:false },
   { id:'nascimentos',nome:'Nascimentos',                  desc:'Partos ocorridos no período, com sexo e mãe.',                  grupo:'Reprodução', periodo:true  },
   { id:'iatf',       nome:'Resultado de IATF/Monta',      desc:'Coberturas e diagnósticos do período, com taxa de prenhez.',    grupo:'Reprodução', periodo:true  },
@@ -12028,6 +12770,7 @@ function relGerar(){
   var titulo = (document.getElementById('rel-titulo')||{}).value || 'Relatório do Rebanho';
   var geradores = {
     composicao: relBloco_composicao, inventario: relBloco_inventario, ponderal: relBloco_ponderal,
+    indicadores: relBloco_indicadores,
     reproducao: relBloco_reproducao, nascimentos: relBloco_nascimentos, iatf: relBloco_iatf,
     sanitario: relBloco_sanitario, estoque: relBloco_estoque, saidas: relBloco_saidas,
     financeiro: relBloco_financeiro
