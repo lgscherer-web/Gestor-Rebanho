@@ -550,7 +550,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.7.0</span><br>
+              Versão: <span id="app-versao">2.8.0</span><br>
               Data da versão: <span id="app-versao-data">19/08/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -621,6 +621,8 @@ tr:hover td{background:#fafaf7}
               <p style="font-size:11px;color:var(--tx3);margin-top:6px">Somente arquivos .xlsx</p>
             </div>
             <input type="file" id="fi1" accept=".xlsx" style="display:none" onchange="loadXLSX(this)">
+            <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:6px" onclick="admExecutar(function(){abrirArquivo('fi-backup');})">&#128190; Restaurar backup (.json)</button>
+            <input type="file" id="fi-backup" accept=".json,application/json" style="display:none" onchange="restaurarBackupArquivo(this)">
             <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="admExecutar(startFresh)">Começar do zero (sem arquivo)</button>
           </div>
         </div>
@@ -11255,6 +11257,51 @@ function confirmarSeparacao(brinco){
     renderBaixas(); renderReg(); renderDash(); renderHistorico(); renderDiagnostico();
     toast(r.movidos+' registro(s) movidos para '+r.virtual+'. O brinco '+brinco+' ficou limpo.','ok');
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RESTAURAR BACKUP (.json)
+// ═══════════════════════════════════════════════════════════════════════════
+// Backup que não se sabe restaurar não é backup. A rotina semanal grava um .json
+// no repositório privado; esta função é o caminho de volta, e passa pela mesma
+// trava de administrador que protege o carregamento de planilha.
+function restaurarBackupArquivo(input){
+  var f = input.files && input.files[0];
+  input.value = '';
+  if(!f) return;
+  var leitor = new FileReader();
+  leitor.onload = function(){
+    var pacote;
+    try { pacote = JSON.parse(leitor.result); }
+    catch(e){ toast('Arquivo inválido: não é um backup .json.','err'); return; }
+
+    // Aceita tanto o pacote da rotina semanal quanto o conteúdo cru de uma versão.
+    var dados = (pacote && pacote.dados) ? pacote.dados : pacote;
+    var animais = ((dados.DB||{}).id||[]).length;
+    if(!animais){ toast('Backup sem animais — arquivo errado ou corrompido.','err'); return; }
+
+    var quando = pacote.criado_em ? new Date(pacote.criado_em).toLocaleString('pt-BR') : '(data não informada)';
+    var msg = 'Restaurar este backup?\n\n'
+      + 'Versão: ' + (pacote.versao||'—') + '\n'
+      + 'Gerado em: ' + quando + '\n'
+      + animais + ' animais\n'
+      + (((dados.DB||{}).pes||[]).length) + ' pesagens\n'
+      + ((dados.DB_financeiro||[]).length) + ' lançamentos financeiros\n\n'
+      + 'Tudo o que está na tela será substituído'
+      + (((typeof nvLigado==='function') && nvLigado())
+          ? ' e enviado à nuvem, alcançando os outros aparelhos.' : '.');
+    if(!confirm(msg)) return;
+
+    if(typeof nvAplicar === 'function' && nvAplicar(dados)){
+      renderAll();
+      markDirty();
+      toast('Backup restaurado: '+animais+' animais. Confira antes de sair da tela.','ok');
+    } else {
+      toast('Não foi possível aplicar o backup.','err');
+    }
+  };
+  leitor.onerror = function(){ toast('Falha ao ler o arquivo.','err'); };
+  leitor.readAsText(f);
 }
 
 // ── Proteção para os brincos já reaproveitados antes desta versão ──────────
