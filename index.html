@@ -928,7 +928,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.16.0</span><br>
+              Versão: <span id="app-versao">2.19.0</span><br>
               Data da versão: <span id="app-versao-data">14/09/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -1375,6 +1375,9 @@ tr:hover td{background:#fafaf7}
             </table>
           </div>
         </div>
+        <!-- Desempenho das matrizes: acumulado da vida do animal, por isso só aparece
+             na aba "Todos" (ver renderRepDash). -->
+        <div id="rep-dash-matrizes"></div>
       </div><!-- /tab-rep-dash-rep -->
 
       <!-- SANIDADE -->
@@ -4772,31 +4775,17 @@ function renderDash(){
   if(!DB.san.length){
     sanEl.innerHTML='<div class="dash-empty"><div class="dash-empty-ic">&#128138;</div>Nenhum manejo registrado</div>';
   } else {
-    var sanSorted=DB.san.slice().sort(function(a,b){
-      var da=toDate(a.data),db=toDate(b.data);
-      if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return db-da;
-    });
-    // Agrupa por data+observação para mostrar eventos, não linhas
-    var eventos={};
-    sanSorted.forEach(function(r){
-      var k=(r.data||'—')+'||'+(r.obs||'');
-      if(!eventos[k]) eventos[k]={data:r.data,desc:r.obs,n:0};
-      eventos[k].n++;
-    });
-    var evList=Object.values(eventos).sort(function(a,b){
-      var da=toDate(a.data),db=toDate(b.data);
-      if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return db-da;
-    }).slice(0,5);
-    // Datas com alguma pesagem registrada (qualquer animal), para sinalizar "Pesagem" na
-    // descrição do manejo mesmo quando o peso foi lançado à parte da medicação/vacina.
-    var datasComPesagem = {};
-    DB.pes.forEach(function(p){ if(p.data) datasComPesagem[p.data]=true; });
+    var eventos = sanEventosPorDia();
+    var evList = sanEventosRecentes(5, eventos);
     sanEl.innerHTML='<table class="gmd-table"><thead><tr><th>Data</th><th>Descrição</th><th>Animais</th></tr></thead><tbody>'
       +evList.map(function(e){
-        var descTxt = e.desc || '';
-        if(datasComPesagem[e.data]) descTxt = descTxt ? (descTxt+', Pesagem') : 'Pesagem';
-        if(!descTxt) descTxt = '—';
-        return '<tr><td>'+fmtD(e.data)+'</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+descTxt+'">'+descTxt+'</td><td>'+e.n+'</td></tr>';
+        var d = sanDescricaoEvento(e);
+        return '<tr><td style="white-space:nowrap;vertical-align:top">'+fmtD(e.data)+'</td>'
+          +'<td style="max-width:230px" title="'+d.texto.replace(/"/g,'&quot;')+'">'
+          +  '<div style="line-height:1.4">'+d.linha1+'</div>'
+          +  (d.linha2 ? '<div style="font-size:10.5px;color:var(--tx3);line-height:1.5;margin-top:2px">'+d.linha2+'</div>' : '')
+          +'</td>'
+          +'<td style="vertical-align:top">'+Object.keys(e.animais).length+'</td></tr>';
       }).join('')+'</tbody></table>'
       +(Object.keys(eventos).length>5?'<div style="font-size:11px;color:var(--tx3);margin-top:6px">+' +(Object.keys(eventos).length-5)+' eventos anteriores</div>':'');
   }
@@ -4859,10 +4848,25 @@ function renderDash(){
   if(typeof divergenciasNascimento === 'function'){
     var divN = divergenciasNascimento();
     if(divN.length) alerts.push({ic:'&#128197;',cor:'var(--red)',
-      txt:'<strong>'+divN.length+' nascimento(s) com data divergente</strong>: terneiro '
-        + divN.slice(0,4).map(function(d){ return d.terneiro+' (parto '+fmtD(d.partoData)+' x cadastro '+fmtD(d.nascCadastro)+')'; }).join(', ')
-        + (divN.length>4 ? ' e outros' : '')
-        + '. Some dos relatórios do período — corrija a data errada.'});
+      txt:'<strong>'+divN.length+' nascimento(s) com data divergente</strong>. '
+        + 'O mesmo nascimento está gravado em dois lugares com datas diferentes, e por isso '
+        + 'o terneiro é contado num relatório e some de outro.'
+        + divN.slice(0,4).map(function(d){
+            var conclusivo = d.partoAntesDoDG
+              ? '<br><span style="color:var(--red)">&#9888; O parto está gravado ANTES do diagnóstico de prenhez ('
+                + fmtD(d.dataDG)+') — isso é impossível, então <strong>a data errada é a do parto</strong>.</span>'
+              : '<br><span style="color:var(--tx2)">Confira qual das duas está certa: só quem acompanhou o parto sabe.</span>';
+            return '<div style="margin-top:8px;padding-left:10px;border-left:2px solid var(--red)">'
+              + '<strong>Terneiro '+d.terneiro+'</strong> (mãe '+d.mae+') &middot; '
+              + 'parto '+fmtD(d.partoData)+' &times; cadastro '+fmtD(d.nascCadastro)
+              + conclusivo
+              + '<br><button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:11px;padding:3px 10px" '
+              +   'onclick="abrirCorrecaoParto(\''+d.mae+'\')">&#9998; Corrigir a data do parto</button>'
+              + ' <button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:11px;padding:3px 10px" '
+              +   'onclick="abrirFichaDe(\''+d.terneiro+'\')">&#128203; Abrir ficha do terneiro</button>'
+              + '</div>';
+          }).join('')
+        + (divN.length>4 ? '<div style="margin-top:6px;font-size:11px;color:var(--tx2)">e mais '+(divN.length-4)+' caso(s).</div>' : '')});
   }
 
   var alertCard = _id('dash-alertas-card');
@@ -11370,6 +11374,18 @@ function renderRepDash(){
     }).join('') || '<tr><td colspan="4"><div class="empty">Sem dados</div></td></tr>';
   }
 
+  // ── Desempenho das matrizes ──
+  // Só na aba "Todos". O ranking soma partos, perdas e quilos desmamados da VIDA
+  // INTEIRA da matriz — recortar isso por safra daria uma lista em que toda vaca
+  // que não pariu naquele ano aparece como candidata a descarte, que é o oposto
+  // do que a tabela serve para decidir.
+  var matrizesBox = document.getElementById('rep-dash-matrizes');
+  if(matrizesBox){
+    matrizesBox.innerHTML = (dashAnoFiltro === 'todos' && typeof cardRanking === 'function')
+      ? cardRanking()
+      : '';
+  }
+
   // ── Consumo de Doses de Sêmen ──
   // Observação: usa TODO o historico de DB_iatf_reg (não so a safra filtrada),
   // porque o saldo de doses é um estoque fisico acumulado, nao algo por temporada.
@@ -12467,7 +12483,9 @@ function renderIndicadores(){
           return [x.mae, x.terneiro, fmtD(x.nasc), x.nasc ? calcAge(x.nasc) : '—'];
         })) : '')
 
-    + cardRanking();
+    // O ranking de matrizes saiu daqui para o Dashboard Reprodutivo: ele é acumulado
+    // da vida inteira do animal e não pertence a uma safra, que é o recorte desta tela.
+    + '';
 }
 
 function cardTabela(titulo, nota, cabs, linhas){
@@ -12672,6 +12690,117 @@ function reconciliarCatEpoca(){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// ÚLTIMOS MANEJOS SANITÁRIOS — agrupamento por dia
+// ═══════════════════════════════════════════════════════════════════════════
+// O evento é o DIA de trabalho no curral, não a linha da planilha. O agrupamento
+// antigo era por data+observação e a descrição mostrava só a observação — que
+// quase sempre está vazia. A medicação, que é o que de fato foi feito no animal,
+// mora em DB.san.meds e não aparecia em lugar nenhum da Visão Geral.
+//
+// A pesagem também entrava de forma grosseira: bastava existir QUALQUER peso
+// naquela data, de qualquer animal, para a palavra "Pesagem" surgir na descrição.
+// Agora ela vem com quantos animais foram pesados e o peso médio do dia.
+//
+// Um dia só de pesagem, sem medicação nenhuma, também passa a ser um evento —
+// é trabalho de curral e o usuário espera vê-lo na lista.
+function sanEventosPorDia(){
+  var eventos = {};
+  function dia(data){
+    if(!eventos[data]) eventos[data] = { data:data, meds:{}, obs:{}, animais:{}, pesados:{}, pesos:[] };
+    return eventos[data];
+  }
+
+  // ATENÇÃO ao separador. Em DB_mi o campo meds é um ARRAY — é dele que sai a lista
+  // confiável. Em DB.san o mesmo conteúdo vira um texto unido por ", ", e partir esse
+  // texto pela vírgula estraga os nomes: o rebanho usa "Ricoben 13,6%" e
+  // "Ivergen Platinum 3,15%", que virariam "Ricoben 13" + "6%". Por isso o array vem
+  // primeiro, e o texto de DB.san só é usado (inteiro, ou partido por ";", que é o
+  // separador da planilha) quando não existe registro de manejo individual do dia.
+  if(typeof DB_mi !== 'undefined' && DB_mi.length){
+    DB_mi.forEach(function(r){
+      if(!r.data) return;
+      var e = dia(r.data);
+      if(r.brinco) e.animais[r.brinco] = true;
+      var arr = Array.isArray(r.meds) ? r.meds : (r.meds ? [r.meds] : []);
+      arr.forEach(function(m){
+        m = String(m).trim();
+        if(m) e.meds[m] = true;
+      });
+      var obsMi = String(r.obs || '').trim();
+      if(obsMi) e.obs[obsMi] = true;
+    });
+  }
+
+  DB.san.forEach(function(r){
+    if(!r.data) return;
+    var e = dia(r.data);
+    if(r.brinco) e.animais[r.brinco] = true;
+    // Espelho de um manejo individual já lido acima: a lista boa veio do array.
+    if(!r._miTag){
+      String(r.meds || '').split(';').forEach(function(m){
+        m = m.trim();
+        if(m) e.meds[m] = true;
+      });
+    }
+    var o = String(r.obs || '').trim();
+    if(o) e.obs[o] = true;
+  });
+
+  DB.pes.forEach(function(pz){
+    if(!pz.data) return;
+    var v = parseFloat(String(pz.peso).replace(',', '.'));
+    if(!(v > 0)) return;
+    var e = dia(pz.data);
+    if(pz.brinco){ e.animais[pz.brinco] = true; e.pesados[pz.brinco] = true; }
+    e.pesos.push(v);
+  });
+
+  return eventos;
+}
+
+function sanEventosRecentes(limite, eventos){
+  eventos = eventos || sanEventosPorDia();
+  return Object.keys(eventos).map(function(k){ return eventos[k]; })
+    .sort(function(a,b){
+      var da=toDate(a.data), db=toDate(b.data);
+      if(!da&&!db) return 0;
+      if(!da) return 1;
+      if(!db) return -1;
+      return db-da;
+    }).slice(0, limite || 5);
+}
+
+// Devolve as duas linhas da célula e o texto puro para o title (onde o conteúdo
+// completo cabe, já que a coluna é estreita).
+function sanDescricaoEvento(e){
+  var meds = Object.keys(e.meds);
+  var linha1 = '';
+  if(meds.length){
+    // Numa vacinação de rebanho inteiro a lista fica longa demais para a coluna.
+    linha1 = meds.slice(0,3).join(', ') + (meds.length>3 ? ' +'+(meds.length-3)+' outro(s)' : '');
+  }
+
+  var detalhes = [];
+  var nPes = Object.keys(e.pesados).length;
+  if(nPes){
+    var media = Math.round(e.pesos.reduce(function(a,b){ return a+b; }, 0) / e.pesos.length);
+    detalhes.push('&#9878; Pesagem: '+nPes+' animal(is), média '+media+' kg');
+  }
+  var obs = Object.keys(e.obs);
+  if(obs.length) detalhes.push(obs.join(' &middot; '));
+
+  if(!linha1 && !detalhes.length) return { linha1:'&mdash;', linha2:'', texto:'—' };
+  if(!linha1) linha1 = 'Sem medicação registrada';
+
+  var textoDetalhes = detalhes.join(' · ').replace(/&#9878;\s*/g, '').replace(/&middot;/g, '·');
+  return {
+    linha1: linha1,
+    linha2: detalhes.join(' &middot; '),
+    texto: linha1 + (detalhes.length ? ' — ' + textoDetalhes : '')
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // CORREÇÃO DE REGISTRO DE PARTO
 // ═══════════════════════════════════════════════════════════════════════════
 // O parto era gravado uma única vez, por fcConfirmarParto, e nunca mais podia
@@ -12725,6 +12854,31 @@ var PARTO_ROTULO = { pariu:'Nasceu vivo', abortou:'Abortou', natimorto:'Natimort
 // registrado — não faz sentido oferecer correção do que não existe. Quando há um
 // terneiro fora do cadastro, o link vira aviso: é o único lugar em que o usuário
 // consegue arrumar, e ele precisa ser encontrado sem procurar.
+// Atalhos usados pelos alertas da Tela Inicial. O alerta apontava o problema e
+// mandava "corrija a data errada", sem dizer onde — e o caminho até lá tem quatro
+// cliques. Estes dois levam direto.
+function abrirCorrecaoParto(brinco){
+  if(!DB.id.find(function(r){ return r.brinco===brinco; })
+     && !DB.dg.find(function(d){ return d.brinco===brinco; })){
+    toast('Animal '+brinco+' não encontrado','err');
+    return;
+  }
+  fcRenderPartosLista(brinco);
+  var m = document.getElementById('modal-estado');
+  if(m) m.classList.add('on');
+}
+
+function abrirFichaDe(brinco){
+  goTab('ficha');
+  setTimeout(function(){
+    var el = document.getElementById('fc-inp');
+    if(el){ el.value = brinco; }
+    if(typeof fcRender === 'function') fcRender(brinco);
+    var ac = document.getElementById('fc-ac');
+    if(ac) ac.style.display = 'none';
+  }, 60);
+}
+
 function fcAnexarLinkCorrigirParto(brinco){
   var lista = partosDoAnimal(brinco);
   if(!lista.length) return;
@@ -13347,8 +13501,15 @@ function divergenciasNascimento(toleranciaDias){
     if(!dp || !dn) return;
     var dias = Math.round(Math.abs(dn - dp) / 86400000);
     if(dias > tol){
+      // Às vezes dá para saber QUAL das duas datas está errada, sem adivinhação:
+      // um parto gravado ANTES do próprio diagnóstico de prenhez é impossível.
+      // Nesse caso a data do parto é a errada, e o cadastro do terneiro é o certo.
+      var dDG = toDate(r.dataDG);
+      var partoAntesDoDG = !!(dDG && dp < dDG);
       achados.push({ terneiro:r.terneiroBrinco, mae:r.brinco, partoData:r.partoData,
-                     nascCadastro:dgT.nasc, dias:dias });
+                     nascCadastro:dgT.nasc, dias:dias, dataDG:r.dataDG,
+                     partoAntesDoDG:partoAntesDoDG,
+                     veredito: partoAntesDoDG ? 'parto' : '' });
     }
   });
   return achados.sort(function(a,b){ return b.dias - a.dias; });
