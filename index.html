@@ -928,7 +928,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.11.0</span><br>
+              Versão: <span id="app-versao">2.16.0</span><br>
               Data da versão: <span id="app-versao-data">14/09/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -1345,7 +1345,8 @@ tr:hover td{background:#fafaf7}
             </div>
           </div>
           <div class="tcard">
-            <div class="tbar"><span style="font-size:13px;font-weight:600">Desempenho por Categoria</span></div>
+            <div class="tbar"><span style="font-size:13px;font-weight:600">Desempenho por Categoria</span>
+              <span style="font-size:10px;color:var(--tx3)">categoria na data do DG</span></div>
             <div class="tscroll">
               <table>
                 <thead><tr><th>Categoria</th><th>DG Real.</th><th>Prenhas</th><th>Taxa (%)</th></tr></thead>
@@ -1689,6 +1690,7 @@ tr:hover td{background:#fafaf7}
                 <button class="btn btn-ghost btn-sm" id="mi-ver-ficha" style="font-size:11px;padding:3px 10px;white-space:nowrap" onclick="abrirFichaModal()">&#128203; Ver ficha completa</button>
               </div>
               <div style="margin-bottom:8px" id="mi-info-cond"></div>
+              <div id="mi-info-vinculo"></div>
               <div style="margin-bottom:8px" id="mi-info-peso"></div>
               <div style="display:flex;gap:16px;flex-wrap:wrap" id="mi-info-detalhes"></div>
             </div>
@@ -2853,7 +2855,11 @@ function parseWB(wb){
         protId:_pid, origemManual:(_pid===null), brinco:b,
         dataDG:xlsxDateToStr(r[3]), resultado:cl(r[4]), obs:cl(r[5]),
         partoResultado:cl(r[6]), partoData:xlsxDateToStr(r[7]),
-        terneiroBrinco:cl(r[8]), terneiroGenero:cl(r[9]), partoObs:cl(r[10])
+        terneiroBrinco:cl(r[8]), terneiroGenero:cl(r[9]), partoObs:cl(r[10]),
+        // Coluna 11, acrescentada no FIM da aba de propósito: inserir no meio
+        // desloca a leitura de todas as colunas seguintes numa planilha antiga,
+        // e foi assim que 110 animais foram corrompidos uma vez.
+        catEpoca:cl(r[11])
       });
     }
   }
@@ -3128,6 +3134,7 @@ function renderAll(){
   reconciliarIntercorrenciasDesmame();
   reconciliarAvoPaterno();
   reconciliarNumPartos();
+  reconciliarCatEpoca();
   reconciliarCondicaoProtocolado();
   reconciliarGeneroTerneiro();
   reconciliarIntercorrenciasReproducao();
@@ -3340,7 +3347,12 @@ function renderReg(){
     var pesoArr=DB.pes.filter(function(p){return p.brinco===r.brinco;}).sort(function(a,b){return (toDate(b.data)||new Date(0))-(toDate(a.data)||new Date(0));});
     var ultPeso=pesoArr.length?pesoArr[0].peso+' kg':'-';
     var brincoCell = '<strong>'+r.brinco+'</strong>';
-    return '<tr>'
+    // O filtro não pode ler o texto da célula: ela é truncada por CSS e agora pode
+    // conter várias condições. A lista completa viaja no atributo, separada por "|".
+    var _conds = condicoesLabels(r.brinco);
+    var _condAttr = _conds.join('|').replace(/"/g,'&quot;');
+    var _condTxt  = condDisplay(r,dg);
+    return '<tr data-cond="'+_condAttr+'">'
       +'<td>'+brincoCell+'</td>'
       +'<td>'+(r.cat||'-')+'</td>'
       +'<td>'+(r.raca||'-')+'</td>'
@@ -3352,7 +3364,7 @@ function renderReg(){
       +'<td>'+(dg.pai||'-')+'</td>'
       +'<td>'+(nomeGenealogico(dg.avo)||'-')+'</td>'
       +'<td>'+(nomeGenealogico(dg.avoPat)||'-')+'</td>'
-      +'<td style="max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+condDisplay(r,dg)+'</td>'
+      +'<td style="max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+_condTxt.replace(/&middot;/g,'·').replace(/"/g,'&quot;')+'">'+_condTxt+'</td>'
       +'<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(terneiroApeGenero(r.brinco,dg)||'-')+'</td>'
       +'<td class="tc">'+(r.gen==='F'?String(dg.numPartos||0):'-')+'</td>'
       +'<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(dg.obs||'')+'">'+(dg.obs?dg.obs.substring(0,20)+(dg.obs.length>20?'…':''):'-')+'</td>'
@@ -3874,7 +3886,7 @@ function _buildWorkbook(){
   // Diagnóstico de gestação (novo módulo)
   if(DB_dg_reg.length){
     var dgRegD=[['DIAGNOSTICO DE GESTACAO'],['Resultados de diagnóstico de prenhez por protocolo.'],
-      ['ID Protocolo','Nome Protocolo','Brinco','Data DG','Resultado','Observações','Resultado Parto','Data Parto','Brinco Terneiro','Genero Terneiro','Obs Parto']]
+      ['ID Protocolo','Nome Protocolo','Brinco','Data DG','Resultado','Observações','Resultado Parto','Data Parto','Brinco Terneiro','Genero Terneiro','Obs Parto','Categoria na Época']]
       .concat(DB_dg_reg.map(function(r){
         var prot=DB_protocolos.find(function(p){return p.id===r.protId;})||{};
         // Prenhez sem protocolo: grava o ID em branco (é o marcador lido na importação).
@@ -3883,7 +3895,8 @@ function _buildWorkbook(){
           r.resultado||'',r.obs||'',
           r.partoResultado||'',
           r.partoData?exDate(r.partoData):null,
-          r.terneiroBrinco||'',r.terneiroGenero||'',r.partoObs||''
+          r.terneiroBrinco||'',r.terneiroGenero||'',r.partoObs||'',
+          r.catEpoca||''
         ];
       }));
     var wsDgReg=XLSX.utils.aoa_to_sheet(dgRegD);
@@ -5588,6 +5601,7 @@ function miMostrarInfo(rec){
     '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Condição atual do animal</div>'
     + '<span class="fc-tag '+condUni.cls+'" style="vertical-align:middle;font-size:18px;font-weight:800;padding:8px 18px;border-radius:8px;letter-spacing:.3px;box-shadow:0 1px 3px rgba(0,0,0,.12)">'+condUni.lbl+'</span>'
     + (condUni.sub?'<div style="font-size:11px;color:var(--tx3);margin-top:5px">'+condUni.sub+'</div>':'');
+  miMostrarVinculo(rec, dg);
   var pesInfo = ultimaPesagemGmd(rec.brinco);
   miPesoRefAtual = pesInfo ? {data:pesInfo.data, peso:pesInfo.peso} : null;
   var pesEl = document.getElementById('mi-info-peso');
@@ -5616,7 +5630,62 @@ function miMostrarInfo(rec){
   // Sincroniza o GMD atual (ex.: reabrindo um manejo para edição já com peso preenchido).
   miAtualizarGmdAtual();
 }
+// ── Vínculo mãe-cria em destaque ───────────────────────────────────────────
+// No curral o operador tem o animal na frente e precisa saber, de relance, qual
+// é o outro lado do par: a vaca chegou com o terneiro ao pé, o terneiro chegou
+// com a mãe. Esse número decide se o manejo vai ser lançado no bicho certo, e
+// estava disponível só abrindo a ficha completa.
+//
+// Duas escolhas herdadas do resto do projeto:
+//
+// • O terneiro vem de estadoAmamentacao(), derivado do registro de parto — não
+//   de condAtual. Protocolar a vaca durante a lactação sobrescrevia condAtual, e
+//   o vínculo sumiria justamente na época de mais manejo.
+//
+// • A mãe passa por brincoHistLbl(), que mostra "V7 (ex-132)" quando ela saiu do
+//   rebanho e o brinco foi arquivado. Exibir o número cru mandaria o operador
+//   procurar um brinco que hoje está em outro animal.
+function miMostrarVinculo(rec, dg){
+  var box = document.getElementById('mi-info-vinculo');
+  if(!box) return;
+  box.innerHTML = '';
+
+  function cartao(rotulo, valor, cor, fundo, borda){
+    return '<div style="background:'+fundo+';border:1px solid '+borda+';border-radius:var(--rsm);'
+      + 'padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+      + '<span style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;'
+      +   'letter-spacing:.5px">'+rotulo+'</span>'
+      + '<span style="font-size:30px;font-weight:800;color:'+cor+';line-height:1.1">'+valor+'</span>'
+      + '</div>';
+  }
+
+  var html = '';
+
+  // Vaca amamentando -> brinco do terneiro, em vermelho.
+  var amam = (typeof estadoAmamentacao==='function') ? estadoAmamentacao(rec.brinco) : {ativo:false};
+  if(amam.ativo){
+    var tern = amam.terneiro || '';
+    html += tern
+      ? cartao('Terneiro ao pé', (typeof brincoHistLbl==='function' ? brincoHistLbl(tern) : tern),
+               'var(--red)', 'var(--redbg)', 'var(--red)')
+      : cartao('Terneiro ao pé', '<span style="font-size:15px;font-weight:700">brinco não registrado</span>',
+               'var(--red)', 'var(--redbg)', 'var(--red)');
+  }
+
+  // Terneiro ao pé -> brinco da mãe, em azul.
+  if(dg && dg.condAtual==='Terneiro ao pé'){
+    html += dg.mae
+      ? cartao('Mãe', (typeof brincoHistLbl==='function' ? brincoHistLbl(dg.mae) : dg.mae),
+               'var(--blut)', 'var(--blubg)', 'var(--blu)')
+      : cartao('Mãe', '<span style="font-size:15px;font-weight:700">não registrada</span>',
+               'var(--blut)', 'var(--blubg)', 'var(--blu)');
+  }
+
+  box.innerHTML = html;
+}
+
 function miOcultarInfo(){
+  var vinc = document.getElementById('mi-info-vinculo'); if(vinc) vinc.innerHTML='';
   document.getElementById('mi-animal-info').style.display='none';
   miPesoRefAtual = null;
   var gmdEl = document.getElementById('mi-gmd-atual'); if(gmdEl) gmdEl.innerHTML='';
@@ -7761,7 +7830,8 @@ function fcConfirmarPrenheManual(brinco){
   DB_dg_reg.push({
     protId: null, origemManual: true, brinco: brinco,
     dataDG: dataStr, resultado: 'Prenhe',
-    obs: obs ? ('Prenhez sem protocolo — '+obs) : 'Prenhez registrada sem protocolo'
+    obs: obs ? ('Prenhez sem protocolo — '+obs) : 'Prenhez registrada sem protocolo',
+    catEpoca: catFemeaNaData(brinco, dataStr)
   });
 
   dgAnimal.condAtual = 'Prenhe';
@@ -8465,30 +8535,68 @@ function dataEhFutura(dataStr){
 // Calcula categoria automatica baseada em genero, nascimento e status reprodutivo
 // Exibe a condição atual de um animal nas tabelas, ocultando-a para machos que já
 // passaram da fase de terneiro (Tourinho/Touro), que não têm condição reprodutiva própria.
+// ── Condições simultâneas em forma de lista ────────────────────────────────
+// condicaoUnificada() devolve UM rótulo só: é a herança do modelo de condição
+// única, e nele "Amamentando" sobrescreve tudo o que vier antes. Numa vaca que
+// pariu e emprenhou de novo — situação normal aqui — isso apagava o "Prenhe",
+// e ela sumia do filtro de prenhez do Registro de Animais. Eram 17 de 42.
+//
+// Esta função devolve TODAS as condições do animal, na mesma derivação que as
+// bandeiras da Ficha usam (condicoesAtuais), sem as datas que acompanham cada
+// uma — datas aqui atrapalhariam: "Desmamado em 14/03/2026" viraria uma opção
+// diferente de filtro para cada data de desmame do rebanho.
+function condicoesLabels(brinco){
+  if(typeof condicoesAtuais !== 'function') return [];
+  var vistos = {}, out = [];
+  condicoesAtuais(brinco).forEach(function(f){
+    var l = (f && f.lbl) ? String(f.lbl).trim() : '';
+    if(!l || l === '—' || vistos[l]) return;
+    vistos[l] = 1; out.push(l);
+  });
+  return out;
+}
+
 function condDisplay(r, dg){
   if((r.gen||'').toUpperCase()==='M' && (r.cat==='Tourinho' || r.cat==='Touro')) return '-';
-  // Usa a mesma derivação da Ficha do Animal e do Cadastro de Manejos (condicaoUnificada),
-  // para que a coluna "Cond. Atual" das tabelas não fique defasada em relação às demais
-  // janelas quando a condição mais recente vier de um DG de IATF e não de DB.dg.condAtual.
+  var labels = condicoesLabels(r.brinco);
+  if(labels.length) return labels.join(' &middot; ');
+  // Sem nenhuma condição derivada, cai na derivação antiga — ela ainda cobre casos
+  // que condicoesAtuais não descreve, como o rótulo de categoria com data.
   var lbl = condicaoUnificada(r.brinco).lbl;
   return (!lbl || lbl==='—') ? '-' : lbl;
 }
 
-// Sexo do terneiro ao pé da vaca (condição Amamentando + terneiro ainda não desmamado).
-// Retorna '' quando não houver terneiro ao pé.
+// Sexo do terneiro ao pé da vaca. Retorna '' quando não houver terneiro ao pé.
+//
+// A pergunta "esta vaca está amamentando?" tem UMA resposta no app, e ela mora em
+// estadoAmamentacao(), derivada do registro de parto. Esta função perguntava a
+// outro lugar: o campo condAtual, herança do modelo de condição única. Esse campo
+// é sobrescrito quando a vaca entra em protocolo ou emprenha de novo — situação
+// normal aqui —, e a coluna "Terneiro (Sexo)" esvaziava sem motivo aparente: 26
+// das 55 vacas amamentando do rebanho apareciam em branco, enquanto a Ficha das
+// mesmas vacas mostrava o terneiro certo.
+//
+// O segundo parâmetro (dg) não é mais usado; fica na assinatura porque os dois
+// pontos de chamada o passam.
 function terneiroApeGenero(brinco, dg){
-  if(!dg || dg.condAtual!=='Amamentando') return '';
-  var dgPartoAtivo = DB_dg_reg.filter(function(r){ return r.brinco===brinco && r.partoResultado==='pariu'; })
-    .sort(function(a,b){
+  var amam = (typeof estadoAmamentacao === 'function')
+    ? estadoAmamentacao(brinco) : {ativo:false};
+  if(!amam.ativo || !amam.terneiro) return '';
+
+  // O registro do parto é necessário para generoTerneiroReal, que confere mãe e
+  // data de nascimento antes de aceitar o cadastro atual daquele brinco — a trava
+  // contra reuso de brinco.
+  var dgPartoAtivo = DB_dg_reg.filter(function(r){
+      return r.brinco===brinco && r.partoResultado==='pariu' && r.terneiroBrinco===amam.terneiro;
+    }).sort(function(a,b){
       var da=toDate(a.partoData), db=toDate(b.partoData);
       if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
       return db-da;
     })[0];
-  if(!dgPartoAtivo || !dgPartoAtivo.terneiroBrinco) return '';
-  var ternDg = DB.dg.find(function(d){ return d.brinco===dgPartoAtivo.terneiroBrinco; });
-  if(!ternDg || ternDg.condAtual==='Desmamado') return '';
-  // Deriva do cadastro do terneiro, para refletir na hora uma correção de sexo feita no
-  // Registro de Animais (ver generoTerneiroReal).
+  if(!dgPartoAtivo) return '';
+
+  // Deriva do cadastro do terneiro, para refletir na hora uma correção de sexo feita
+  // no Registro de Animais (ver generoTerneiroReal).
   return generoTerneiroReal(dgPartoAtivo);
 }
 
@@ -8522,10 +8630,17 @@ function atualizarCategorias(){
     var repRec = DB.rep.find(function(d){return d.brinco===r.brinco;})||{};
     var jaPariu = (repRec.par||'').toLowerCase()==='sim'
                || r.cat==='Matriz' || r.cat==='Primipara';
-    var novaCat = calcCat(r.gen, dg.nasc, jaPariu);
-    if(novaCat && novaCat !== r.cat){
-      r.cat = novaCat;
-      atualizados++;
+    // Descarte é uma DECISÃO do produtor, não uma etapa da vida do animal. Como ele
+    // ocupa o mesmo campo das categorias etárias, a recategorização automática o
+    // apagava a cada carregamento: a vaca marcada para descarte voltava a Novilha e
+    // o touro voltava a Touro, em silêncio, e com isso reentravam na reprodução.
+    // Só sai de Descarte quem for tirado de lá à mão, no Registro de Animais.
+    if(r.cat !== 'Descarte'){
+      var novaCat = calcCat(r.gen, dg.nasc, jaPariu);
+      if(novaCat && novaCat !== r.cat){
+        r.cat = novaCat;
+        atualizados++;
+      }
     }
     // Consistência de condição x categoria: aplicada em toda passagem (não só quando a categoria
     // muda nesta chamada), para autocorrigir registros antigos/importados que já estejam na
@@ -9549,6 +9664,10 @@ function aptaReproducao(brinco, dataRef){
   if(!refDate) refDate = new Date();
   var idRec = DB.id.find(function(r){ return r.brinco===brinco; });
   if(!idRec || (idRec.gen||'').toUpperCase()!=='F') return false;
+  // Marcada para descarte: sai da reprodução, qualquer que seja a condição dela.
+  // Sem esta linha a vaca continuava entrando na carga automática de fêmeas aptas
+  // ao se criar um protocolo — justamente o animal que não se quer mais emprenhar.
+  if(idRec.cat === 'Descarte') return false;
   var dgRec = DB.dg.find(function(r){ return r.brinco===brinco; });
   if(!dgRec || !dgRec.nasc) return false;
   var idade = (refDate - toDate(dgRec.nasc)) / (365.25*86400000);
@@ -10739,7 +10858,8 @@ function dgSalvarById(pid, brinco){
   if(!resVal){ toast('Selecione o resultado do DG','err'); return; }
   if(dataVal && !validDate(dataVal)){ toast('Data DG inválida','err'); return; }
   if(!dataVal) dataVal = todayStr();
-  DB_dg_reg.push({ protId:pid, brinco:brinco, dataDG:dataVal, resultado:resVal, obs:obsVal });
+  DB_dg_reg.push({ protId:pid, brinco:brinco, dataDG:dataVal, resultado:resVal, obs:obsVal,
+    catEpoca: catFemeaNaData(brinco, dataVal) });
   // Atualiza condição atual do animal
   var dg2 = DB.dg.find(function(d){ return d.brinco===brinco; });
   if(dg2){
@@ -10762,7 +10882,8 @@ function dgSalvar(pid, brinco){
   if(!res){ toast('Selecione o resultado do DG','err'); return; }
   if(data && !validDate(data)){ toast('Data DG inválida','err'); return; }
   if(!data) data = todayStr();
-  DB_dg_reg.push({ protId:pid, brinco:brinco, dataDG:data, resultado:res, obs:obs });
+  DB_dg_reg.push({ protId:pid, brinco:brinco, dataDG:data, resultado:res, obs:obs,
+    catEpoca: catFemeaNaData(brinco, data) });
   // Atualiza condição atual do animal
   var dg = DB.dg.find(function(d){ return d.brinco===brinco; });
   if(dg){
@@ -11230,8 +11351,12 @@ function renderRepDash(){
   if(catBody){
     var catAgg = {};
     dgF.forEach(function(d){
-      var animal = DB.id.find(function(a){ return a.brinco===d.brinco; });
-      var cat = animal ? (animal.cat||'Sem categoria') : 'Sem categoria';
+      // Categoria NA ÉPOCA do diagnóstico, não a de hoje. Categoria de fêmea sobe com o
+      // tempo, então usar a atual jogava a novilha que emprenhou ano passado no balde de
+      // Matriz — e a tabela existe justamente para separar as duas.
+      var cat = (typeof catEpocaDoDG==='function')
+        ? catEpocaDoDG(d)
+        : (function(){ var a = DB.id.find(function(x){ return x.brinco===d.brinco; }); return a ? (a.cat||'—') : '—'; })();
       if(!catAgg[cat]) catAgg[cat] = {dg:0, prenhas:0};
       catAgg[cat].dg++;
       if((d.resultado||'').toLowerCase()==='prenhe') catAgg[cat].prenhas++;
@@ -11306,9 +11431,12 @@ function regPopularFiltros(){
     if(avoLbl && avos.indexOf(avoLbl)===-1) avos.push(avoLbl);
     var avoPatLbl = nomeGenealogico(d.avoPat);
     if(avoPatLbl && avosPat.indexOf(avoPatLbl)===-1) avosPat.push(avoPatLbl);
-    // Idem para a condição: a coluna usa condDisplay → condicaoUnificada, e não o campo cru.
-    var condLbl = condicaoUnificada(d.brinco).lbl;
-    if(condLbl && condLbl!=='—' && conds.indexOf(condLbl)===-1) conds.push(condLbl);
+    // Idem para a condição — e cada animal pode ter mais de uma. Antes a opção vinha de
+    // condicaoUnificada(), que além de devolver só uma, embutia datas no rótulo
+    // ("Desmamado em 14/03/2026"): a lista ganhava uma entrada por data de desmame.
+    condicoesLabels(d.brinco).forEach(function(condLbl){
+      if(condLbl && conds.indexOf(condLbl)===-1) conds.push(condLbl);
+    });
     var sexoTern = terneiroApeGenero(d.brinco, d);
     if(sexoTern && repros.indexOf(sexoTern)===-1) repros.push(sexoTern);
   });
@@ -11352,14 +11480,20 @@ function filterRegTable(){
     var pai   =(cells[8] ||{}).textContent||'';
     var avo   =(cells[9] ||{}).textContent||'';
     var avoPat=(cells[10]||{}).textContent||'';
-    var cond  =(cells[11]||{}).textContent||'';
+    // A condição vem do atributo da linha, não do texto da célula: um animal pode
+    // estar em mais de uma condição ao mesmo tempo (amamentando E prenhe), e a célula
+    // ainda é truncada por CSS. O texto da célula fica como reserva.
+    var condAttr = tr.getAttribute('data-cond');
+    var condLista = (condAttr !== null && condAttr !== '')
+      ? condAttr.split('|')
+      : [((cells[11]||{}).textContent||'').trim()];
     var repro =(cells[12]||{}).textContent||'';
     var ok = (!fRaca   || raca.trim()===fRaca)
           && (!fGen    || gen.trim()===fGen)
           && (!fPai    || pai.trim()===fPai)
           && (!fAvo    || avo.trim()===fAvo)
           && (!fAvoPat || avoPat.trim()===fAvoPat)
-          && (!fCond   || cond.trim()===fCond)
+          && (!fCond   || condLista.some(function(c){ return c.trim()===fCond; }))
           && (!fRepro  || repro.trim()===fRepro);
     if(ok) tr.removeAttribute('data-filtered-out'); else tr.setAttribute('data-filtered-out','1');
   });
@@ -11833,7 +11967,15 @@ function estadoAmamentacao(brinco){
   if(p.terneiroBrinco){
     var t = DB.dg.find(function(d){ return d.brinco===p.terneiroBrinco; });
     if(!t) return {ativo:false, desde:p.partoData, terneiro:p.terneiroBrinco};       // terneiro saiu do rebanho
-    if(t.condAtual==='Desmamado') return {ativo:false, desde:p.partoData, terneiro:p.terneiroBrinco};
+    // O desmame precisa ser reconhecido pelos DOIS sinais. Antes olhávamos só a condição
+    // 'Desmamado', e ela não dura: assim que a terneira faz idade de Terneira Sobreano,
+    // atualizarCategorias() troca essa condição por 'Vazia' de propósito. Naquele instante
+    // a mãe — desmamada meses antes — voltava a constar como Amamentando, e junto voltavam
+    // a carência de 30 dias e a exclusão dela dos protocolos. A data de desmame, essa, não
+    // se apaga. indicadoresSafra() já usava as duas; aqui ficou de fora.
+    if(t.dataDesmame || t.condAtual==='Desmamado'){
+      return {ativo:false, desde:p.partoData, terneiro:p.terneiroBrinco};
+    }
   }
   return {ativo:true, desde:p.partoData, terneiro:p.terneiroBrinco||''};
 }
@@ -11891,6 +12033,13 @@ function condicoesAtuais(brinco){
   var dgRec = DB.dg.find(function(d){ return d.brinco===brinco; }) || {};
   var idRec = DB.id.find(function(r){ return r.brinco===brinco; }) || {};
   var flags = [];
+
+  // Descarte na frente de tudo: é o fato que mais muda o que fazer com o animal.
+  // Fica ao lado das demais bandeiras (e não no lugar delas) porque saber que a
+  // vaca marcada para descarte está prenhe ou amamentando continua importando.
+  if(idRec.cat === 'Descarte'){
+    flags.push({id:'descarte', cls:'fc-tag-abortou', lbl:'Descarte', sub:'fora da reprodução'});
+  }
 
   // Animais jovens: estado próprio, não reprodutivo.
   if(dgRec.condAtual==='Terneiro ao pé'){
@@ -12389,6 +12538,137 @@ function relBloco_indicadores(){
     + '<h3>Matrizes de menor desempenho</h3>'
     + '<p class="nota">As 15 primeiras da fila de descarte, da pior para a melhor.</p>'
     + relTabela(['Brinco','Categoria','Idade','Partos','Perdas','Desmamados','kg desm.','IEP'], rank);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CATEGORIA NA ÉPOCA DO DIAGNÓSTICO
+// ═══════════════════════════════════════════════════════════════════════════
+// A tabela "Desempenho por Categoria" comparava a categoria de HOJE. O problema
+// é que categoria de fêmea sobe com o tempo: a novilha que emprenhou na safra
+// passada é Primípara hoje e vai ser Matriz na que vem. Resultado: 133 dos 179
+// diagnósticos do rebanho estavam atribuídos à categoria errada, e a tabela —
+// que existe justamente para comparar prenhez de novilha contra matriz —
+// mostrava quase tudo empilhado em Matriz.
+//
+// Categoria no momento do diagnóstico é um FATO HISTÓRICO, como o sexo do
+// terneiro no parto: não muda depois. Então é congelada no registro, e não
+// derivada na hora de desenhar a tela.
+//
+// Os registros antigos são preenchidos por reconciliação, no mesmo padrão de
+// reconciliarAvoPaterno/reconciliarNumPartos: roda a cada carregamento, só
+// preenche o que está vazio, nunca sobrescreve valor já gravado.
+//
+// Sobre o reuso de brinco: a derivação usa a data de nascimento guardada na
+// genealogia e conta apenas partos ANTERIORES à data do diagnóstico. Um DG
+// anterior ao nascimento do animal que hoje usa aquele brinco é descartado —
+// é a mesma trava de _eventoDoAnimal.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Ordem das categorias de fêmea. Serve para a trava de coerência abaixo: a
+// categoria sobe com o tempo e nunca desce, então o valor de uma data passada
+// jamais pode estar acima do valor de hoje.
+var CAT_ESCADA = { 'Terneira':0, 'Terneira Sobreano':1, 'Novilha':2, 'Primipara':3, 'Matriz':4 };
+
+// Categoria de uma fêmea numa data passada, a partir da idade que ela tinha e
+// de quantas vezes já havia parido até ali. Usa os mesmos cortes de calcCat.
+function catFemeaNaData(brinco, dataRef){
+  var dRef = toDate(dataRef);
+  if(!dRef) return '';
+
+  var dgRec = DB.dg.find(function(d){ return d.brinco === brinco; });
+
+  // Quantos partos a fêmea já tinha NAQUELA data.
+  //
+  // Contar só os partos registrados no módulo de reprodução daria um número
+  // errado para quase todo o rebanho: o módulo é recente, e as matrizes vinham
+  // parindo muito antes de existir registro. Elas apareceriam como novilhas.
+  //
+  // O contador do animal (numPartos) é a melhor informação disponível sobre
+  // paridade — reconciliarNumPartos() o mantém com um piso derivado da própria
+  // categoria. Então parte-se do total de hoje e descontam-se os partos
+  // registrados DEPOIS do diagnóstico. O que sobra é a paridade na época.
+  var partosDepois = DB_dg_reg.filter(function(r){
+    if(r.brinco !== brinco) return false;
+    if(r.partoResultado !== 'pariu' && r.partoResultado !== 'natimorto') return false;
+    var dp = toDate(r.partoData);
+    return dp && dp >= dRef;
+  }).length;
+
+  var totalHoje = dgRec ? (parseInt(dgRec.numPartos) || 0) : 0;
+  if(!dgRec){
+    // Animal arquivado cujo cadastro se perdeu numa versão antiga: resta contar
+    // os partos que ficaram registrados.
+    totalHoje = DB_dg_reg.filter(function(r){
+      if(r.brinco !== brinco) return false;
+      if(r.partoResultado !== 'pariu' && r.partoResultado !== 'natimorto') return false;
+      var dp = toDate(r.partoData);
+      return dp && dp < dRef;
+    }).length;
+    partosDepois = 0;
+  }
+  var partosAntes = Math.max(0, totalHoje - partosDepois);
+
+  var nasc = dgRec ? toDate(dgRec.nasc) : null;
+
+  // Sem data de nascimento ainda dá para dizer alguma coisa: quem já havia parido
+  // antes daquele diagnóstico não era novilha.
+  if(!nasc || nasc > dRef){
+    if(partosAntes >= 2) return 'Matriz';
+    if(partosAntes === 1) return 'Primipara';
+    return '';
+  }
+
+  var anos = (dRef - nasc) / (365.25 * 86400000);
+  if(anos < 0) return '';
+
+  var derivada;
+  if(anos < 1)              derivada = 'Terneira';
+  else if(anos < 1.7)       derivada = 'Terneira Sobreano';
+  else if(partosAntes >= 2) derivada = 'Matriz';
+  else if(partosAntes === 1) derivada = 'Primipara';
+  else                      derivada = 'Novilha';
+
+  // Trava de coerência: categoria de fêmea só sobe com o tempo, então o passado
+  // não pode ficar acima do presente. A trava existe porque os dois campos de
+  // origem podem se contradizer — o animal 163 do rebanho tem numPartos = 1 e
+  // categoria Novilha ao mesmo tempo, e nenhuma reconciliação do app resolve
+  // essa divergência. Nesses casos vale o valor mais conservador, e a divergência
+  // continua visível no cadastro para ser corrigida à mão.
+  var idRec = DB.id.find(function(a){ return a.brinco === brinco; });
+  if(idRec && idRec.cat && CAT_ESCADA[idRec.cat] !== undefined
+     && CAT_ESCADA[derivada] > CAT_ESCADA[idRec.cat]){
+    return idRec.cat;
+  }
+  return derivada;
+}
+
+// Rótulo usado pelas telas. Ordem: valor congelado → derivação → categoria atual
+// → desconhecido. A categoria atual entra só como último recurso porque ela é
+// justamente o que queremos evitar; mas um valor defasado ainda informa mais que
+// um balde anônimo.
+var CAT_DESCONHECIDA = 'Sem cadastro (saiu do rebanho)';
+function catEpocaDoDG(r){
+  if(!r) return CAT_DESCONHECIDA;
+  if(r.catEpoca) return r.catEpoca;
+  var derivada = catFemeaNaData(r.brinco, r.dataDG);
+  if(derivada) return derivada;
+  var idRec = DB.id.find(function(a){ return a.brinco === r.brinco; });
+  if(idRec && idRec.cat) return idRec.cat;
+  return CAT_DESCONHECIDA;
+}
+
+// Autocorretiva a cada carregamento. Só grava o que conseguiu derivar — deixar
+// em branco é melhor que chutar, e o que ficar em branco aparece na tela como
+// "Sem cadastro (saiu do rebanho)", que é a verdade sobre esses registros.
+function reconciliarCatEpoca(){
+  var preenchidos = 0;
+  DB_dg_reg.forEach(function(r){
+    if(r.catEpoca) return;
+    var c = catFemeaNaData(r.brinco, r.dataDG);
+    if(c){ r.catEpoca = c; preenchidos++; }
+  });
+  return preenchidos;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -12935,7 +13215,9 @@ function relBloco_inventario(){
     return [r.brinco, r.cat||'—', r.raca||'—', r.gen||'—',
             dg.nasc?fmtD(dg.nasc):'—', dg.nasc?calcAge(dg.nasc):'—',
             p?(p.peso+' kg'):'—',
-            (typeof condicaoUnificada==='function' ? (condicaoUnificada(r.brinco).lbl||'—') : (dg.condAtual||'—')),
+            (typeof condicoesLabels==='function' && condicoesLabels(r.brinco).length
+               ? condicoesLabels(r.brinco).join(' · ')
+               : (typeof condicaoUnificada==='function' ? (condicaoUnificada(r.brinco).lbl||'—') : (dg.condAtual||'—'))),
             dg.mae?brincoHistLbl(dg.mae):'—', nomeGenealogico(dg.pai||'')||'—'];
   });
   return '<h2>Inventário de animais</h2>'
@@ -12972,8 +13254,15 @@ function relBloco_reproducao(){
   DB.id.forEach(function(r){
     if((r.gen||'').toUpperCase()!=='F') return;
     femeas++;
-    var c = (typeof condicaoUnificada==='function') ? (condicaoUnificada(r.brinco).lbl||'—') : '—';
-    cont[c]=(cont[c]||0)+1;
+    // Uma fêmea pode estar em mais de uma condição ao mesmo tempo (amamentando e
+    // prenhe, por exemplo) e precisa ser contada nas duas — senão o total de prenhes
+    // deste relatório fica menor que o real. A soma das linhas passa de 100%, e a
+    // nota abaixo da tabela avisa disso.
+    var labels = (typeof condicoesLabels==='function') ? condicoesLabels(r.brinco) : [];
+    if(!labels.length){
+      labels = [(typeof condicaoUnificada==='function') ? (condicaoUnificada(r.brinco).lbl||'—') : '—'];
+    }
+    labels.forEach(function(c){ cont[c]=(cont[c]||0)+1; });
   });
   var linhas = Object.keys(cont).sort(function(a,b){ return cont[b]-cont[a]; }).map(function(k){
     return [k, cont[k], (cont[k]*100/(femeas||1)).toFixed(1).replace('.',',')+'%'];
@@ -12993,7 +13282,9 @@ function relBloco_reproducao(){
   prev.sort(function(a,b){ return toDate(a[2]) - toDate(b[2]); });
 
   return '<h2>Situação reprodutiva</h2>'
-    + '<p class="nota"><strong>'+femeas+'</strong> fêmeas no rebanho.</p>'
+    + '<p class="nota"><strong>'+femeas+'</strong> fêmeas no rebanho. Uma fêmea pode aparecer '
+    + 'em mais de uma linha — amamentar e estar prenhe ao mesmo tempo é o esperado —, '
+    + 'por isso a soma dos percentuais passa de 100%.</p>'
     + relTabela(['Condição','Fêmeas','% das fêmeas'], linhas)
     + '<h3>Previsão de partos</h3>'
     + '<p class="nota">Estimativa de 280 dias a partir da cobertura.</p>'
