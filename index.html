@@ -928,8 +928,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.10.0</span><br>
-              Data da versão: <span id="app-versao-data">10/09/2026</span><br>
+              Versão: <span id="app-versao">2.11.0</span><br>
+              Data da versão: <span id="app-versao-data">14/09/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -4829,6 +4829,20 @@ function renderDash(){
 
   // Datas de nascimento em conflito entre o registro do parto e o cadastro do terneiro.
   // Silenciosas por natureza: o animal aparece numa tela e some de outra.
+  // Partos cujo terneiro não existe no cadastro: o vínculo mãe-cria está rompido, então o
+  // terneiro não entra em taxa de desmame nem em kg por vaca exposta. Silencioso por natureza —
+  // nenhuma tela dá erro, o animal só não aparece nas contas.
+  if(typeof partosComTerneiroInexistente === 'function'){
+    var semTern = partosComTerneiroInexistente();
+    if(semTern.length) alerts.push({ic:'&#128118;',cor:'var(--red)',
+      txt:'<strong>'+semTern.length+' parto(s) com terneiro fora do cadastro</strong>: '
+        + semTern.slice(0,4).map(function(x){
+            return 'mãe '+x.mae+(x.terneiro ? ' (terneiro '+x.terneiro+')' : ' (sem brinco)');
+          }).join(', ')
+        + (semTern.length>4 ? ' e outros' : '')
+        + '. Abra a Ficha da mãe &rarr; Atualizar Estado &rarr; Corrigir registro de parto.'});
+  }
+
   if(typeof divergenciasNascimento === 'function'){
     var divN = divergenciasNascimento();
     if(divN.length) alerts.push({ic:'&#128197;',cor:'var(--red)',
@@ -7560,6 +7574,7 @@ function fcAbrirEstado(brinco){
   if(ativa) fcRenderPartoForm(brinco, ativa);
   else if(dgRecEst.condAtual==='Terneiro ao pé') fcRenderDesmameForm(brinco);
   else fcRenderEstadoManual(brinco);
+  fcAnexarLinkCorrigirParto(brinco);
   document.getElementById('modal-estado').classList.add('on');
 }
 
@@ -12374,6 +12389,400 @@ function relBloco_indicadores(){
     + '<h3>Matrizes de menor desempenho</h3>'
     + '<p class="nota">As 15 primeiras da fila de descarte, da pior para a melhor.</p>'
     + relTabela(['Brinco','Categoria','Idade','Partos','Perdas','Desmamados','kg desm.','IEP'], rank);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CORREÇÃO DE REGISTRO DE PARTO
+// ═══════════════════════════════════════════════════════════════════════════
+// O parto era gravado uma única vez, por fcConfirmarParto, e nunca mais podia
+// ser tocado: o botão "Atualizar Estado" só oferece o formulário de desfecho
+// enquanto existe uma prenhez EM ABERTO. Registrado o parto, a prenhez fecha e
+// o formulário some junto — inclusive o campo do brinco do terneiro. Um erro de
+// digitação ali (um "T" no lugar de "37") ficava permanente.
+//
+// E não era um erro inofensivo. O brinco do terneiro é a única ligação entre a
+// vaca e a cria: é por ele que o app sabe se o terneiro foi desmamado, quanto
+// pesou e se conta para a taxa de desmame e para os kg por vaca exposta. Um
+// brinco errado não dá erro em lugar nenhum — só faz o terneiro sumir de todos
+// os índices, em silêncio.
+//
+// Duas decisões de projeto aqui:
+//
+// • O terneiro precisa JÁ EXISTIR no cadastro. No fluxo de registrar o parto o
+//   app cria o animal; aqui, não. Criar um animal a partir de uma tela de
+//   correção abriria caminho para cadastros pela metade, sem raça nem categoria.
+//   Quando o brinco não existe, a tela manda cadastrar antes e explica por quê.
+//
+// • O número de partos da vaca é ajustado à mão quando o resultado muda.
+//   reconciliarNumPartos() recalcula a cada carregamento, mas só PARA CIMA
+//   (usa Math.max contra um piso derivado da categoria). Se um "pariu" virasse
+//   "abortou" e eu confiasse nela, o contador ficaria travado no número antigo.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Todos os partos/desfechos já registrados de um animal, do mais recente para o
+// mais antigo. O índice em DB_dg_reg viaja junto porque é ele que identifica o
+// registro na hora de salvar — protId+brinco não serve, uma vaca pode ter mais
+// de um registro no mesmo protocolo.
+function partosDoAnimal(brinco){
+  var lista = [];
+  DB_dg_reg.forEach(function(r, i){
+    if(r.brinco === brinco && r.partoResultado) lista.push({ idx:i, rec:r });
+  });
+  lista.sort(function(a, b){
+    var da = toDate(a.rec.partoData), db = toDate(b.rec.partoData);
+    if(!da && !db) return 0;
+    if(!da) return 1;
+    if(!db) return -1;
+    return db - da;
+  });
+  return lista;
+}
+
+var PARTO_ROTULO = { pariu:'Nasceu vivo', abortou:'Abortou', natimorto:'Natimorto' };
+
+// O acesso à correção fica pendurado no fim do "Atualizar Estado", qualquer que
+// seja o formulário que apareceu ali. Ele some quando o animal não tem parto
+// registrado — não faz sentido oferecer correção do que não existe. Quando há um
+// terneiro fora do cadastro, o link vira aviso: é o único lugar em que o usuário
+// consegue arrumar, e ele precisa ser encontrado sem procurar.
+function fcAnexarLinkCorrigirParto(brinco){
+  var lista = partosDoAnimal(brinco);
+  if(!lista.length) return;
+  var box = document.getElementById('me-content');
+  if(!box) return;
+
+  var quebrado = lista.some(function(it){
+    var r = it.rec;
+    if(r.partoResultado !== 'pariu') return false;
+    var b = (r.terneiroBrinco || '').trim();
+    if(!b) return true;
+    if(typeof brincoEhVirtual === 'function' && brincoEhVirtual(b)) return false;
+    return !DB.id.find(function(x){ return x.brinco === b; });
+  });
+
+  box.insertAdjacentHTML('beforeend',
+    '<div style="margin-top:16px;border-top:1px solid var(--bord);padding-top:12px">'
+    + (quebrado
+        ? '<div style="font-size:11.5px;color:var(--red);line-height:1.6;margin-bottom:7px">'
+          + '&#9888; Há um parto com terneiro fora do cadastro. Enquanto ficar assim, esse terneiro '
+          + 'não conta na taxa de desmame nem nos kg por vaca exposta.</div>'
+        : '')
+    + '<button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" '
+    +   'onclick="fcRenderPartosLista(\'' + brinco + '\')">&#9998; Corrigir registro de parto'
+    +   (lista.length > 1 ? ' (' + lista.length + ')' : '') + '</button>'
+    + '</div>');
+}
+
+function fcRenderPartosLista(brinco){
+  var lista = partosDoAnimal(brinco);
+  document.getElementById('me-title').textContent = 'Corrigir registro de parto — Brinco ' + brinco;
+
+  if(!lista.length){
+    document.getElementById('me-content').innerHTML =
+      '<div style="font-size:12px;color:var(--tx2);margin-bottom:12px">Este animal não tem nenhum parto registrado.</div>'
+      + '<button class="btn btn-ghost btn-sm" onclick="fcAbrirEstado(\'' + brinco + '\')">Voltar</button>';
+    return;
+  }
+
+  var linhas = lista.map(function(it){
+    var r = it.rec;
+    var tern = '';
+    if(r.partoResultado === 'pariu'){
+      var existe = !!DB.id.find(function(x){ return x.brinco === r.terneiroBrinco; });
+      tern = r.terneiroBrinco
+        ? ('Terneiro <strong>' + r.terneiroBrinco + '</strong>'
+           + (existe ? '' : ' <span style="color:var(--red)">&#9888; não está no cadastro</span>'))
+        : '<span style="color:var(--red)">&#9888; sem brinco de terneiro</span>';
+    }
+    return '<div style="border:1px solid var(--bord);border-radius:var(--rsm);padding:10px 12px;'
+      + 'display:flex;align-items:center;gap:10px;justify-content:space-between">'
+      + '<div style="font-size:12.5px;line-height:1.6">'
+      +   '<strong>' + (PARTO_ROTULO[r.partoResultado] || r.partoResultado) + '</strong>'
+      +   ' &middot; ' + (r.partoData ? fmtD(r.partoData) : 'sem data')
+      +   (tern ? '<br>' + tern : '')
+      + '</div>'
+      + '<button class="btn btn-ghost btn-sm" onclick="fcRenderEditarParto(\'' + brinco + '\',' + it.idx + ')">Editar</button>'
+      + '</div>';
+  }).join('');
+
+  document.getElementById('me-content').innerHTML =
+    '<div style="font-size:12px;color:var(--tx2);margin-bottom:12px">'
+    + 'Partos e desfechos registrados para <strong>' + brinco + '</strong>. '
+    + 'Escolha qual corrigir:</div>'
+    + '<div style="display:flex;flex-direction:column;gap:8px">' + linhas + '</div>'
+    + '<div style="margin-top:14px"><button class="btn btn-ghost btn-sm" onclick="fcAbrirEstado(\'' + brinco + '\')">Voltar</button></div>';
+}
+
+function fcRenderEditarParto(brinco, idx){
+  var r = DB_dg_reg[idx];
+  if(!r){ toast('Registro de parto não encontrado', 'err'); return; }
+  var prot = DB_protocolos.find(function(p){ return p.id === r.protId; });
+
+  function opt(v){
+    return '<option value="' + v + '"' + (r.partoResultado === v ? ' selected' : '') + '>' + PARTO_ROTULO[v] + '</option>';
+  }
+  function optGen(v){
+    var atual = r.terneiroGenero || '';
+    return '<option value="' + v + '"' + (atual === v ? ' selected' : '') + '>' + (v || '-') + '</option>';
+  }
+
+  var aviso = '';
+  if(r.partoResultado === 'pariu' && r.terneiroBrinco && !DB.id.find(function(x){ return x.brinco === r.terneiroBrinco; })){
+    aviso = '<div style="background:var(--ambbg);border:1px solid var(--amb);border-radius:var(--rsm);'
+      + 'padding:10px 12px;margin-bottom:12px;font-size:12px;line-height:1.6">'
+      + '<strong>&#9888; O brinco <code>' + r.terneiroBrinco + '</code> não existe no cadastro.</strong> '
+      + 'Enquanto ficar assim, este terneiro não entra na taxa de desmame nem nos kg por vaca exposta — '
+      + 'o app não tem como saber que animal ele é.</div>';
+  }
+
+  document.getElementById('me-title').textContent = 'Corrigir parto — Brinco ' + brinco;
+  document.getElementById('me-content').innerHTML =
+    aviso
+    + '<div style="font-size:12px;color:var(--tx2);margin-bottom:12px">'
+    +   'Registro de <strong>' + brinco + '</strong>'
+    +   (prot ? ' — protocolo <strong>' + prot.nome + '</strong>' : '')
+    +   (r.dataDG ? ' (DG ' + fmtD(r.dataDG) + ')' : '') + '.</div>'
+    + '<div class="fc-form-row">'
+    +   '<div class="fc-fg"><label>Resultado</label>'
+    +     '<select id="ep-resultado" style="' + _selStyle + '" onchange="fcToggleEditTerneiro()">'
+    +       opt('pariu') + opt('abortou') + opt('natimorto')
+    +     '</select></div>'
+    +   '<div class="fc-fg"><label>Data</label><input id="ep-data" placeholder="dd/mm/aaaa" maxlength="10" '
+    +     'oninput="maskDate(this)" value="' + (r.partoData || '') + '"></div>'
+    + '</div>'
+    + '<div id="ep-terneiro-fields" class="fc-form-row"' + (r.partoResultado === 'pariu' ? '' : ' style="display:none"') + '>'
+    +   '<div class="fc-fg"><label>Brinco do Terneiro</label>'
+    +     '<input id="ep-brinco" placeholder="Ex: 37" value="' + (r.terneiroBrinco || '') + '"></div>'
+    +   '<div class="fc-fg"><label>Gênero</label><select id="ep-genero" style="' + _selStyle + '">'
+    +     optGen('') + optGen('F') + optGen('M') + '</select></div>'
+    + '</div>'
+    + '<div class="fc-fg" style="margin-bottom:4px"><label>Observação</label>'
+    +   '<input id="ep-obs" placeholder="Opcional" value="' + (r.partoObs || '') + '"></div>'
+    + '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin-top:10px">'
+    +   'O terneiro precisa estar cadastrado em <strong>Registro de Animais</strong> antes de ser vinculado aqui. '
+    +   'A data de nascimento do terneiro não é alterada por esta tela — se ela divergir da data do parto, '
+    +   'o aviso aparece na Tela Inicial.</div>'
+    + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">'
+    +   '<button class="btn btn-ghost btn-sm" onclick="fcRenderPartosLista(\'' + brinco + '\')">Voltar</button>'
+    +   '<button class="btn btn-primary" onclick="fcSalvarEdicaoParto(\'' + brinco + '\',' + idx + ')">&#10003; Salvar correção</button>'
+    + '</div>';
+}
+
+function fcToggleEditTerneiro(){
+  var sel = document.getElementById('ep-resultado');
+  var box = document.getElementById('ep-terneiro-fields');
+  if(!sel || !box) return;
+  box.style.display = sel.value === 'pariu' ? 'flex' : 'none';
+}
+
+function fcSalvarEdicaoParto(brinco, idx){
+  var r = DB_dg_reg[idx];
+  if(!r || r.brinco !== brinco){ toast('Registro de parto não encontrado', 'err'); return; }
+
+  function val(id){ var el = document.getElementById(id); return el ? String(el.value || '') : ''; }
+  var resultado  = val('ep-resultado');
+  var dataStr    = val('ep-data').trim();
+  var ternBrinco = val('ep-brinco').trim();
+  var ternGen    = val('ep-genero');
+  var obs        = val('ep-obs').trim();
+
+  if(!dataStr){ toast('Informe a data do parto/desfecho', 'err'); return; }
+  if(!validDate(dataStr)){ toast('Use o formato dd/mm/aaaa para a data', 'err'); return; }
+  if(dataEhFutura(dataStr)){ toast('Data não pode ser futura', 'err'); return; }
+
+  if(resultado === 'pariu'){
+    var bMsg = brincoErrMsg(ternBrinco);
+    if(bMsg){ toast('Brinco do terneiro: ' + bMsg, 'err'); return; }
+    // Ao contrário do registro do parto, aqui o animal tem de existir: esta tela
+    // corrige um vínculo, não cadastra bicho.
+    if(!brincoExiste(ternBrinco)){
+      toast('O brinco ' + ternBrinco + ' não está cadastrado. Registre o animal em Registro de Animais antes de vinculá-lo.', 'err');
+      return;
+    }
+    // Um terneiro só pode ter uma mãe. Sem esta checagem, um erro de digitação
+    // criaria dois partos apontando para o mesmo animal e ele contaria em dobro.
+    var conflito = null;
+    DB_dg_reg.forEach(function(x, i){
+      if(i !== idx && x.partoResultado === 'pariu' && x.terneiroBrinco === ternBrinco) conflito = x;
+    });
+    if(conflito){
+      toast('O terneiro ' + ternBrinco + ' já está vinculado ao parto de ' + conflito.brinco + '.', 'err');
+      return;
+    }
+    if(!ternGen){ toast('Selecione o gênero do terneiro', 'err'); return; }
+  }
+
+  var antes = {
+    resultado: r.partoResultado || '',
+    terneiro:  r.terneiroBrinco || '',
+    data:      r.partoData || ''
+  };
+
+  r.partoResultado = resultado;
+  r.partoData = dataStr;
+  r.partoObs  = obs;
+  if(resultado === 'pariu'){
+    r.terneiroBrinco = ternBrinco;
+    r.terneiroGenero = ternGen;
+  } else {
+    r.terneiroBrinco = '';
+    r.terneiroGenero = '';
+  }
+
+  // ── Número de partos ────────────────────────────────────────────────────
+  // Nascimento vivo e natimorto contam como parição; aborto não.
+  // reconciliarNumPartos() só ajusta para cima, então a descida é feita aqui.
+  var contavaAntes = (antes.resultado === 'pariu' || antes.resultado === 'natimorto');
+  var contaAgora   = (resultado === 'pariu' || resultado === 'natimorto');
+  var dgAnimal = DB.dg.find(function(d){ return d.brinco === brinco; });
+  if(dgAnimal && contavaAntes !== contaAgora){
+    dgAnimal.numPartos = Math.max(0, (parseInt(dgAnimal.numPartos) || 0) + (contaAgora ? 1 : -1));
+  }
+
+  // ── Condição da vaca ────────────────────────────────────────────────────
+  // Mesmo tratamento de fcConfirmarParto. A bandeira de amamentação é derivada
+  // do registro de parto, então ela se acerta sozinha no próximo desenho; o que
+  // precisa ser escrito é a data de início e a data de intercorrência.
+  if(dgAnimal){
+    if(resultado === 'pariu'){
+      dgAnimal.dataAmamentacao = dataStr;
+      dgAnimal.dataInterRepro  = '';
+      if(dgAnimal.condAtual === 'Vazia') dgAnimal.condAtual = 'Amamentando';
+    } else {
+      dgAnimal.condAtual       = 'Vazia';
+      dgAnimal.dataInterRepro  = dataStr;
+      dgAnimal.dataAmamentacao = '';
+    }
+  }
+
+  // ── Registro da correção no histórico ───────────────────────────────────
+  var mudancas = [];
+  if(antes.resultado !== resultado){
+    mudancas.push('resultado: ' + (PARTO_ROTULO[antes.resultado] || antes.resultado) + ' → ' + PARTO_ROTULO[resultado]);
+  }
+  if(antes.data !== dataStr) mudancas.push('data: ' + (antes.data ? fmtD(antes.data) : 'vazia') + ' → ' + fmtD(dataStr));
+  if(antes.terneiro !== (r.terneiroBrinco || '')){
+    mudancas.push('terneiro: ' + (antes.terneiro || 'vazio') + ' → ' + (r.terneiroBrinco || 'vazio'));
+  }
+  if(mudancas.length){
+    fcLogEstado(brinco, 'Registro de parto corrigido (' + mudancas.join('; ') + ')', todayBR());
+  }
+
+  markDirty();
+  toast(mudancas.length ? 'Registro de parto corrigido.' : 'Nenhuma alteração a salvar.', 'ok');
+
+  // ── Sobra do brinco antigo ──────────────────────────────────────────────
+  // Trocar o brinco do terneiro deixa para trás o registro do brinco errado.
+  // Ele não aparece em tela nenhuma (não está no cadastro), mas continua na
+  // planilha e na nuvem, e volta a incomodar na próxima conferência. Ofereço a
+  // limpeza — nunca faço sozinho, e só quando não há nada pendurado nele.
+  closeEstadoModal();
+  _fcAtualizarTelas(brinco);
+
+  var sobrou = (antes.terneiro && antes.terneiro !== (r.terneiroBrinco || '')) ? antes.terneiro : '';
+  if(sobrou && ehRegistroFantasma(sobrou) && brincoOrfaoSeguro(sobrou).ok){
+    showConfirm('O brinco ' + sobrou + ' ficou sem uso: não está no cadastro de animais e não tem '
+      + 'pesagem, manejo, filho nem intercorrência ligados a ele. Remover esse registro solto?',
+      function(){
+        removerRegistroFantasma(sobrou);
+        toast('Registro solto de ' + sobrou + ' removido.', 'ok');
+        _fcAtualizarTelas(brinco);
+      },
+      'Remover registro solto');
+  }
+}
+
+function _fcAtualizarTelas(brinco){
+  if(typeof fcRender === 'function') fcRender(brinco);
+  if(typeof renderReg === 'function') renderReg();
+  if(typeof renderHistorico === 'function') renderHistorico();
+  if(typeof renderDiagnostico === 'function') renderDiagnostico();
+  if(typeof renderAgenda === 'function') renderAgenda();
+  if(typeof renderRepDash === 'function') renderRepDash();
+  if(typeof renderIndicadores === 'function') renderIndicadores();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REGISTROS FANTASMA
+// ═══════════════════════════════════════════════════════════════════════════
+// Um brinco que existe em DB.dg (genealogia) mas não em DB.id (cadastro) é um
+// animal pela metade: não aparece em nenhuma listagem, não pode ser pesado nem
+// desmamado, mas ocupa espaço na planilha e pode confundir uma conferência
+// futura. Nasce de cadastro interrompido no meio.
+//
+// Os brincos virtuais (V1, V2…) são a exceção deliberada: eles existem
+// EXATAMENTE assim de propósito — animal arquivado sai de DB.id e fica só na
+// genealogia, para que os descendentes continuem rastreáveis. Nunca são
+// fantasmas.
+function ehRegistroFantasma(b){
+  if(!b) return false;
+  if(typeof brincoEhVirtual === 'function' && brincoEhVirtual(b)) return false;
+  if(DB.id.find(function(r){ return r.brinco === b; })) return false;
+  return !!DB.dg.find(function(d){ return d.brinco === b; });
+}
+
+// Remover é apagar dado, então a regra é dura: só se NADA depender do brinco.
+// Devolve {ok:true} ou {ok:false, motivo:'...'} — o motivo é mostrado ao usuário.
+function brincoOrfaoSeguro(b){
+  if(!b) return { ok:false, motivo:'brinco vazio' };
+  if(typeof brincoEhVirtual === 'function' && brincoEhVirtual(b)){
+    return { ok:false, motivo:'é um brinco virtual de animal arquivado — precisa continuar existindo para a genealogia' };
+  }
+  if(DB.id.find(function(r){ return r.brinco === b; })){
+    return { ok:false, motivo:'o animal está cadastrado' };
+  }
+
+  var usos = [];
+  function temEm(arr, rotulo){
+    if(arr && arr.some(function(r){ return r && r.brinco === b; })) usos.push(rotulo);
+  }
+  temEm(DB.pes, 'pesagens');
+  temEm(DB.san, 'manejos sanitários');
+  temEm(typeof DB_mi !== 'undefined' ? DB_mi : [], 'manejos individuais');
+  temEm(DB.rep, 'registro reprodutivo');
+  temEm(typeof DB_iatf_reg !== 'undefined' ? DB_iatf_reg : [], 'registros de IATF');
+  temEm(typeof DB_baixas !== 'undefined' ? DB_baixas : [], 'saída do rebanho');
+
+  if(DB_dg_reg.some(function(r){ return r.brinco === b || r.terneiroBrinco === b; })){
+    usos.push('registros de diagnóstico/parto');
+  }
+  if(DB.dg.some(function(d){ return d.mae === b || d.pai === b || d.avo === b || d.avoPat === b; })){
+    usos.push('é ascendente de outro animal');
+  }
+  if(typeof fcInter !== 'undefined' && (fcInter[b] || []).length){
+    usos.push('intercorrências no histórico');
+  }
+  if(typeof DB_protocolos !== 'undefined' && DB_protocolos.some(function(p){
+      return p.brincos && p.brincos.indexOf(b) !== -1; })){
+    usos.push('protocolo reprodutivo');
+  }
+
+  return usos.length ? { ok:false, motivo:usos.join(', ') } : { ok:true };
+}
+
+function removerRegistroFantasma(b){
+  var seg = brincoOrfaoSeguro(b);
+  if(!seg.ok) return false;
+  DB.dg = DB.dg.filter(function(d){ return d.brinco !== b; });
+  if(typeof fcInter !== 'undefined') delete fcInter[b];
+  markDirty();
+  return true;
+}
+
+// ── Diagnóstico para o painel de alertas ───────────────────────────────────
+// Partos cujo terneiro não está no cadastro. Só aponta; a correção é manual,
+// pelo botão da Ficha do Animal — decidir QUAL é o brinco certo é coisa que só
+// quem estava no curral sabe.
+function partosComTerneiroInexistente(){
+  var achados = [];
+  DB_dg_reg.forEach(function(r, i){
+    if(r.partoResultado !== 'pariu') return;
+    var b = (r.terneiroBrinco || '').trim();
+    if(b && DB.id.find(function(x){ return x.brinco === b; })) return;
+    if(b && typeof brincoEhVirtual === 'function' && brincoEhVirtual(b)) return;  // terneiro que saiu do rebanho
+    achados.push({ idx:i, mae:r.brinco, terneiro:b, partoData:r.partoData || '' });
+  });
+  return achados;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
