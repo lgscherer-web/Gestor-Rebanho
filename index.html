@@ -812,6 +812,18 @@ tr:hover td{background:#fafaf7}
   </div>
 </div>
 
+<!-- Aviso de manejo próximo, mostrado na abertura do app (ver avisoManejoProximo). -->
+<div class="overlay" id="modal-manejo">
+  <div class="modal" style="max-width:480px">
+    <h3 id="mm-title">&#9200; Manejo programado</h3>
+    <div id="mm-content" style="font-size:13px;color:var(--tx2);line-height:1.6"></div>
+    <div class="modal-act">
+      <button class="btn btn-ghost" onclick="fecharAvisoManejo()">Fechar</button>
+      <button class="btn btn-primary" onclick="fecharAvisoManejo();goTab('sanidade')">&#128197; Abrir Agenda Sanitária</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="modal-estado">
   <div class="modal" style="max-width:460px">
     <h3 id="me-title">Atualizar Estado</h3>
@@ -922,7 +934,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.23.0</span><br>
+              Versão: <span id="app-versao">2.33.0</span><br>
               Data da versão: <span id="app-versao-data">16/09/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -1016,7 +1028,7 @@ tr:hover td{background:#fafaf7}
           <div class="kpi kpi-grn"><div class="kpi-ic">&#128004;</div><div class="kpi-lbl">Total de Animais</div><div class="kpi-val" id="kpi-total">—</div><div class="kpi-sub" id="kpi-total-sub"></div></div>
           <div class="kpi kpi-pur"><div class="kpi-ic">&#9878;</div><div class="kpi-lbl">Ultima Pesagem (media)</div><div class="kpi-val" id="kpi-peso">—</div><div class="kpi-sub" id="kpi-peso-sub"></div></div>
           <div class="kpi kpi-amb"><div class="kpi-ic">&#128293;</div><div class="kpi-lbl">GMD Médio Geral</div><div class="kpi-val" id="kpi-gmd">—</div><div class="kpi-sub" id="kpi-gmd-sub"></div></div>
-          <div class="kpi kpi-blu"><div class="kpi-ic">&#128203;</div><div class="kpi-lbl">Manejos Sanitarios</div><div class="kpi-val" id="kpi-san">—</div><div class="kpi-sub" id="kpi-san-sub"></div></div>
+          <div class="kpi kpi-blu"><div class="kpi-ic">&#9878;</div><div class="kpi-lbl">Peso Total do Rebanho</div><div class="kpi-val" id="kpi-peso-total">—</div><div class="kpi-sub" id="kpi-peso-total-sub"></div></div>
         </div>
 
         <!-- Linha 1: Composição + Reprodução -->
@@ -1312,7 +1324,10 @@ tr:hover td{background:#fafaf7}
               <div class="empty" style="padding:20px">Sem dados de diagnóstico.</div>
             </div>
           </div>
-          <div class="tcard">
+          <!-- Foto do rebanho HOJE, não resultado de safra: só aparece na aba da safra
+               corrente. Em safras passadas repetiria o estado de agora ao lado de números
+               de anos atrás, sugerindo um recorte histórico que o quadro não faz. -->
+          <div class="tcard" id="rep-dash-situacao-card">
             <div class="tbar"><span style="font-size:13px;font-weight:600">Situação Atual das Fêmeas</span></div>
             <div style="padding:14px 16px" id="rep-dash-situacao">
               <div class="empty" style="padding:20px">Sem dados.</div>
@@ -1338,17 +1353,12 @@ tr:hover td{background:#fafaf7}
                 <tbody id="tbl-rep-dash-cat"><tr><td colspan="4"><div class="empty">Sem dados</div></td></tr></tbody>
               </table>
             </div>
+            <div id="rep-dash-cat-nota" style="padding:0 16px 10px;font-size:11px;color:var(--tx3)"></div>
           </div>
         </div>
-        <div class="tcard">
-          <div class="tbar"><span style="font-size:13px;font-weight:600">Consumo de Doses de Sêmen</span><span style="font-size:11px;color:var(--tx3)">Total acumulado — não filtrado por safra</span></div>
-          <div class="tscroll">
-            <table>
-              <thead><tr><th>Sêmen</th><th>Doses Cadastradas</th><th>Doses Usadas</th><th>Restantes</th><th>Status</th></tr></thead>
-              <tbody id="tbl-rep-dash-doses"><tr><td colspan="5"><div class="empty">Nenhum sêmen cadastrado em Reprodutores</div></td></tr></tbody>
-            </table>
-          </div>
-        </div>
+        <!-- "Consumo de Doses de Sêmen" saiu daqui: o saldo é estoque físico acumulado,
+             não resultado de safra, e ficava idêntico em todas as abas de ano. A tabela
+             vive agora só em Estoque de Materiais → Doses Sêmen (#tbl-sd-saldo). -->
         <div class="tcard">
           <div class="tbar"><span style="font-size:13px;font-weight:600">Resumo por Protocolo</span></div>
           <div class="tscroll">
@@ -1672,15 +1682,20 @@ tr:hover td{background:#fafaf7}
               <div class="fg"><label>Data do manejo</label><input type="text" id="mi-data" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);miAtualizarGmdAtual()"></div>
             </div>
             <!-- Info card do animal -->
-            <div id="mi-animal-info" style="display:none;background:var(--grnbg);border:1px solid #a5d6a7;border-radius:var(--rsm);padding:10px 14px;margin:10px 0;font-size:12px">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
-                <div style="font-weight:700;font-size:13px;color:var(--grnt)" id="mi-info-brinco"></div>
-                <button class="btn btn-ghost btn-sm" id="mi-ver-ficha" style="font-size:11px;padding:3px 10px;white-space:nowrap" onclick="abrirFichaModal()">&#128203; Ver ficha completa</button>
+            <!-- Card compacto: duas linhas. A primeira reúne, lado a lado, o que decide o
+                 lançamento no curral (brinco, condição e o outro lado do par mãe-cria); a
+                 segunda junta o que é consulta (cadastro e pesagem) em texto corrido. -->
+            <div id="mi-animal-info" style="display:none;background:var(--grnbg);border:1px solid #a5d6a7;border-radius:var(--rsm);padding:8px 12px;margin:8px 0;font-size:12px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <div style="font-weight:800;font-size:15px;color:var(--grnt);white-space:nowrap" id="mi-info-brinco"></div>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap" id="mi-info-cond"></div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="mi-info-vinculo"></div>
+                <button class="btn btn-ghost btn-sm" id="mi-ver-ficha" style="font-size:11px;padding:3px 10px;white-space:nowrap;margin-left:auto" onclick="abrirFichaModal()">&#128203; Ver ficha completa</button>
               </div>
-              <div style="margin-bottom:8px" id="mi-info-cond"></div>
-              <div id="mi-info-vinculo"></div>
-              <div style="margin-bottom:8px" id="mi-info-peso"></div>
-              <div style="display:flex;gap:16px;flex-wrap:wrap" id="mi-info-detalhes"></div>
+              <div style="display:flex;align-items:center;gap:4px 14px;flex-wrap:wrap;margin-top:6px;font-size:11px;color:var(--tx2)">
+                <span style="display:flex;gap:14px;flex-wrap:wrap" id="mi-info-detalhes"></span>
+                <span id="mi-info-peso"></span>
+              </div>
             </div>
             <div class="grid g2">
               <div class="fg"><label>Pesagem (kg)</label><input type="number" id="mi-peso" placeholder="Ex: 320" step="0.1" min="0" oninput="miAtualizarGmdAtual()">
@@ -1958,6 +1973,7 @@ tr:hover td{background:#fafaf7}
           </div>
         </div>
 
+        <div id="baixa-painel-legado" style="display:none;margin-bottom:14px"></div>
         <div id="baixa-painel-reuso" style="display:none;margin-bottom:14px"></div>
 
         <div class="tcard">
@@ -2292,7 +2308,12 @@ var DB_iatf = [];
 var iatfBrincos = [];
 var calEventos = []; // previsões sanitárias {data,cats,n,desc}
 function calSalvarStorage(){ try{ localStorage.setItem('calEventos_rebanho', JSON.stringify(calEventos)); }catch(e){} }
-function calCarregarStorage(){ try{ var s=localStorage.getItem('calEventos_rebanho'); if(s) calEventos=JSON.parse(s)||[]; }catch(e){} }
+function calCarregarStorage(){ try{ var s=localStorage.getItem('calEventos_rebanho'); if(s) calEventos=JSON.parse(s)||[]; }catch(e){} _calStorageLido=true; }
+// As previsões sanitárias só eram lidas do localStorage ao abrir a Agenda Sanitária.
+// Agora o alerta da Visão Geral e o aviso de abertura também dependem delas, e esses
+// rodam antes de qualquer visita àquela tela — daí a carga preguiçosa, uma vez por sessão.
+var _calStorageLido = false;
+function calGarantirCarregado(){ if(!_calStorageLido) calCarregarStorage(); }
 var currentTab = 'dashboard';
 var delTarget = null;
 var fileName = 'REBANHO_BASE_DADOS.xlsx';
@@ -2432,6 +2453,11 @@ function showData(){
   renderAll();
   goTab('dashboard');
   if(typeof nvAtualizarPainel === 'function') nvAtualizarPainel();
+  // Aviso de manejo próximo. Com atraso para não competir com o toast de
+  // carregamento nem com o banner da nuvem, que aparecem neste mesmo instante.
+  setTimeout(function(){
+    try { avisoManejoProximo(); } catch(e){}
+  }, 1200);
 }
 
 document.getElementById('dropzone').addEventListener('dragover', function(e){ e.preventDefault(); this.classList.add('over'); });
@@ -4366,12 +4392,16 @@ function calNavAno(d){ calAno+=d; renderCalGrade(); }
 
 function renderCalGrade(){
   document.getElementById('cal-ym-label').textContent=calAno;
+  var todos=agendaManejos();
   var g=document.getElementById('cal-grid');
   g.innerHTML=MESES.map(function(m,i){
-    var evs=calEventos.filter(function(e){
-      var d=new Date(e.data); return d.getFullYear()===calAno&&d.getMonth()===i;
+    var evs=todos.filter(function(e){
+      return e.data.getFullYear()===calAno && e.data.getMonth()===i;
     });
-    var pills=evs.slice(0,2).map(function(e){return '<div class="cal-ev-pill">'+e.desc.substring(0,22)+'</div>';}).join('');
+    var pills=evs.slice(0,2).map(function(e){
+      var cor = e.origem==='reprodutivo' ? 'var(--blut)' : '';
+      return '<div class="cal-ev-pill"'+(cor?' style="color:'+cor+'"':'')+'>'+e.desc.substring(0,22)+'</div>';
+    }).join('');
     return '<div class="cal-month-cell'+(evs.length?' has-ev':'')+'" onclick="calSelMes('+i+')">'
       +'<div class="cal-month-name">'+m+'</div>'+pills
       +(evs.length>2?'<div class="cal-ev-pill">+' +(evs.length-2)+' mais</div>':'')
@@ -4383,21 +4413,25 @@ function calSelMes(m){
   calMesSel=m;
   var titulo=MESES[m]+' '+calAno;
   document.getElementById('cal-side-title').textContent=titulo;
-  var evs=calEventos.filter(function(e){
-    var d=new Date(e.data); return d.getFullYear()===calAno&&d.getMonth()===m;
+  var evs=agendaManejos().filter(function(e){
+    return e.data.getFullYear()===calAno && e.data.getMonth()===m;
   });
   var lista=document.getElementById('cal-eventos-lista');
   if(evs.length===0){
     lista.innerHTML='<div style="font-size:12px;color:var(--tx3);padding:6px 0">Nenhuma previsao para este mes.</div>';
   } else {
-    lista.innerHTML=evs.map(function(e,i){
-      var idx=calEventos.indexOf(e);
+    lista.innerHTML=evs.map(function(e){
+      // Etapa de protocolo é somente-leitura aqui: quem manda nela é a Agenda
+      // Reprodutiva, e excluí-la por esta tela deixaria as duas telas em desacordo.
+      var acao = (e.origem==='sanitario')
+        ? '<div style="margin-top:4px"><button class="btn btn-danger btn-sm" onclick="excluirCalEvento('+e.idx+')">&#128465; Excluir</button></div>'
+        : '<div style="margin-top:4px;font-size:10px;color:var(--tx3)">Editar na Agenda Reprodutiva</div>';
       return '<div class="cal-ev-item">'
-        +'<div class="cal-ev-date">'+fmtCalData(e.data)+'</div>'
+        +'<div class="cal-ev-date">'+e.dataBR+' '+agendaOrigemBadge(e.origem)+'</div>'
         +'<div class="cal-ev-desc">'+e.desc+'</div>'
-        +'<div class="cal-ev-cats">'+e.cats.join(', ')+'</div>'
+        +(e.cats?'<div class="cal-ev-cats">'+e.cats+'</div>':'')
         +'<div class="cal-ev-n">'+e.n+' animais</div>'
-        +'<div style="margin-top:4px"><button class="btn btn-danger btn-sm" onclick="excluirCalEvento('+idx+')">&#128465; Excluir</button></div>'
+        + acao
         +'</div>';
     }).join('');
   }
@@ -4406,6 +4440,100 @@ function calSelMes(m){
 function fmtCalData(iso){
   if(!iso) return '';
   var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AGENDA UNIFICADA — sanitário + reprodutivo
+// ═══════════════════════════════════════════════════════════════════════════
+// No curral não existe "dia sanitário" e "dia reprodutivo": existe o dia em que o
+// gado entra no brete. Quem programa uma vermifugação precisa enxergar que o D8 do
+// protocolo cai na mesma semana, senão junta duas viagens que podiam ser uma — ou,
+// pior, marca manejo em cima da IATF.
+//
+// As datas reprodutivas NÃO são copiadas para calEventos: são lidas de DB_protocolos
+// a cada render. Duplicar geraria duas fontes da verdade, e mudar o D0 na Agenda
+// Reprodutiva deixaria uma cópia velha no calendário sanitário para sempre.
+// Por isso elas aparecem como somente-leitura aqui.
+
+// Etapas que efetivamente levam o animal ao brete, na ordem do protocolo.
+function protEtapasAgenda(p){
+  if(!p) return [];
+  var etapas = [];
+  if(p.tipo === 'natural'){
+    if(p.dataInicio) etapas.push({ data:p.dataInicio, rotulo:'Entrada do touro' });
+    if(p.dataFim)    etapas.push({ data:p.dataFim,    rotulo:'Retirada do touro' });
+  } else {
+    if(p.d0)  etapas.push({ data:p.d0,  rotulo:'D0 — implante' });
+    if(p.d8)  etapas.push({ data:p.d8,  rotulo:'D8 — retirada do implante' });
+    // D10 some da agenda depois que a IATF foi registrada: já foi feita.
+    var iatfFeitas = DB_iatf_reg.filter(function(r){ return r.protId===p.id; }).length;
+    if(p.d10 && !iatfFeitas) etapas.push({ data:p.d10, rotulo:'D10 — IATF' });
+  }
+  // Diagnóstico: some quando todos os animais cobertos já foram diagnosticados.
+  var dgData = protDgEstDate(p);
+  if(dgData){
+    var cobertos = DB_iatf_reg.filter(function(r){ return r.protId===p.id; }).length;
+    var dgFeitos = DB_dg_reg.filter(function(r){ return r.protId===p.id; }).length;
+    if(!(cobertos > 0 && dgFeitos >= cobertos)){
+      etapas.push({ data:dgData, rotulo:'Diagnóstico de gestação' });
+    }
+  }
+  return etapas;
+}
+
+// Lista única de manejos programados, das duas agendas, ordenada por data.
+// `data` é sempre um Date com hora zerada; `dataBR` é o rótulo DD/MM/AAAA.
+function agendaManejos(){
+  var out = [];
+  calGarantirCarregado();
+
+  calEventos.forEach(function(e, idx){
+    var d = e.data ? new Date(e.data + 'T00:00:00') : null;
+    if(!d || isNaN(d)) return;
+    out.push({
+      data:d, dataBR:fmtCalData(e.data), desc:e.desc||'(sem descrição)',
+      cats:(e.cats||[]).join(', '), n:e.n||0,
+      origem:'sanitario', idx:idx
+    });
+  });
+
+  (typeof DB_protocolos !== 'undefined' ? DB_protocolos : []).forEach(function(p){
+    protEtapasAgenda(p).forEach(function(et){
+      var d = toDate(et.data);
+      if(!d) return;
+      d.setHours(0,0,0,0);
+      out.push({
+        data:d, dataBR:fmtD(et.data), desc:et.rotulo+' · '+p.nome,
+        cats:'', n:(p.brincos||[]).length,
+        origem:'reprodutivo', protId:p.id
+      });
+    });
+  });
+
+  out.sort(function(a,b){
+    if(a.data - b.data !== 0) return a.data - b.data;
+    // Mesmo dia: sanitário primeiro, só para a ordem não variar entre renders.
+    return (a.origem === b.origem) ? 0 : (a.origem === 'sanitario' ? -1 : 1);
+  });
+  return out;
+}
+
+// Os que ainda não passaram (hoje conta como futuro).
+function agendaManejosFuturos(){
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  return agendaManejos().filter(function(m){ return m.data >= hoje; });
+}
+
+// Quantos dias faltam para o manejo (0 = hoje).
+function agendaDiasAte(m){
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  return Math.round((m.data - hoje) / 86400000);
+}
+
+function agendaOrigemBadge(origem){
+  return origem === 'reprodutivo'
+    ? '<span style="font-size:9px;font-weight:700;color:var(--blut);background:var(--blubg);padding:1px 6px;border-radius:8px">REPRODUTIVO</span>'
+    : '<span style="font-size:9px;font-weight:700;color:var(--grnt);background:var(--grnbg);padding:1px 6px;border-radius:8px">SANITÁRIO</span>';
 }
 
 function abrirCalAddForm(manterDados){
@@ -4588,29 +4716,27 @@ function excluirCalEvento(idx){
 function renderManejosProgramados(){
   var tb = document.getElementById('tbl-manejos-programados');
   if(!tb) return;
-  var hoje = new Date(); hoje.setHours(0,0,0,0);
-  var futuros = calEventos.filter(function(e){
-    var d = toDate(e.data);
-    return d && d >= hoje;
-  }).sort(function(a,b){
-    return toDate(a.data) - toDate(b.data);
-  });
+  var futuros = agendaManejosFuturos();
   document.getElementById('prog-total').textContent = futuros.length+' previsao(oes)';
   if(!futuros.length){
     tb.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="empty-ic">&#128197;</div>Nenhum manejo programado</div></td></tr>';
     return;
   }
   tb.innerHTML = futuros.map(function(e){
-    var idx = calEventos.indexOf(e);
+    var dias = agendaDiasAte(e);
+    var quando = dias===0 ? 'hoje' : (dias===1 ? 'amanhã' : 'em '+dias+' dias');
+    var urgente = dias <= 7;
+    var acoes = (e.origem==='sanitario')
+      ? '<button class="btn btn-ghost btn-sm" onclick="editarCalEvento('+e.idx+')" title="Editar">&#9998;</button>'
+        +'<button class="btn btn-danger btn-sm" onclick="excluirCalEvento('+e.idx+')" title="Excluir">&#128465;</button>'
+      : '<span style="font-size:10px;color:var(--tx3);white-space:nowrap">Agenda Reprodutiva</span>';
     return '<tr>'
-      +'<td>'+fmtCalData(e.data)+'</td>'
-      +'<td>'+(e.cats||[]).join(', ')+'</td>'
+      +'<td style="white-space:nowrap">'+e.dataBR
+        +'<div style="font-size:10px;'+(urgente?'color:var(--amb);font-weight:700':'color:var(--tx3)')+'">'+quando+'</div></td>'
+      +'<td>'+agendaOrigemBadge(e.origem)+(e.cats?'<div style="font-size:11px;margin-top:2px">'+e.cats+'</div>':'')+'</td>'
       +'<td>'+e.n+'</td>'
       +'<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+e.desc+'">'+e.desc+'</td>'
-      +'<td class="tc"><div style="display:flex;gap:3px;justify-content:flex-end">'
-      +'<button class="btn btn-ghost btn-sm" onclick="editarCalEvento('+idx+')" title="Editar">&#9998;</button>'
-      +'<button class="btn btn-danger btn-sm" onclick="excluirCalEvento('+idx+')" title="Excluir">&#128465;</button>'
-      +'</div></td>'
+      +'<td class="tc"><div style="display:flex;gap:3px;justify-content:flex-end;align-items:center">'+acoes+'</div></td>'
       +'</tr>';
   }).join('');
 }
@@ -4636,18 +4762,38 @@ function renderDash(){
   _id('kpi-total-sub').textContent = topCat || (total ? 'cadastrados' : 'Nenhum animal');
   if(DB_baixas.length) _id('kpi-total-sub').textContent += ' · '+DB_baixas.length+' baixado(s)';
 
-  // ── KPI: peso médio ──
+  // ── KPIs de peso: média e total ──
+  // Só animais ATIVOS entram. As pesagens de quem saiu do rebanho continuam na base
+  // sob o brinco de arquivo (V1, V2…) — somá-las inflaria o peso total com bicho que
+  // não está mais no campo, que é justamente o número que se quer confiável aqui.
   var latestPeso = {};
   var sorted = DB.pes.slice().sort(function(a,b){ return (toDate(a.data)||new Date(0))-(toDate(b.data)||new Date(0)); });
-  sorted.forEach(function(r){ if(r.peso) latestPeso[r.brinco]=parseFloat(r.peso)||0; });
+  sorted.forEach(function(r){
+    if(!r.peso) return;
+    if(!animalAtivo(r.brinco)) return;
+    latestPeso[r.brinco] = parseFloat(r.peso)||0;
+  });
   var pesos = Object.values(latestPeso).filter(function(v){return v>0;});
   if(pesos.length){
-    var avg = pesos.reduce(function(s,v){return s+v;},0)/pesos.length;
+    var somaPeso = pesos.reduce(function(s,v){return s+v;},0);
+    var avg = somaPeso/pesos.length;
     _id('kpi-peso').textContent = avg.toFixed(1)+' kg';
     _id('kpi-peso-sub').textContent = pesos.length+' animal(is) com pesagem';
+
+    // Peso total: soma da ÚLTIMA pesagem de cada animal ativo. Em arrobas usa-se o
+    // peso vivo mesmo (1 @ = 15 kg de carcaça); aqui fica só o peso vivo, que é o que
+    // a balança registrou — converter para arroba exigiria um rendimento de carcaça
+    // que o app não tem.
+    _id('kpi-peso-total').textContent = Math.round(somaPeso).toLocaleString('pt-BR')+' kg';
+    var semPesagem = total - pesos.length;
+    _id('kpi-peso-total-sub').textContent = semPesagem > 0
+      ? pesos.length+' de '+total+' animais · '+semPesagem+' sem pesagem'
+      : 'todos os '+total+' animais pesados';
   } else {
     _id('kpi-peso').textContent = '—';
     _id('kpi-peso-sub').textContent = 'Sem pesagens';
+    _id('kpi-peso-total').textContent = '—';
+    _id('kpi-peso-total-sub').textContent = 'Sem pesagens';
   }
 
   // ── KPI: GMD médio geral ──
@@ -4661,15 +4807,9 @@ function renderDash(){
     _id('kpi-gmd-sub').textContent = 'Min. 2 pesagens por animal';
   }
 
-  // ── KPI: Manejos sanitários ──
-  _id('kpi-san').textContent = DB.san.length;
-  if(DB.san.length){
-    var byBrinco = {};
-    DB.san.forEach(function(r){ byBrinco[r.brinco]=true; });
-    _id('kpi-san-sub').textContent = Object.keys(byBrinco).length+' animais envolvidos';
-  } else {
-    _id('kpi-san-sub').textContent = 'Nenhum manejo registrado';
-  }
+  // O KPI "Manejos Sanitários" saiu daqui: era uma contagem acumulada da vida inteira
+  // da base, que só crescia e não sustentava nenhuma decisão. A seção "Últimos Manejos
+  // Sanitários", logo abaixo, continua mostrando o que de fato foi feito e quando.
 
   // ── Composição por categoria ──
   var compEl = _id('dash-composicao');
@@ -4779,6 +4919,34 @@ function renderDash(){
   var alertEl = _id('dash-alertas');
   var alerts = [];
   var hoje = new Date();
+
+  // Próximo manejo programado — das DUAS agendas (sanitária e reprodutiva). Vem
+  // primeiro na lista porque é o único alerta sobre algo que ainda vai acontecer:
+  // os demais descrevem o que já está errado e podem esperar.
+  if(typeof agendaManejosFuturos === 'function'){
+    var proximos = agendaManejosFuturos();
+    if(proximos.length){
+      var prox = proximos[0];
+      var diasProx = agendaDiasAte(prox);
+      var quandoProx = diasProx===0 ? '<strong>hoje</strong>'
+                     : diasProx===1 ? '<strong>amanhã</strong>'
+                     : 'em <strong>'+diasProx+' dias</strong>';
+      // Tudo que cai no mesmo dia entra junto: é uma ida ao brete só.
+      var mesmoDia = proximos.filter(function(m){ return m.data.getTime() === prox.data.getTime(); });
+      alerts.push({
+        ic: diasProx<=7 ? '&#9200;' : '&#128197;',
+        cor: diasProx<=7 ? 'var(--amb)' : 'var(--blu)',
+        txt: '<strong>Próximo manejo: '+prox.dataBR+'</strong> ('+quandoProx+')<br>'
+           + mesmoDia.map(function(m){
+               return agendaOrigemBadge(m.origem)+' '+m.desc+(m.n?' &middot; '+m.n+' animais':'');
+             }).join('<br>')
+           + (proximos.length>mesmoDia.length
+               ? '<div style="font-size:11px;color:var(--tx3);margin-top:4px">e mais '
+                 +(proximos.length-mesmoDia.length)+' manejo(s) programado(s) depois.</div>'
+               : '')
+      });
+    }
+  }
   // Animais sem pesagem nos últimos 90 dias
   var recente = {};
   DB.pes.forEach(function(r){ var d=toDate(r.data); if(d&&(!recente[r.brinco]||d>recente[r.brinco])) recente[r.brinco]=d; });
@@ -5586,17 +5754,19 @@ function miMostrarInfo(rec){
   // Usa exatamente a mesma derivação da Ficha do Animal (condicaoUnificada), para que as duas
   // telas nunca mostrem condições diferentes para o mesmo animal.
   var condUni = condicaoUnificada(rec.brinco);
+  // A etiqueta fica na mesma linha do brinco e do vínculo mãe-cria. Sem o rótulo
+  // "Condição atual do animal" acima: a etiqueta já se explica, e o rótulo custava
+  // uma linha inteira de altura no card.
   document.getElementById('mi-info-cond').innerHTML =
-    '<div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Condição atual do animal</div>'
-    + '<span class="fc-tag '+condUni.cls+'" style="vertical-align:middle;font-size:18px;font-weight:800;padding:8px 18px;border-radius:8px;letter-spacing:.3px;box-shadow:0 1px 3px rgba(0,0,0,.12)">'+condUni.lbl+'</span>'
-    + (condUni.sub?'<div style="font-size:11px;color:var(--tx3);margin-top:5px">'+condUni.sub+'</div>':'');
+    '<span class="fc-tag '+condUni.cls+'" style="font-size:13px;font-weight:800;padding:4px 12px;border-radius:6px;letter-spacing:.3px">'+condUni.lbl+'</span>'
+    + (condUni.sub?'<span style="font-size:11px;color:var(--tx3)">'+condUni.sub+'</span>':'');
   miMostrarVinculo(rec, dg);
   var pesInfo = ultimaPesagemGmd(rec.brinco);
   miPesoRefAtual = pesInfo ? {data:pesInfo.data, peso:pesInfo.peso} : null;
   var pesEl = document.getElementById('mi-info-peso');
   if(pesEl){
     if(!pesInfo){
-      pesEl.innerHTML = '<span style="color:var(--tx3);font-size:12px">Nenhuma pesagem registrada</span>';
+      pesEl.innerHTML = '<span style="color:var(--tx3)">Nenhuma pesagem registrada</span>';
     } else {
       var linhas = '<span><b>Última pesagem:</b> '+pesInfo.peso+' kg em '+fmtD(pesInfo.data)+'</span>';
       if(pesInfo.gmd!==null){
@@ -5639,13 +5809,16 @@ function miMostrarVinculo(rec, dg){
   if(!box) return;
   box.innerHTML = '';
 
+  // Etiqueta em linha (não mais cartão empilhado): entra ao lado da condição atual,
+  // na primeira linha do card. O número caiu de 30px para 22px — segue muito maior
+  // que todo o resto do card, que é o que importa para ler de relance no curral.
   function cartao(rotulo, valor, cor, fundo, borda){
-    return '<div style="background:'+fundo+';border:1px solid '+borda+';border-radius:var(--rsm);'
-      + 'padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+    return '<span style="background:'+fundo+';border:1px solid '+borda+';border-radius:var(--rsm);'
+      + 'padding:2px 10px;display:inline-flex;align-items:center;gap:8px;line-height:1.15">'
       + '<span style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;'
-      +   'letter-spacing:.5px">'+rotulo+'</span>'
-      + '<span style="font-size:30px;font-weight:800;color:'+cor+';line-height:1.1">'+valor+'</span>'
-      + '</div>';
+      +   'letter-spacing:.5px;white-space:nowrap">'+rotulo+'</span>'
+      + '<span style="font-size:22px;font-weight:800;color:'+cor+'">'+valor+'</span>'
+      + '</span>';
   }
 
   var html = '';
@@ -5657,7 +5830,7 @@ function miMostrarVinculo(rec, dg){
     html += tern
       ? cartao('Terneiro ao pé', (typeof brincoHistLbl==='function' ? brincoHistLbl(tern) : tern),
                'var(--red)', 'var(--redbg)', 'var(--red)')
-      : cartao('Terneiro ao pé', '<span style="font-size:15px;font-weight:700">brinco não registrado</span>',
+      : cartao('Terneiro ao pé', '<span style="font-size:13px;font-weight:700">brinco não registrado</span>',
                'var(--red)', 'var(--redbg)', 'var(--red)');
   }
 
@@ -5666,15 +5839,18 @@ function miMostrarVinculo(rec, dg){
     html += dg.mae
       ? cartao('Mãe', (typeof brincoHistLbl==='function' ? brincoHistLbl(dg.mae) : dg.mae),
                'var(--blut)', 'var(--blubg)', 'var(--blu)')
-      : cartao('Mãe', '<span style="font-size:15px;font-weight:700">não registrada</span>',
+      : cartao('Mãe', '<span style="font-size:13px;font-weight:700">não registrada</span>',
                'var(--blut)', 'var(--blubg)', 'var(--blu)');
   }
 
   box.innerHTML = html;
+  // Sem vínculo (macho, vaca vazia, terneiro já desmamado) o box some da linha:
+  // um flex item vazio ainda consumiria o gap de 10px do contêiner.
+  box.style.display = html ? 'flex' : 'none';
 }
 
 function miOcultarInfo(){
-  var vinc = document.getElementById('mi-info-vinculo'); if(vinc) vinc.innerHTML='';
+  var vinc = document.getElementById('mi-info-vinculo'); if(vinc){ vinc.innerHTML=''; vinc.style.display='none'; }
   document.getElementById('mi-animal-info').style.display='none';
   miPesoRefAtual = null;
   var gmdEl = document.getElementById('mi-gmd-atual'); if(gmdEl) gmdEl.innerHTML='';
@@ -6505,6 +6681,7 @@ function renderBaixas(){
   var elPerdas=document.getElementById('baixa-kpi-perdas'); if(elPerdas) elPerdas.textContent = (porTipo['Morte']||0)+(porTipo['Abate']||0);
 
   document.getElementById('baixa-cnt').textContent = DB_baixas.length+' registro(s)';
+  renderPainelBaixasLegadas();
   renderPainelReuso();
 
   var lista = baixaTipoFiltro ? DB_baixas.filter(function(b){return b.tipo===baixaTipoFiltro;}) : DB_baixas;
@@ -7580,6 +7757,58 @@ function renderSanAlertas(){
 
 // ─── MODAL DE CONFIRMACAO ────────────────────────────────────────────
 var _confirmCallback = null;
+// ── Aviso de manejo próximo, na abertura do app ────────────────────────────
+// Dispara quando o manejo mais próximo (sanitário OU reprodutivo) cai dentro dos
+// próximos 7 dias. Serve para o caso real de abrir o app por outro motivo e não
+// lembrar que o D8 é depois de amanhã.
+//
+// Aparece no máximo uma vez por dia POR EVENTO: a chave guardada junta a data do
+// aviso com a data do manejo. Assim, remarcar o manejo faz o aviso voltar no mesmo
+// dia (a chave muda), mas fechar o aviso não o traz de volta a cada navegação.
+var AVISO_MANEJO_DIAS = 7;
+var AVISO_MANEJO_CHAVE = 'rebanho_aviso_manejo_v1';
+
+function avisoManejoProximo(){
+  if(typeof agendaManejosFuturos !== 'function') return;
+  var proximos = agendaManejosFuturos();
+  if(!proximos.length) return;
+
+  var prox = proximos[0];
+  var dias = agendaDiasAte(prox);
+  if(dias > AVISO_MANEJO_DIAS) return;
+
+  var chave = todayBR() + '|' + prox.dataBR;
+  try { if(localStorage.getItem(AVISO_MANEJO_CHAVE) === chave) return; } catch(e){}
+
+  var mesmoDia = proximos.filter(function(m){ return m.data.getTime() === prox.data.getTime(); });
+  var quando = dias===0 ? 'é HOJE' : (dias===1 ? 'é AMANHÃ' : 'é em '+dias+' dias');
+
+  var el = document.getElementById('mm-content');
+  if(!el) return;
+  el.innerHTML =
+    '<div style="font-size:15px;margin-bottom:10px">O próximo manejo programado <strong>'+quando+'</strong> '
+    + '&mdash; <strong>'+prox.dataBR+'</strong>.</div>'
+    + mesmoDia.map(function(m){
+        return '<div style="padding:8px 0;border-top:1px solid var(--surf2)">'
+          + agendaOrigemBadge(m.origem)+' <strong>'+m.desc+'</strong>'
+          + (m.n ? '<div style="font-size:12px;color:var(--tx3)">'+m.n+' animal(is)'
+                   + (m.cats ? ' &middot; '+m.cats : '')+'</div>' : '')
+          + '</div>';
+      }).join('')
+    + (proximos.length > mesmoDia.length
+        ? '<div style="font-size:11px;color:var(--tx3);margin-top:8px">E mais '
+          +(proximos.length-mesmoDia.length)+' manejo(s) programado(s) depois deste.</div>'
+        : '');
+
+  try { localStorage.setItem(AVISO_MANEJO_CHAVE, chave); } catch(e){}
+  document.getElementById('modal-manejo').classList.add('on');
+}
+
+function fecharAvisoManejo(){
+  var el = document.getElementById('modal-manejo');
+  if(el) el.classList.remove('on');
+}
+
 function showConfirm(msg, cb, title){
   document.getElementById('mc-title').textContent = title||'Confirmar exclusao';
   document.getElementById('mc-msg').textContent   = msg;
@@ -8440,7 +8669,7 @@ function markDirty(){
   if(el) el.style.display='block';
   // Auto-refresh dashboard KPIs silently
   setTimeout(function(){
-    var kpis=['kpi-total','kpi-peso','kpi-gmd','kpi-san'];
+    var kpis=['kpi-total','kpi-peso','kpi-gmd','kpi-peso-total'];
     if(kpis.every(function(id){return document.getElementById(id);})) renderDash();
   }, 50);
   // Debounced auto-save to localStorage
@@ -9882,6 +10111,21 @@ function agSetTipo(tipo){
 }
 
 // Retorna lista de anos únicos dos protocolos, ordenada descendente
+// Qual aba de ano do Dashboard representa a safra corrente.
+//
+// A resposta óbvia seria a safra do calendário (julho→junho), mas ela pode não ter
+// aba: enquanto o primeiro protocolo do ano novo não é lançado, não existe aba
+// 2026/2027 e o rebanho ainda está vivendo os desdobramentos de 2025/2026 (DGs,
+// partos, desmames). Por isso: usa a safra do calendário quando ela já tem aba;
+// caso contrário, a aba mais recente que existe. Assim o quadro "Situação Atual
+// das Fêmeas" nunca some de todas as abas ao mesmo tempo.
+function dashAnoCorrente(){
+  var anos = anosUnicos();
+  if(!anos.length) return null;
+  var doCalendario = anoReproFromD0(todayBR());
+  return (anos.indexOf(doCalendario) !== -1) ? doCalendario : anos[0];
+}
+
 function anosUnicos(){
   var anos = {};
   DB_protocolos.forEach(function(p){
@@ -10734,6 +10978,49 @@ function iatfRegSalvarEdicao(idx){
 }
 
 // ─── DIAGNÓSTICO ─────────────────────────────────────────────────────────────
+// ── Ordenação das tabelas de Diagnóstico ───────────────────────────────────
+// Mesmo desenho do Histórico Reprodutivo (histOrdem/histTh), mas com um estado só
+// para todas as tabelas da tela: são várias, uma por protocolo, e ordenar cada uma
+// por um critério diferente só confundiria quem está comparando protocolos.
+//
+// O padrão é brinco crescente — a ordem que a tela já usava, e a que corresponde à
+// fila do curral.
+var dgOrdem = { col: 'brinco', dir: 'asc' };
+var DG_DIR_INICIAL = { brinco:'asc', categoria:'asc', data:'desc', resultado:'asc' };
+
+function dgOrdenar(col){
+  if(dgOrdem.col === col){
+    dgOrdem.dir = (dgOrdem.dir === 'asc') ? 'desc' : 'asc';
+  } else {
+    dgOrdem.col = col;
+    dgOrdem.dir = DG_DIR_INICIAL[col] || 'asc';
+  }
+  renderDiagnostico();
+}
+
+function dgTh(col, rotulo, classe){
+  var ativa = (dgOrdem.col === col);
+  var seta = ativa ? (dgOrdem.dir === 'asc' ? ' &#9650;' : ' &#9660;') : '';
+  return '<th' + (classe ? ' class="' + classe + '"' : '') + ' style="cursor:pointer;user-select:none'
+    + (ativa ? ';color:var(--grnt)' : '') + '" '
+    + 'title="Ordenar por ' + rotulo + '" onclick="dgOrdenar(\'' + col + '\')">'
+    + rotulo + '<span style="font-size:9px">' + seta + '</span></th>';
+}
+
+// Categoria mostrada na linha: a MESMA que o Desempenho por Categoria vai contar.
+// Para DG já registrado vem de catEpocaDoDG (respeita o valor congelado); para animal
+// ainda sem diagnóstico, deriva na data prevista do DG. Vazio quando não dá para saber.
+function dgCategoriaDaLinha(brinco, existing, dataPrevista){
+  if(existing && typeof catEpocaDoDG === 'function'){
+    var c = catEpocaDoDG(existing);
+    return (c === CAT_DESCONHECIDA) ? '' : c;
+  }
+  if(typeof catFemeaNaData === 'function'){
+    return catFemeaNaData(brinco, dataPrevista) || '';
+  }
+  return '';
+}
+
 function renderDiagnostico(){
   var wrap = document.getElementById('dg-content');
   if(!wrap) return;
@@ -10775,12 +11062,55 @@ function renderDiagnostico(){
       var dgEstDate = fmtD(protDgEstDate(p));
       var dgFeitosCnt = DB_dg_reg.filter(function(r){return r.protId===p.id;}).length;
       var prenhasCnt  = DB_dg_reg.filter(function(r){return r.protId===p.id&&(r.resultado||'').toLowerCase()==='prenhe';}).length;
-      var rows = animaisIatf.filter(function(b){
+      var linhas = animaisIatf.filter(function(b){
         // Animal baixado sem DG registrado antes da saída: não oferece formulário de novo registro.
         if(brincoAnon(b)) return !!DB_dg_reg.find(function(r){return r.protId===p.id&&r.brinco===b;});
         return true;
       }).map(function(b){
-        var existing=DB_dg_reg.find(function(r){return r.protId===p.id&&r.brinco===b;});
+        var existing = DB_dg_reg.find(function(r){return r.protId===p.id&&r.brinco===b;});
+        return { brinco:b, existing:existing, cat:dgCategoriaDaLinha(b, existing, dgEstDate) };
+      });
+
+      // Ordenação. O desempate é sempre o brinco, para a lista não "dançar" entre
+      // redesenhos quando duas linhas empatam na coluna escolhida.
+      (function(){
+        var col = dgOrdem.col, dir = (dgOrdem.dir === 'asc') ? 1 : -1;
+        function txt(a, b){ return (a||'').localeCompare(b||'', undefined, {numeric:true}); }
+        linhas.sort(function(x, y){
+          var r = 0;
+          if(col === 'categoria'){
+            // Sem categoria vai sempre para o fim, independente da direção.
+            if(!x.cat && !y.cat) r = 0;
+            else if(!x.cat) return 1;
+            else if(!y.cat) return -1;
+            else r = (CAT_ESCADA[x.cat] || 0) - (CAT_ESCADA[y.cat] || 0);
+          } else if(col === 'data'){
+            var dx = x.existing ? toDate(x.existing.dataDG) : null;
+            var dy = y.existing ? toDate(y.existing.dataDG) : null;
+            if(!dx && !dy) r = 0;
+            else if(!dx) return 1;          // ainda sem DG: sempre no fim
+            else if(!dy) return -1;
+            else r = dx - dy;
+          } else if(col === 'resultado'){
+            // Pendentes no fim; entre os feitos, Prenhe antes de Vazia.
+            var rx = x.existing ? (x.existing.resultado||'') : '';
+            var ry = y.existing ? (y.existing.resultado||'') : '';
+            if(!rx && !ry) r = 0;
+            else if(!rx) return 1;
+            else if(!ry) return -1;
+            else r = txt(rx, ry);
+          } else {
+            r = txt(x.brinco, y.brinco);
+          }
+          if(r === 0) return txt(x.brinco, y.brinco);
+          return r * dir;
+        });
+      })();
+
+      var rows = linhas.map(function(linha){
+        var b = linha.brinco;
+        var existing = linha.existing;
+        var catTd = '<td>'+(linha.cat || '<span style="color:var(--tx3)">—</span>')+'</td>';
         var lbl=brincoLbl(b);
         var idGen='dg-'+p.id+'-'+b.replace(/[^a-z0-9]/gi,'_');
         if(existing){
@@ -10788,6 +11118,7 @@ function renderDiagnostico(){
           if(editKey===dgEditKey){
             return '<tr>'
               +'<td><strong>'+lbl+'</strong></td>'
+              + catTd
               +'<td><input type="text" id="'+idGen+'-edata" value="'+(existing.dataDG||'')+'" maxlength="10" oninput="maskDate(this)" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:110px;outline:none"></td>'
               +'<td><select id="'+idGen+'-eres" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);outline:none">'
                 +'<option value=""'+(!existing.resultado?' selected':'')+'>—</option>'
@@ -10802,6 +11133,7 @@ function renderDiagnostico(){
           }
           var cls=(existing.resultado||'').toLowerCase()==='prenhe'?'bdg-prenha':'bdg-vazia';
           return '<tr><td><strong>'+lbl+'</strong></td>'
+            + catTd
             +'<td>'+fmtD(existing.dataDG)+'</td>'
             +'<td><span class="bdg '+cls+'">'+existing.resultado+'</span></td>'
             +'<td>'+(existing.obs||'-')+'</td>'
@@ -10810,6 +11142,7 @@ function renderDiagnostico(){
         }
         return '<tr>'
           +'<td><strong>'+b+'</strong></td>'
+          + catTd
           +'<td><input type="text" id="'+idGen+'-data" value="'+dgEstDate+'" maxlength="10" oninput="maskDate(this)" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);width:110px;outline:none"></td>'
           +'<td><select id="'+idGen+'-res" style="height:30px;padding:0 8px;font-size:12px;border:1px solid var(--bord);border-radius:var(--rsm);outline:none">'
             +'<option value="">—</option><option>Prenhe</option><option>Vazia</option>'
@@ -10826,7 +11159,12 @@ function renderDiagnostico(){
         +'</div>'
         +'<div class="prot-body">'
         +'<div class="tscroll"><table>'
-          +'<thead><tr><th>Animal</th><th>Data DG</th><th>Resultado</th><th>Observação</th><th class="tc">Ação</th></tr></thead>'
+          +'<thead><tr>'
+            + dgTh('brinco','Animal')
+            + dgTh('categoria','Categoria')
+            + dgTh('data','Data DG')
+            + dgTh('resultado','Resultado')
+            +'<th>Observação</th><th class="tc">Ação</th></tr></thead>'
           +'<tbody>'+rows+'</tbody>'
         +'</table></div>'
         +'</div>'   // prot-body
@@ -11465,10 +11803,14 @@ function renderRepDash(){
       }).join('');
     }
   }
-  // Situação atual das fêmeas — condição real de cada vaca apta neste momento (DB.dg.condAtual),
-  // independente da safra/protocolo selecionado no filtro. Os resultados por protocolo/safra
-  // ficam no quadro "Resultados do Último Ano Reprodutivo" acima.
-  var sitDiv = document.getElementById('rep-dash-situacao');
+  // Situação atual das fêmeas — condição real de cada vaca apta NESTE MOMENTO. Por ser uma
+  // foto do presente, e não um resultado de safra, só faz sentido na aba da safra corrente:
+  // em 2023/2024 ela mostraria o rebanho de hoje ao lado de números de três anos atrás.
+  // Os resultados por protocolo/safra ficam em "Resultados do Último Ano Reprodutivo".
+  var sitCard = document.getElementById('rep-dash-situacao-card');
+  var sitVisivel = (dashAnoFiltro !== 'todos' && dashAnoFiltro === dashAnoCorrente());
+  if(sitCard) sitCard.style.display = sitVisivel ? '' : 'none';
+  var sitDiv = sitVisivel ? document.getElementById('rep-dash-situacao') : null;
   if(sitDiv){
     var vacasAptasSit = animaisAtivos().filter(function(r){ return r.cat==='Matriz'||r.cat==='Primipara'||r.cat==='Novilha'; });
     if(!vacasAptasSit.length){ sitDiv.innerHTML='<div class="empty" style="padding:20px">Sem dados.</div>'; }
@@ -11526,7 +11868,7 @@ function renderRepDash(){
   // ── Desempenho por Categoria ──
   var catBody = document.getElementById('tbl-rep-dash-cat');
   if(catBody){
-    var catAgg = {};
+    var catAgg = {}, catOcultos = 0;
     dgF.forEach(function(d){
       // Categoria NA ÉPOCA do diagnóstico, não a de hoje. Categoria de fêmea sobe com o
       // tempo, então usar a atual jogava a novilha que emprenhou ano passado no balde de
@@ -11534,6 +11876,12 @@ function renderRepDash(){
       var cat = (typeof catEpocaDoDG==='function')
         ? catEpocaDoDG(d)
         : (function(){ var a = DB.id.find(function(x){ return x.brinco===d.brinco; }); return a ? (a.cat||'—') : '—'; })();
+      // Registros cuja categoria na época não é recuperável ficam fora da tabela.
+      // São animais que saíram do rebanho antes de existir o congelamento e tiveram o
+      // cadastro apagado por uma versão antiga — sem nascimento nem paridade, não há o
+      // que derivar. Uma linha "Sem cadastro" não informa nada sobre desempenho por
+      // categoria; chutar uma categoria informaria algo falso. Some da lista.
+      if(cat === CAT_DESCONHECIDA){ catOcultos++; return; }
       if(!catAgg[cat]) catAgg[cat] = {dg:0, prenhas:0};
       catAgg[cat].dg++;
       if((d.resultado||'').toLowerCase()==='prenhe') catAgg[cat].prenhas++;
@@ -11545,6 +11893,14 @@ function renderRepDash(){
       return '<tr><td><strong>'+k+'</strong></td><td>'+a.dg+'</td>'
         +'<td><span class="bdg bdg-prenha">'+a.prenhas+'</span></td><td><strong>'+taxaK+'</strong></td></tr>';
     }).join('') || '<tr><td colspan="4"><div class="empty">Sem dados</div></td></tr>';
+    // Rodapé honesto: os ocultos saíram da conta, e o usuário precisa saber disso para
+    // não estranhar a diferença entre este total e o do Resumo por Protocolo.
+    var catNota = document.getElementById('rep-dash-cat-nota');
+    if(catNota){
+      catNota.innerHTML = catOcultos
+        ? catOcultos + ' diagnóstico(s) fora da tabela: animais sem cadastro, categoria na época não recuperável'
+        : '';
+    }
   }
 
   // ── Desempenho das matrizes ──
@@ -11559,35 +11915,9 @@ function renderRepDash(){
       : '';
   }
 
-  // ── Consumo de Doses de Sêmen ──
-  // Observação: usa TODO o historico de DB_iatf_reg (não so a safra filtrada),
-  // porque o saldo de doses é um estoque fisico acumulado, nao algo por temporada.
-  var dosesBody = document.getElementById('tbl-rep-dash-doses');
-  if(dosesBody){
-    var semenCadastrados = DB_repr.filter(function(r){ return r.tipo==='semen'; });
-    if(!semenCadastrados.length){
-      dosesBody.innerHTML = '<tr><td colspan="5"><div class="empty">Nenhum sêmen cadastrado em Reprodutores</div></td></tr>';
-    } else {
-      dosesBody.innerHTML = semenCadastrados.map(function(r){
-        var label = reprNome(r) || 'Sêmen';
-        var _breg = reprBrincoReg(r);
-        var exibicao = label + (_breg?' ('+_breg+')':'');
-        var cadastrado = parseFloat(r.semen_doses);
-        var temCadastro = !isNaN(cadastrado);
-        var usadas = DB_iatf_reg.filter(function(x){ return x.touro===label; }).length;
-        if(!temCadastro){
-          return '<tr><td><strong>'+exibicao+'</strong></td><td>—</td><td>'+usadas+'</td><td>—</td>'
-            +'<td style="color:var(--tx3)">Sem estoque cadastrado</td></tr>';
-        }
-        var restantes = cadastrado - usadas;
-        var pct = cadastrado>0 ? restantes/cadastrado : 0;
-        var cor = restantes<=0 ? 'var(--red)' : (pct<=0.2 ? 'var(--amb)' : 'var(--grnt)');
-        var status = restantes<=0 ? 'Esgotado' : (pct<=0.2 ? 'Estoque baixo' : 'Em estoque');
-        return '<tr><td><strong>'+exibicao+'</strong></td><td>'+cadastrado+'</td><td>'+usadas+'</td>'
-          +'<td style="color:'+cor+';font-weight:700">'+restantes+'</td><td style="color:'+cor+'">'+status+'</td></tr>';
-      }).join('');
-    }
-  }
+  // O bloco "Consumo de Doses de Sêmen" que existia aqui foi removido: era a mesma
+  // tabela de renderSemenDoses() (Estoque de Materiais → Doses Sêmen), calculada sobre
+  // todo o histórico e portanto idêntica em qualquer aba de ano do dashboard.
 }
 
 // ─── EXPORT / IMPORT ─────────────────────────────────────────────────────────
@@ -11967,9 +12297,21 @@ function renderPainelReuso(){
       +'Estes brincos foram reaproveitados antes do arquivamento automático existir, e ainda carregam '
       +'registros anteriores ao nascimento do animal atual — ou seja, do animal que usava o número antes. '
       +'Separar move esses registros para um brinco de arquivo (V1, V2…), sem apagar nada.</p>'
-      +'<table><thead><tr><th>Brinco</th><th>Nascimento</th><th>Registros alheios</th><th class="tc">Ação</th></tr></thead><tbody>'
+      +'<table><thead><tr><th>Brinco</th><th>Nascimento</th><th>Registros alheios</th>'
+      +'<th>Categoria do animal anterior</th><th class="tc">Ação</th></tr></thead><tbody>'
       + lista.map(function(a){
+          // O seletor só aparece quando há registro de reprodução junto: é o único caso
+          // em que a categoria do animal anterior muda alguma estatística.
+          var sel = a.repro
+            ? '<select id="reuso-cat-'+a.brinco+'" style="font-size:12px;padding:3px 6px">'
+              +'<option value="Matriz">Matriz</option>'
+              +'<option value="Primipara">Primípara</option>'
+              +'<option value="Novilha">Novilha</option>'
+              +'<option value="">Não sei</option></select>'
+              +'<div style="font-size:10px;color:var(--tx3);margin-top:2px">'+a.repro+' registro(s) de reprodução</div>'
+            : '<span style="color:var(--tx3);font-size:11px">—</span>';
           return '<tr><td><strong>'+a.brinco+'</strong></td><td>'+fmtD(a.nasc)+'</td><td>'+a.registros+'</td>'
+            +'<td>'+sel+'</td>'
             +'<td class="tc"><button class="btn btn-ghost btn-sm" onclick="confirmarSeparacao(\''+a.brinco+'\')">Separar</button></td></tr>';
         }).join('')
       +'</tbody></table>'
@@ -11979,12 +12321,25 @@ function renderPainelReuso(){
 function confirmarSeparacao(brinco){
   var alvo = brincosComHistoricoAlheio().find(function(a){ return a.brinco===brinco; });
   if(!alvo) return;
-  showConfirm('Separar '+alvo.registros+' registro(s) anteriores ao nascimento do animal '+brinco+'?\n\n'
-    +'Eles vão para um brinco de arquivo e continuam consultáveis. Nada é apagado.', function(){
-    var r = separarHistoricoAlheio(brinco);
+  var selEl = document.getElementById('reuso-cat-'+brinco);
+  var catAnterior = (alvo.repro && selEl) ? selEl.value : '';
+
+  var msg = 'Separar '+alvo.registros+' registro(s) do animal anterior ao '+brinco+'?\n\n';
+  if(alvo.repro){
+    msg += alvo.repro+' deles são de reprodução (serviço registrado antes de '
+        + IDADE_MIN_SERVICO_MESES + ' meses de idade).\n';
+    msg += catAnterior
+      ? 'Vão contar como "'+catAnterior+'" no ano reprodutivo em que aconteceram.\n\n'
+      : 'Sem categoria informada, eles ficam fora do Desempenho por Categoria.\n\n';
+  }
+  msg += 'Tudo vai para um brinco de arquivo e continua consultável. Nada é apagado.';
+
+  showConfirm(msg, function(){
+    var r = separarHistoricoAlheio(brinco, catAnterior);
     if(!r){ toast('Nada a separar.','err'); return; }
     markDirty();
     renderBaixas(); renderReg(); renderDash(); renderHistorico(); renderDiagnostico();
+    if(typeof renderRepDash==='function') renderRepDash();
     toast(r.movidos+' registro(s) movidos para '+r.virtual+'. O brinco '+brinco+' ficou limpo.','ok');
   });
 }
@@ -12049,6 +12404,29 @@ function registroPertenceAoAnimal(brinco, dataRegistro){
   return dr >= new Date(dn.getTime() - 86400000);
 }
 
+// Corte específico para registros de REPRODUÇÃO (IATF, monta, diagnóstico).
+//
+// O corte por nascimento acima não basta. A vaca 104 do rebanho tem cadastro de
+// 02/06/2025 e carrega uma IATF de 07/11/2025 e um DG de 07/12/2025: datas
+// POSTERIORES ao nascimento, então passavam pelo filtro — só que o animal tinha
+// cinco meses na inseminação. Os registros são da 104 anterior, uma matriz que saiu
+// do rebanho sem passar pela Saída do Rebanho e deixou o histórico preso ao número.
+//
+// Pesagem e manejo sanitário acontecem em qualquer idade, e por isso continuam com
+// o corte por nascimento. Serviço, não: abaixo de IDADE_MIN_SERVICO_MESES o registro
+// é do animal anterior, não deste.
+var IDADE_MIN_SERVICO_MESES = 14;
+function servicoPertenceAoAnimal(brinco, dataRegistro){
+  if(!registroPertenceAoAnimal(brinco, dataRegistro)) return false;
+  if(!dataRegistro) return true;
+  var dgRec = DB.dg.find(function(d){ return d.brinco===brinco; });
+  if(!dgRec || !dgRec.nasc) return true;
+  var dn = toDate(dgRec.nasc), dr = toDate(dataRegistro);
+  if(!dn || !dr) return true;
+  var meses = (dr - dn) / (30.44 * 86400000);
+  return meses >= IDADE_MIN_SERVICO_MESES;
+}
+
 // Diagnóstico: aponta brincos que carregam registros anteriores ao próprio
 // nascimento — sinal de reuso feito antes do arquivamento virtual existir.
 function brincosComHistoricoAlheio(){
@@ -12059,33 +12437,74 @@ function brincosComHistoricoAlheio(){
     var n = 0;
     DB.pes.forEach(function(p){ if(p.brinco===r.brinco && !registroPertenceAoAnimal(r.brinco,p.data)) n++; });
     DB_mi.forEach(function(m){ if(m.brinco===r.brinco && !registroPertenceAoAnimal(r.brinco,m.data)) n++; });
-    DB_dg_reg.forEach(function(d){ if(d.brinco===r.brinco && !registroPertenceAoAnimal(r.brinco,d.dataDG)) n++; });
-    DB_iatf_reg.forEach(function(i){ if(i.brinco===r.brinco && !registroPertenceAoAnimal(r.brinco,i.data)) n++; });
+    // Reprodução usa o corte por idade mínima de serviço, não o de nascimento.
+    var repro = 0;
+    DB_dg_reg.forEach(function(d){ if(d.brinco===r.brinco && !servicoPertenceAoAnimal(r.brinco,d.dataDG)) repro++; });
+    DB_iatf_reg.forEach(function(i){ if(i.brinco===r.brinco && !servicoPertenceAoAnimal(r.brinco,i.data)) repro++; });
+    n += repro;
     (fcInter[r.brinco]||[]).forEach(function(it){ if(!registroPertenceAoAnimal(r.brinco,it.data)) n++; });
-    if(n) achados.push({ brinco:r.brinco, nasc:dgRec.nasc, registros:n });
+    // Matrícula em protocolo de uma temporada que não pode ter sido deste animal.
+    DB_protocolos.forEach(function(p){
+      if(!p.brincos || p.brincos.indexOf(r.brinco) === -1) return;
+      var quando = (typeof protDataInicio === 'function') ? protDataInicio(p) : (p.d0||p.dataInicio||'');
+      if(!servicoPertenceAoAnimal(r.brinco, quando)){ n++; repro++; }
+    });
+    if(n) achados.push({ brinco:r.brinco, nasc:dgRec.nasc, registros:n, repro:repro });
   });
   return achados.sort(function(a,b){ return b.registros-a.registros; });
+}
+
+// Move a INSCRIÇÃO no protocolo (p.brincos) junto com os registros.
+//
+// Essa lista é a matrícula do animal na temporada: enquanto o número velho continua
+// nela, a Ficha e a Agenda mostram o animal de hoje como "Aguardando IATF" num
+// protocolo de que ele nunca participou. Foi o que sobrou na terneira 104 depois de
+// mover a IATF e o DG — os registros saíram, a matrícula ficou.
+//
+// A decisão é por protocolo, pela data de início dele: se um serviço naquela data não
+// poderia ser do animal de hoje, a matrícula é do anterior e vai junto. Assim um
+// protocolo NOVO, em que o animal atual está legitimamente inscrito, não é tocado.
+function moverInscricoesProtocolo(brinco, virtual){
+  var n = 0;
+  DB_protocolos.forEach(function(p){
+    if(!p.brincos || p.brincos.indexOf(brinco) === -1) return;
+    var quando = (typeof protDataInicio === 'function') ? protDataInicio(p) : (p.d0 || p.dataInicio || '');
+    if(servicoPertenceAoAnimal(brinco, quando)) return;   // é do animal de hoje: fica
+    p.brincos = p.brincos.map(function(x){ return x===brinco ? virtual : x; });
+    n++;
+  });
+  return n;
 }
 
 // Move para um brinco virtual os registros que ficaram presos a um número
 // reaproveitado. Só roda quando o usuário manda, pela tela de Saída do Rebanho —
 // é uma correção de dados, e correção automática em massa já custou caro neste
 // projeto.
-function separarHistoricoAlheio(brinco){
+function separarHistoricoAlheio(brinco, catAnterior){
   var dgRec = DB.dg.find(function(d){ return d.brinco===brinco; });
   if(!dgRec || !dgRec.nasc) return null;
   var virtual = proximoBrincoVirtual();
   var movidos = 0;
 
-  function mover(arr, campoData){
+  function mover(arr, campoData, pertence, marcarCat){
     arr.forEach(function(r){
       if(r.brinco!==brinco) return;
-      if(registroPertenceAoAnimal(brinco, r[campoData])) return;
+      if(pertence(brinco, r[campoData])) return;
       r.brinco = virtual; movidos++;
+      // O animal anterior não tem mais cadastro: sem nascimento nem paridade, nada
+      // é derivável e o DG cairia no balde "sem cadastro", que o Desempenho por
+      // Categoria oculta. Congelar a categoria informada preserva o registro nas
+      // estatísticas da safra em que ele aconteceu.
+      if(marcarCat && catAnterior) r.catEpoca = catAnterior;
     });
   }
-  mover(DB.pes,'data'); mover(DB.san,'data'); mover(DB_mi,'data');
-  mover(DB_dg_reg,'dataDG'); mover(DB_iatf_reg,'data'); mover(DB.rep,'dtdiag');
+  mover(DB.pes,'data', registroPertenceAoAnimal);
+  mover(DB.san,'data', registroPertenceAoAnimal);
+  mover(DB_mi,'data', registroPertenceAoAnimal);
+  mover(DB_dg_reg,'dataDG', servicoPertenceAoAnimal, true);
+  mover(DB_iatf_reg,'data', servicoPertenceAoAnimal);
+  mover(DB.rep,'dtdiag', servicoPertenceAoAnimal);
+  movidos += moverInscricoesProtocolo(brinco, virtual);
 
   var its = fcInter[brinco]||[];
   var ficam = [], vao = [];
@@ -12105,6 +12524,186 @@ function separarHistoricoAlheio(brinco){
     comprador: '', valor: '', brincoOriginal: brinco, _baixaTag: 'sep-'+virtual
   });
   return { virtual: virtual, movidos: movidos };
+}
+
+// ── Baixas antigas, ainda identificadas pelo número do brinco ──────────────
+// As saídas registradas antes do arquivamento virtual guardaram o brinco real em
+// DB_baixas. Enquanto ficam assim, o número continua "ocupado" por um animal que já
+// saiu: se ele for reusado, o histórico dos dois se mistura — foi o que aconteceu com
+// a 104, cuja terneira atual herdou a IATF e o DG da matriz anterior.
+//
+// Arquivar resolve na origem, com o mesmo desenho de V8/V9: a baixa passa a se chamar
+// V-n e guarda brincoOriginal, e o histórico do animal antigo vai junto.
+function baixasLegadas(){
+  return DB_baixas.map(function(b, idx){ return { b:b, idx:idx }; })
+    .filter(function(o){
+      return o.b.brinco && !brincoEhVirtual(o.b.brinco) && !o.b.brincoOriginal;
+    })
+    .map(function(o){
+      var brinco = o.b.brinco;
+      var reusado = animalAtivo(brinco);
+      // Reusado: só saem os registros que não são do animal de hoje (mesmos cortes do
+      // painel de reuso). Não reusado: tudo que está sob o número é do animal que saiu.
+      function conta(arr, campo, pertence){
+        return arr.filter(function(r){
+          if(r.brinco !== brinco) return false;
+          return reusado ? !pertence(brinco, r[campo]) : true;
+        }).length;
+      }
+      var repro = conta(DB_dg_reg,'dataDG',servicoPertenceAoAnimal)
+                + conta(DB_iatf_reg,'data',servicoPertenceAoAnimal);
+      var outros = conta(DB.pes,'data',registroPertenceAoAnimal)
+                 + conta(DB.san,'data',registroPertenceAoAnimal)
+                 + conta(DB_mi,'data',registroPertenceAoAnimal);
+      // Matrículas em protocolo contam como registro: são elas que fazem o número
+      // aparecer como "Aguardando IATF" na ficha do animal atual.
+      var inscricoes = 0;
+      DB_protocolos.forEach(function(p){
+        if(!p.brincos || p.brincos.indexOf(brinco) === -1) return;
+        if(!reusado){ inscricoes++; return; }
+        var quando = (typeof protDataInicio === 'function') ? protDataInicio(p) : (p.d0||p.dataInicio||'');
+        if(!servicoPertenceAoAnimal(brinco, quando)) inscricoes++;
+      });
+      return { idx:o.idx, brinco:brinco, data:o.b.data, tipo:o.b.tipo,
+               reusado:reusado, repro:repro, inscricoes:inscricoes,
+               registros:repro+outros+inscricoes };
+    });
+}
+
+function arquivarBaixaLegada(idxBaixa, catAnterior){
+  var baixa = DB_baixas[idxBaixa];
+  if(!baixa || brincoEhVirtual(baixa.brinco)) return null;
+  var brinco  = baixa.brinco;
+  var reusado = animalAtivo(brinco);
+  var virtual = proximoBrincoVirtual();
+  var movidos = 0;
+
+  if(!reusado){
+    // Número livre: tudo que está sob ele é do animal que saiu. renomearBrinco cuida de
+    // TODAS as referências — inclusive genealogia (mãe/pai/avô), terneiro nos partos,
+    // listas de protocolo e reprodutores — que uma varredura manual esqueceria.
+    movidos = [DB.pes,DB.san,DB_mi,DB_dg_reg,DB_iatf_reg,DB.rep].reduce(function(s,arr){
+      return s + arr.filter(function(r){ return r.brinco===brinco; }).length;
+    }, 0) + (fcInter[brinco]||[]).length;
+    renomearBrinco(brinco, virtual, 'baixa antiga arquivada');
+    // Com o cadastro renomeado junto, catEpocaDoDG volta a derivar sozinho pelo V-n;
+    // a categoria informada só entra se não sobrou cadastro de onde derivar.
+    if(catAnterior && !DB.dg.find(function(d){ return d.brinco===virtual; })){
+      DB_dg_reg.forEach(function(r){ if(r.brinco===virtual && !r.catEpoca) r.catEpoca = catAnterior; });
+    }
+  } else {
+    // Número reusado: só sai o que não pode ser do animal de hoje. Mesmos cortes do
+    // painel de reuso — nascimento para manejo/pesagem, idade mínima para serviço.
+    // Expressão, não declaração: declarar função dentro de bloco tem semântica
+    // irregular entre navegadores antigos, e este app roda em celular do produtor.
+    var mover = function(arr, campo, pertence, marcarCat){
+      arr.forEach(function(r){
+        if(r.brinco !== brinco) return;
+        if(pertence(brinco, r[campo])) return;   // é do animal de hoje: fica
+        r.brinco = virtual; movidos++;
+        if(marcarCat && catAnterior) r.catEpoca = catAnterior;
+      });
+    };
+    mover(DB.pes,'data', registroPertenceAoAnimal);
+    mover(DB.san,'data', registroPertenceAoAnimal);
+    mover(DB_mi,'data',  registroPertenceAoAnimal);
+    mover(DB_dg_reg,'dataDG', servicoPertenceAoAnimal, true);
+    mover(DB_iatf_reg,'data', servicoPertenceAoAnimal);
+    mover(DB.rep,'dtdiag',    servicoPertenceAoAnimal);
+    // Sem isto o número velho continua matriculado no protocolo, e o animal de hoje
+    // segue aparecendo como "Aguardando IATF" numa temporada que não foi dele.
+    movidos += moverInscricoesProtocolo(brinco, virtual);
+
+    var its = fcInter[brinco]||[];
+    var ficam = [], vao = [];
+    its.forEach(function(it){
+      (registroPertenceAoAnimal(brinco, it.data) ? ficam : vao).push(it);
+    });
+    if(vao.length){
+      fcInter[brinco] = ficam;
+      fcInter[virtual] = (fcInter[virtual]||[]).concat(vao);
+      movidos += vao.length;
+    }
+  }
+
+  baixa.brincoOriginal = brinco;
+  baixa.brinco = virtual;
+
+  fcLogEstado(virtual, 'Baixa antiga arquivada como '+virtual+' (brinco '+brinco+' liberado)', todayBR());
+  return { virtual: virtual, movidos: movidos, reusado: reusado };
+}
+
+function renderPainelBaixasLegadas(){
+  var el = document.getElementById('baixa-painel-legado');
+  if(!el) return;
+  var lista = baixasLegadas();
+  if(!lista.length){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='block';
+  el.innerHTML =
+    '<div class="tcard" style="border:1px solid var(--blu)">'
+    +'<div class="tbar" style="background:var(--blubg)"><span style="font-size:13px;font-weight:600;color:var(--tx)">&#128230; Baixas antigas sem brinco de arquivo</span></div>'
+    +'<div style="padding:12px 16px">'
+      +'<p style="font-size:12px;color:var(--tx2);line-height:1.6;margin:0 0 10px">'
+      +'Estas saídas foram registradas antes do arquivamento automático e ainda usam o número '
+      +'original do brinco. Enquanto ficarem assim, o número segue ocupado por um animal que já saiu, '
+      +'e reusá-lo mistura os dois históricos. Arquivar dá a cada uma um número de arquivo '
+      +'(V1, V2…), como já acontece com V8 e V9. <strong>Nada é apagado.</strong></p>'
+      +'<table><thead><tr><th>Brinco</th><th>Saída</th><th>Situação</th>'
+      +'<th>Categoria do animal</th><th>Registros</th><th class="tc">Ação</th></tr></thead><tbody>'
+      + lista.map(function(a){
+          var sit = a.reusado
+            ? '<span style="color:var(--red);font-weight:600">brinco reusado</span>'
+              +'<div style="font-size:10px;color:var(--tx3)">só o histórico antigo sai</div>'
+            : '<span style="color:var(--tx3)">número livre</span>';
+          var sel = a.repro
+            ? '<select id="leg-cat-'+a.idx+'" style="font-size:12px;padding:3px 6px">'
+              +'<option value="Matriz">Matriz</option>'
+              +'<option value="Primipara">Primípara</option>'
+              +'<option value="Novilha">Novilha</option>'
+              +'<option value="">Não sei</option></select>'
+              +'<div style="font-size:10px;color:var(--tx3);margin-top:2px">'+a.repro+' registro(s) de reprodução</div>'
+            : '<span style="color:var(--tx3);font-size:11px">—</span>';
+          return '<tr><td><strong>'+a.brinco+'</strong></td>'
+            +'<td>'+(a.data?fmtD(a.data):'—')+'</td>'
+            +'<td>'+sit+'</td>'
+            +'<td>'+sel+'</td>'
+            +'<td>'+a.registros+'</td>'
+            +'<td class="tc"><button class="btn btn-ghost btn-sm" onclick="confirmarArquivamentoLegado('+a.idx+')">Arquivar</button></td></tr>';
+        }).join('')
+      +'</tbody></table>'
+    +'</div></div>';
+}
+
+function confirmarArquivamentoLegado(idxBaixa){
+  var alvo = baixasLegadas().find(function(a){ return a.idx===idxBaixa; });
+  if(!alvo) return;
+  var selEl = document.getElementById('leg-cat-'+idxBaixa);
+  var catAnterior = (alvo.repro && selEl) ? selEl.value : '';
+
+  var msg = 'Arquivar a baixa do brinco '+alvo.brinco+'?\n\n';
+  msg += alvo.reusado
+    ? 'O número está em uso por outro animal. Só o histórico do animal ANTERIOR ('
+      + alvo.registros + ' registro(s)) vai para o arquivo; o animal de hoje fica intacto.\n'
+    : 'O número não está em uso. Todo o histórico dele ('+alvo.registros+' registro(s)) vai para o arquivo.\n';
+  if(alvo.inscricoes){
+    msg += '\nInclui '+alvo.inscricoes+' inscrição(ões) em protocolo — é o que faz o brinco '
+        +  'aparecer como "Aguardando IATF" na ficha do animal atual.\n';
+  }
+  if(alvo.repro){
+    msg += catAnterior
+      ? '\nOs registros de reprodução vão contar como "'+catAnterior+'" no ano em que aconteceram.\n'
+      : '\nSem categoria informada, os registros de reprodução ficam fora do Desempenho por Categoria.\n';
+  }
+  msg += '\nNada é apagado — o histórico continua consultável pelo número de arquivo.';
+
+  showConfirm(msg, function(){
+    var r = arquivarBaixaLegada(idxBaixa, catAnterior);
+    if(!r){ toast('Não foi possível arquivar.','err'); return; }
+    markDirty();
+    renderBaixas(); renderReg(); renderDash(); renderHistorico(); renderDiagnostico();
+    if(typeof renderRepDash==='function') renderRepDash();
+    toast('Brinco '+alvo.brinco+' arquivado como '+r.virtual+' ('+r.movidos+' registro(s)).','ok');
+  }, 'Arquivar baixa antiga');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -12829,9 +13428,28 @@ function catFemeaNaData(brinco, dataRef){
   var idRec = DB.id.find(function(a){ return a.brinco === brinco; });
   if(idRec && idRec.cat && CAT_ESCADA[idRec.cat] !== undefined
      && CAT_ESCADA[derivada] > CAT_ESCADA[idRec.cat]){
-    return idRec.cat;
+    derivada = idRec.cat;
   }
-  return derivada;
+  // Piso reprodutivo — aplicado DEPOIS da trava, senão a trava o desfazia.
+  return pisoNovilha(derivada);
+}
+
+// Piso reprodutivo: Terneira e Terneira Sobreano são categorias de idade, não de
+// reprodução. Se o animal entrou num protocolo, ele estava sendo servido — logo era,
+// reprodutivamente, uma novilha, por mais nova que a etiqueta de idade dissesse.
+//
+// No rebanho isso pegava a fêmea 104 (nascida 02/06/2025, DG em 07/12/2025): seis
+// meses de idade no diagnóstico. A idade é incompatível com serviço, então o que o
+// número diz é que há erro no dado de origem — data de nascimento errada, brinco
+// reusado ou brinco digitado errado no protocolo. Enquanto o erro não é resolvido à
+// mão, contar como Novilha mantém o registro na tabela sem criar uma linha
+// "Terneira" que nenhuma interpretação zootécnica sustenta.
+//
+// Não transforma vazio em Novilha: quem não tem categoria derivável continua sem,
+// e a tabela decide o que fazer com esses (hoje, ocultá-los).
+function pisoNovilha(cat){
+  if(cat === 'Terneira' || cat === 'Terneira Sobreano') return 'Novilha';
+  return cat;
 }
 
 // Rótulo usado pelas telas. Ordem: valor congelado → derivação → categoria atual
@@ -12841,11 +13459,17 @@ function catFemeaNaData(brinco, dataRef){
 var CAT_DESCONHECIDA = 'Sem cadastro (saiu do rebanho)';
 function catEpocaDoDG(r){
   if(!r) return CAT_DESCONHECIDA;
-  if(r.catEpoca) return r.catEpoca;
+  if(r.catEpoca) return pisoNovilha(r.catEpoca);
+  // Serviço incompatível com a idade de quem hoje usa o brinco: o registro é do animal
+  // anterior, e a categoria dele não está em lugar nenhum. Derivar daqui produziria a
+  // categoria da fêmea errada. Fica sem categoria — e portanto fora da tabela — até o
+  // usuário separar o histórico pela tela de Saída do Rebanho, que pergunta qual era.
+  if(typeof servicoPertenceAoAnimal === 'function'
+     && !servicoPertenceAoAnimal(r.brinco, r.dataDG)) return CAT_DESCONHECIDA;
   var derivada = catFemeaNaData(r.brinco, r.dataDG);
   if(derivada) return derivada;
   var idRec = DB.id.find(function(a){ return a.brinco === r.brinco; });
-  if(idRec && idRec.cat) return idRec.cat;
+  if(idRec && idRec.cat) return pisoNovilha(idRec.cat);
   return CAT_DESCONHECIDA;
 }
 
@@ -12855,7 +13479,18 @@ function catEpocaDoDG(r){
 function reconciliarCatEpoca(){
   var preenchidos = 0;
   DB_dg_reg.forEach(function(r){
-    if(r.catEpoca) return;
+    // Migração do piso reprodutivo: versões anteriores congelaram "Terneira" /
+    // "Terneira Sobreano" na planilha. Esses valores já salvos são corrigidos aqui,
+    // senão o congelamento os protegeria para sempre da nova regra.
+    if(r.catEpoca){
+      var piso = pisoNovilha(r.catEpoca);
+      if(piso !== r.catEpoca) r.catEpoca = piso;
+      return;
+    }
+    // Não congela categoria em registro que é de outro animal — congelar aqui gravaria
+    // na planilha a categoria da fêmea errada, e o congelamento a protegeria depois.
+    if(typeof servicoPertenceAoAnimal === 'function'
+       && !servicoPertenceAoAnimal(r.brinco, r.dataDG)) return;
     var c = catFemeaNaData(r.brinco, r.dataDG);
     if(c){ r.catEpoca = c; preenchidos++; }
   });
