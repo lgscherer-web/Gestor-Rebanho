@@ -760,6 +760,9 @@ tr:hover td{background:#fafaf7}
 .ano-grupo-stats{display:flex;gap:14px;font-size:11px;color:var(--tx2);flex-wrap:wrap;align-items:center}
 .ano-grupo-arrow{font-size:11px;color:var(--tx3);transition:transform .2s;flex-shrink:0}
 .ano-grupo.open .ano-grupo-arrow{transform:rotate(180deg)}
+.prot-card .prot-body{display:block}
+.prot-card.prot-recolhido .prot-body{display:none}
+.prot-toggle{font-size:11px;line-height:1;padding:3px 9px;min-width:28px}
 .ano-grupo-body{display:none;padding:16px}
 .ano-grupo.open .ano-grupo-body{display:block}
 /* ── PROTOCOLO CARD ── */
@@ -779,15 +782,6 @@ tr:hover td{background:#fafaf7}
 .hist-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--bord);flex-wrap:wrap}
 .hist-row:last-child{border-bottom:none}
 .hist-row:hover{background:#fafaf7}
-.hist-brinco{font-size:14px;font-weight:700;color:var(--tx);min-width:60px}
-.hist-anos{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.hist-ano{display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--surf2);border:1px solid var(--bord);border-radius:var(--rsm);padding:6px 10px;min-width:72px}
-.hist-bolas{display:flex;gap:5px;align-items:center}
-.bola-tip{font-size:9px;color:var(--tx3);text-align:center;margin-top:1px}
-.bola{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;flex-shrink:0;font-size:9px;font-weight:700}
-.bola-verde{background:#2e7d32;color:#fff}
-.bola-vermelha{background:#c62828;color:#fff}
-.bola-cinza{background:#bdbdbd;color:#fff}
 </style>
 </head>
 <body>
@@ -928,8 +922,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.19.0</span><br>
-              Data da versão: <span id="app-versao-data">14/09/2026</span><br>
+              Versão: <span id="app-versao">2.23.0</span><br>
+              Data da versão: <span id="app-versao-data">16/09/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -1260,7 +1254,6 @@ tr:hover td{background:#fafaf7}
             <button class="btn btn-primary" id="ag-save-btn" onclick="agSalvar()">+ Criar Protocolo</button>
           </div>
         </div>
-        <div id="ag-ano-tabs-bar" class="ano-tabs-bar" style="display:none"></div>
         <div id="ag-lista"></div>
       </div><!-- /tab-rep-agenda -->
 
@@ -1269,7 +1262,6 @@ tr:hover td{background:#fafaf7}
         <div class="sh" style="margin-bottom:22px">
           <div class="sh-title">&#128297; Registro de IATF/Monta <small>Inseminação Artificial e Monta Natural</small></div>
         </div>
-        <div id="iatfreg-ano-tabs-bar" class="ano-tabs-bar" style="display:none"></div>
         <div id="iatf-reg-content">
           <div class="empty"><div class="empty-ic">&#128297;</div><p>Crie um protocolo na Agenda primeiro.</p></div>
         </div>
@@ -1280,7 +1272,6 @@ tr:hover td{background:#fafaf7}
         <div class="sh" style="margin-bottom:22px">
           <div class="sh-title">&#128269; Diagnóstico <small>Registro de prenhez por protocolo</small></div>
         </div>
-        <div id="dg-ano-tabs-bar" class="ano-tabs-bar" style="display:none"></div>
         <div id="dg-content">
           <div class="empty"><div class="empty-ic">&#128269;</div><p>Crie um protocolo na Agenda e registre as IATFs primeiro.</p></div>
         </div>
@@ -1294,15 +1285,9 @@ tr:hover td{background:#fafaf7}
         <div class="fcard">
           <div class="fcard-title">Histórico Reprodutivo por Animal</div>
           <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <input type="text" id="hist-search" placeholder="Buscar brinco..." style="height:32px;padding:0 10px;font-size:13px;border:1px solid var(--bord);border-radius:var(--rsm);width:180px;outline:none" oninput="renderHistorico()">
-            <div style="display:flex;align-items:center;gap:12px;font-size:12px;color:var(--tx2)">
-              <span><span class="bola bola-verde" style="display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-right:4px">&#10003;</span>Sim</span>
-              <span><span class="bola bola-vermelha" style="display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-right:4px">&#10007;</span>Não</span>
-              <span><span class="bola bola-cinza" style="display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-right:4px">?</span>Sem dado / Aguardando</span>
-              <span style="font-size:10px;color:var(--tx3)">E = Emprenhou &nbsp; P = Pariu &nbsp; D = Desmamou</span>
-            </div>
+            <input type="text" id="hist-search" placeholder="Buscar pelo brinco inteiro..." style="height:32px;padding:0 10px;font-size:13px;border:1px solid var(--bord);border-radius:var(--rsm);width:210px;outline:none" oninput="renderHistorico()">
+            <span style="font-size:11.5px;color:var(--tx3)">Sem busca, a tela lista todas as fêmeas.</span>
           </div>
-          <div id="hist-ano-tabs-bar" class="ano-tabs-bar" style="display:none"></div>
           <div id="hist-lista"><div class="empty"><div class="empty-ic">&#128200;</div>Nenhum histórico disponível.</div></div>
         </div>
       </div><!-- /tab-rep-historico -->
@@ -9803,9 +9788,6 @@ document.addEventListener('click',function(e){
 // tipo==='iatf': usa d0/d8/d10/dg_est. tipo==='natural': usa dataInicio/dataFim (sem D0/D8/D10/IATF individual).
 var DB_protocolos = [];
 var agTipoProtocolo = 'iatf';   // tipo selecionado no formulário da Agenda: 'iatf' ou 'natural'
-var agAnoFiltro     = 'todos';  // filtro de ano na Agenda
-var iatfAnoFiltro   = 'todos';  // filtro de ano no Reg.IATF
-var dgAnoFiltro     = 'todos';  // filtro de ano no DG
 var iatfEditIdx     = null;     // índice do registro de IATF em edição (DB_iatf_reg)
 // Último Inseminador / Sêmen-Lote usados no Registro de IATF — ficam como padrão no formulário
 // até que um novo valor seja digitado, para não precisar redigitar a cada animal.
@@ -9821,7 +9803,6 @@ var ultimaDataManejo = '';
 try{ ultimaDataManejo = localStorage.getItem('ultimaDataManejo_rebanho') || ''; }catch(e){}
 var dgEditKey       = null;     // chave 'protId-brinco' do registro de DG em edição
 var dashAnoFiltro   = 'todos';  // filtro de ano no Dashboard Reprodutivo
-var histAnoFiltro   = 'todos';  // filtro de ano no Histórico Reprodutivo
 var DB_iatf_reg   = [];  // [{protId, brinco, data, touro, inseminador, semen, obs}]
 var DB_dg_reg     = [];  // [{protId, brinco, dataDG, resultado, obs}]
 var agBrincosSel  = [];
@@ -9910,36 +9891,92 @@ function anosUnicos(){
   return Object.keys(anos).sort(function(a,b){ return b.localeCompare(a); });
 }
 
-// Renderiza a barra de abas de anos para um container
-function renderAnoTabsBar(barId, filtroVar, onSelect){
-  var bar = document.getElementById(barId);
-  if(!bar) return;
-  var anos = anosUnicos();
-  if(!anos.length){ bar.style.display='none'; return; }
-  bar.style.display='flex';
-  var html = '<button class="ano-tab all'+(filtroVar==='todos'?' active':'')+'" onclick="'+onSelect+'(\'todos\')">Todos</button>';
-  html += anos.map(function(a){
-    var n = DB_protocolos.filter(function(p){ return (p.ano||anoReproFromD0(p.d0)||'—')===a; }).length;
-    return '<button class="ano-tab'+(filtroVar===a?' active':'')+'" onclick="'+onSelect+'(\''+a+'\')">'+a+' <span style="font-size:10px;opacity:.7">('+n+')</span></button>';
-  }).join('');
-  bar.innerHTML = html;
-}
+
 
 // Seleciona ano na Agenda
-function agSetAno(ano){ agAnoFiltro=ano; renderAgenda(); }
 // Seleciona ano no Reg. IATF
-function iatfSetAno(ano){ iatfAnoFiltro=ano; renderIatfReg(); }
 // Seleciona ano no DG
-function dgSetAno(ano){ dgAnoFiltro=ano; renderDiagnostico(); }
 // Seleciona ano no Dashboard Reprodutivo
 function dashSetAno(ano){ dashAnoFiltro=ano; renderRepDash(); }
 // Seleciona ano no Histórico Reprodutivo
-function histSetAno(ano){ histAnoFiltro=ano; renderHistorico(); }
 
-// Toggle de um grupo de ano (acordeão)
-function toggleAnoGrupo(el){
+// ── Acordeão de ano reprodutivo ───────────────────────────────────────────
+// A Agenda, o Registro de IATF e o Diagnóstico tinham DUAS formas de escolher o
+// ano ao mesmo tempo: uma barra de etiquetas no topo ("Todos", "2025/2026", …) e
+// o próprio acordeão logo abaixo. Duas maneiras de fazer a mesma coisa, e a barra
+// ia crescer uma etiqueta por safra para sempre. Ficou só a lista.
+//
+// Com a barra fora, o estado aberto/recolhido de cada ano precisa ser lembrado —
+// antes ele era recalculado a cada desenho a partir do filtro, então bastava
+// salvar um registro para tudo voltar ao padrão. Mesmo motivo e mesmo formato do
+// recolhimento de protocolo: guardado por TELA + ANO, fora do DOM.
+var anoRecolhidos = {};
+
+function anoChave(tela, ano){ return tela + ':' + ano; }
+
+// Padrão: só o ano mais recente nasce aberto. É onde o trabalho está acontecendo;
+// as safras fechadas viram histórico e só se abrem quando procuradas.
+function anoAberto(tela, ano, anoMaisRecente){
+  var k = anoChave(tela, ano);
+  if(k in anoRecolhidos) return !anoRecolhidos[k];
+  return ano === anoMaisRecente;
+}
+
+// O segundo e o terceiro parâmetros são opcionais: o Histórico Reprodutivo ainda
+// usa a chamada curta, sem memória, e continua funcionando como antes.
+function toggleAnoGrupo(el, tela, ano){
   var grupo = el.closest('.ano-grupo');
-  if(grupo) grupo.classList.toggle('open');
+  if(!grupo) return;
+  grupo.classList.toggle('open');
+  if(tela && ano !== undefined && ano !== null){
+    anoRecolhidos[anoChave(tela, ano)] = !grupo.classList.contains('open');
+  }
+}
+
+// ── Recolher um protocolo dentro da Agenda / IATF / Diagnóstico ───────────
+// Mesma ideia do acordeão de ano reprodutivo, um nível abaixo: com seis ou sete
+// protocolos abertos, cada um com a lista inteira de animais, a tela vira uma
+// rolagem sem fim e o protocolo do dia fica perdido no meio.
+//
+// O estado é guardado por TELA + PROTOCOLO, e não no DOM. Estas três telas se
+// redesenham inteiras a cada registro salvo; se o recolhimento morasse só na
+// classe CSS, tudo voltaria a abrir a cada animal lançado — exatamente na hora
+// em que o operador está repetindo a mesma operação dezenas de vezes.
+//
+// Por tela, e não global, porque o mesmo protocolo tem peso diferente em cada
+// uma: dá para querer o de IATF recolhido e o de Diagnóstico aberto.
+var protRecolhidos = {};
+
+function protChave(tela, id){ return tela + ':' + id; }
+function protAberto(tela, id){ return !protRecolhidos[protChave(tela, id)]; }
+
+// Classe do cartão. Vai junto do class= existente de cada tela, que é diferente
+// nas três (protocolo-card, fcard, dg-proto-section).
+function protCardCls(tela, id){
+  return 'prot-card' + (protAberto(tela, id) ? '' : ' prot-recolhido');
+}
+
+function protBtnHtml(tela, id){
+  var aberto = protAberto(tela, id);
+  return '<button class="btn btn-ghost btn-sm prot-toggle" '
+    + 'title="'+(aberto ? 'Recolher' : 'Expandir')+'" '
+    + 'aria-expanded="'+(aberto ? 'true' : 'false')+'" '
+    + 'onclick="event.stopPropagation();toggleProtGrupo(this,\''+tela+'\','+id+')">'
+    + (aberto ? '&#9662;' : '&#9656;')
+    + '</button>';
+}
+
+function toggleProtGrupo(btn, tela, id){
+  var k = protChave(tela, id);
+  if(protRecolhidos[k]) delete protRecolhidos[k];
+  else protRecolhidos[k] = true;
+
+  var recolhido = !!protRecolhidos[k];
+  var card = btn.closest('.prot-card');
+  if(card) card.classList.toggle('prot-recolhido', recolhido);
+  btn.innerHTML = recolhido ? '&#9656;' : '&#9662;';
+  btn.title = recolhido ? 'Expandir' : 'Recolher';
+  btn.setAttribute('aria-expanded', recolhido ? 'false' : 'true');
 }
 
 // Filtra protocolos por ano (ou retorna todos)
@@ -10274,25 +10311,10 @@ function agExcluir(idx){
 }
 
 function renderAgenda(){
-  renderAnoTabsBar('ag-ano-tabs-bar','todos' /* placeholder */, 'agSetAno');
-  // rebuild with actual filter
-  (function(){
-    var bar = document.getElementById('ag-ano-tabs-bar');
-    var anos = anosUnicos();
-    if(!anos.length && bar) bar.style.display='none';
-    else if(bar){
-      bar.style.display='flex';
-      var html='<button class="ano-tab all'+(agAnoFiltro==='todos'?' active':'')+'" onclick="agSetAno(this.dataset.ano)" data-ano="todos">Todos</button>';
-      html+=anos.map(function(a){
-        var n=DB_protocolos.filter(function(p){return (p.ano||anoReproFromD0(p.d0)||'—')===a;}).length;
-        return '<button class="ano-tab'+(agAnoFiltro===a?' active':'')+'" onclick="agSetAno(this.dataset.ano)" data-ano="'+a+'">'+a+' <small>('+n+')</small></button>';
-      }).join('');
-      bar.innerHTML=html;
-    }
-  })();
   var lista = document.getElementById('ag-lista');
   if(!lista) return;
-  var filtrados = protocolosFiltrados(agAnoFiltro);
+  // Sem filtro de ano: todos os anos aparecem, cada um como uma seção recolhível.
+  var filtrados = protocolosFiltrados('todos');
   if(!filtrados.length){
     lista.innerHTML='<div class="empty"><div class="empty-ic">&#128197;</div><p>'+(DB_protocolos.length?'Nenhum protocolo neste ano.':'Nenhum protocolo cadastrado ainda.')+'</p></div>';
     return;
@@ -10302,7 +10324,7 @@ function renderAgenda(){
   var anoMaisRecente = anosRecentes[0]||'';
   // Build HTML with collapsible year groups
   lista.innerHTML = grupos.map(function(g){
-    var isOpen = (agAnoFiltro !== 'todos') || (g.ano === anoMaisRecente);
+    var isOpen = anoAberto('agenda', g.ano, anoMaisRecente);
     // Stats for the group header
     var totalAnim = 0, totalIatf = 0, totalDg = 0, totalPrenha = 0;
     g.protocolos.forEach(function(p){
@@ -10313,7 +10335,7 @@ function renderAgenda(){
     });
     var taxaGrupo = totalDg>0 ? Math.round(totalPrenha/totalDg*100)+'%' : '—';
     return '<div class="ano-grupo'+(isOpen?' open':'')+'">'
-      +'<div class="ano-grupo-header" onclick="toggleAnoGrupo(this)">'
+      +'<div class="ano-grupo-header" onclick="toggleAnoGrupo(this,\'agenda\',\''+g.ano+'\')">'
         +'<div class="ano-grupo-title">'
           +'<span class="ano-grupo-badge">'+g.protocolos.length+'</span>'
           +'&#127968; Ano Reprodutivo '+g.ano
@@ -10361,7 +10383,7 @@ function renderAgenda(){
           +'<div style="flex:1;background:var(--redbg)"></div>'
         +'</div>'
       : '';
-    return '<div class="protocolo-card">'
+    return '<div class="protocolo-card '+protCardCls('agenda', p.id)+'">'
       // Cabeçalho
       +'<div class="protocolo-card-header">'
         +'<div>'
@@ -10372,10 +10394,12 @@ function renderAgenda(){
         +'</div>'
         +'<div style="display:flex;gap:6px;align-items:center">'
           +(taxa!=='—'?'<span style="font-size:18px;font-weight:700;color:'+(parseInt(taxa)>=50?'var(--grn)':'var(--red)')+'">'+taxa+'</span><span style="font-size:10px;color:var(--tx3);margin-right:4px">prenhez</span>':'')
+          +protBtnHtml('agenda', p.id)
           +'<button class="btn btn-ghost btn-sm" onclick="agEditar('+i+')" title="Editar">&#9998;</button>'
           +'<button class="btn btn-danger btn-sm" onclick="agExcluir('+i+')" title="Excluir">&#128465;</button>'
         +'</div>'
       +'</div>'
+      +'<div class="prot-body">'
       // Bloco de datas
       +(isNatural
         ? '<div style="display:grid;grid-template-columns:repeat(2,auto);gap:8px;margin-bottom:12px;justify-content:start">'
@@ -10410,6 +10434,7 @@ function renderAgenda(){
         +'<span><span class="san-chip" style="pointer-events:none;font-size:9px;padding:1px 6px">•</span> Aguardando</span>'
       +'</div>'
       +(p.obs?'<div style="font-size:11px;color:var(--tx2);margin-top:8px;padding:8px 12px;background:var(--blubg);border-radius:var(--rsm);border-left:3px solid #90caf9">'+p.obs+'</div>':'')
+      +'</div>'   // prot-body
     +'</div>';
         }).join('')
       +'</div>'  // ano-grupo-body
@@ -10422,23 +10447,8 @@ function renderIatfReg(){
   var wrap = document.getElementById('iatf-reg-content');
   if(!wrap) return;
 
-  // Rebuild year tabs bar
-  (function(){
-    var bar = document.getElementById('iatfreg-ano-tabs-bar');
-    if(!bar) return;
-    var anos = anosUnicos();
-    if(!anos.length){ bar.style.display='none'; return; }
-    bar.style.display='flex';
-    var html='<button class="ano-tab all'+(iatfAnoFiltro==='todos'?' active':'')+'" onclick="iatfSetAno(this.dataset.ano)" data-ano="todos">Todos</button>';
-    html+=anos.map(function(a){
-      var n=DB_protocolos.filter(function(p){return (p.ano||anoReproFromD0(p.d0)||'—')===a;}).length;
-      return '<button class="ano-tab'+(iatfAnoFiltro===a?' active':'')+'" onclick="iatfSetAno(this.dataset.ano)" data-ano="'+a+'">'+a+' <small>('+n+')</small></button>';
-    }).join('');
-    bar.innerHTML=html;
-  })();
-
-  // Mostra protocolos de IATF e de Monta Natural
-  var filtrados = protocolosFiltrados(iatfAnoFiltro);
+  // Mostra protocolos de IATF e de Monta Natural, de todos os anos
+  var filtrados = protocolosFiltrados('todos');
   if(!filtrados.length){
     wrap.innerHTML='<div class="empty"><div class="empty-ic">&#128297;</div><p>'+(DB_protocolos.length?'Nenhum protocolo neste ano.':'Crie um protocolo na Agenda primeiro.')+'</p></div>';
     return;
@@ -10449,7 +10459,7 @@ function renderIatfReg(){
   var anoMaisRecente = anosRecentes[0]||'';
 
   wrap.innerHTML = grupos.map(function(g){
-    var isOpen = (iatfAnoFiltro !== 'todos') || (g.ano === anoMaisRecente);
+    var isOpen = anoAberto('iatf', g.ano, anoMaisRecente);
     var totalIatf=0, totalAnim=0;
     g.protocolos.forEach(function(p){
       totalAnim += p.brincos.length;
@@ -10468,11 +10478,13 @@ function renderIatfReg(){
       var touroOpts = isNatural
         ? DB_repr.filter(function(r){ return r.tipo==='touro'; })
         : DB_repr.filter(function(r){ return reprNome(r)!==p.repr; });
-      return '<div class="fcard" style="margin-bottom:14px">'
-        +'<div class="fcard-title" style="display:flex;align-items:center;justify-content:space-between">'
+      return '<div class="fcard '+protCardCls('iatf', p.id)+'" style="margin-bottom:14px">'
+        +'<div class="fcard-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
           +'<span>'+(isNatural?'&#128004;':'&#128297;')+' '+p.nome+(isNatural?' <span style="font-size:9px;font-weight:700;color:var(--blut);background:var(--blubg);padding:1px 6px;border-radius:8px;margin-left:6px">MONTA NATURAL</span>':'')+'</span>'
           +'<span style="font-size:11px;font-weight:400;color:var(--tx2)">'+(isNatural?('Fim: '+fmtD(p.dataFim)):('D10: '+fmtD(p.d10)))+' &nbsp;|&nbsp; '+feitas.length+'/'+p.brincos.length+(isNatural?' Monta(s)':' IATF(s)')+'</span>'
+        +protBtnHtml('iatf', p.id)
         +'</div>'
+        +'<div class="prot-body">'
         +'<div class="grid g3" style="margin-bottom:10px">'
           +'<div class="fg"><label>Animal *</label>'
             +'<select id="iatfreg-brinco-'+p.id+'" onchange="iatfAtualizarConsanguinidade('+p.id+')">'
@@ -10545,11 +10557,12 @@ function renderIatfReg(){
               +'<button class="btn btn-danger btn-sm" onclick="iatfRegExcluir('+origIdx+')" title="Excluir">&#128465;</button></td></tr>';
           }).join('')
           +'</tbody></table></div>':'<div style="font-size:12px;color:var(--tx3);padding:8px 0">'+(isNatural?'Nenhuma monta registrada.':'Nenhuma IATF registrada.')+'</div>')
+        +'</div>'   // prot-body
       +'</div>';
     }).join('');
 
     return '<div class="ano-grupo'+(isOpen?' open':'')+'">'
-      +'<div class="ano-grupo-header" onclick="toggleAnoGrupo(this)">'
+      +'<div class="ano-grupo-header" onclick="toggleAnoGrupo(this,\'iatf\',\''+g.ano+'\')">'
         +'<div class="ano-grupo-title">'
           +'<span class="ano-grupo-badge">'+g.protocolos.length+'</span>'
           +'&#127968; Ano Reprodutivo '+g.ano
@@ -10725,22 +10738,7 @@ function renderDiagnostico(){
   var wrap = document.getElementById('dg-content');
   if(!wrap) return;
 
-  // Rebuild year tabs bar
-  (function(){
-    var bar = document.getElementById('dg-ano-tabs-bar');
-    if(!bar) return;
-    var anos = anosUnicos();
-    if(!anos.length){ bar.style.display='none'; return; }
-    bar.style.display='flex';
-    var html='<button class="ano-tab all'+(dgAnoFiltro==='todos'?' active':'')+'" onclick="dgSetAno(this.dataset.ano)" data-ano="todos">Todos</button>';
-    html+=anos.map(function(a){
-      var n=DB_protocolos.filter(function(p){return (p.ano||anoReproFromD0(p.d0)||'—')===a;}).length;
-      return '<button class="ano-tab'+(dgAnoFiltro===a?' active':'')+'" onclick="dgSetAno(this.dataset.ano)" data-ano="'+a+'">'+a+' <small>('+n+')</small></button>';
-    }).join('');
-    bar.innerHTML=html;
-  })();
-
-  var filtrados = protocolosFiltrados(dgAnoFiltro);
+  var filtrados = protocolosFiltrados('todos');
   if(!filtrados.length){
     wrap.innerHTML='<div class="empty"><div class="empty-ic">&#128269;</div><p>'+(DB_protocolos.length?'Nenhum protocolo neste ano.':'Crie um protocolo na Agenda e registre as IATFs primeiro.')+'</p></div>';
     return;
@@ -10751,7 +10749,7 @@ function renderDiagnostico(){
   var anoMaisRecente = anosRecentes[0]||'';
 
   wrap.innerHTML = grupos.map(function(g){
-    var isOpen = (dgAnoFiltro !== 'todos') || (g.ano === anoMaisRecente);
+    var isOpen = anoAberto('dg', g.ano, anoMaisRecente);
     var totalDg=0, totalPrenha=0, totalAnim=0;
     g.protocolos.forEach(function(p){
       var elegiveisCnt = DB_iatf_reg.filter(function(r){return r.protId===p.id;}).length;
@@ -10820,20 +10818,23 @@ function renderDiagnostico(){
           +'<td class="tc"><button class="btn btn-primary btn-sm" onclick="dgSalvarById('+p.id+',\''+b.replace(/'/g,"\\'")+'\')">&#10003;</button></td></tr>';
       }).join('');
 
-      return '<div class="dg-proto-section" style="margin-bottom:14px;border:1px solid var(--bord);border-radius:var(--rsm);overflow:hidden">'
-        +'<div style="background:var(--surf2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">'
+      return '<div class="dg-proto-section '+protCardCls('dg', p.id)+'" style="margin-bottom:14px;border:1px solid var(--bord);border-radius:var(--rsm);overflow:hidden">'
+        +'<div style="background:var(--surf2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px">'
           +'<span class="dg-proto-title">&#128269; '+p.nome+(isNatural?' <span style="font-size:9px;font-weight:700;color:var(--blut);background:var(--blubg);padding:1px 6px;border-radius:8px;margin-left:6px">&#128004; MONTA NATURAL</span>':'')+'</span>'
           +'<span style="font-size:11px;color:var(--tx2)">'+dgFeitosCnt+'/'+animaisIatf.length+' DG &nbsp;|&nbsp; Taxa: '+(dgFeitosCnt>0?Math.round(prenhasCnt/dgFeitosCnt*100)+'%':'—')+'</span>'
+          +protBtnHtml('dg', p.id)
         +'</div>'
+        +'<div class="prot-body">'
         +'<div class="tscroll"><table>'
           +'<thead><tr><th>Animal</th><th>Data DG</th><th>Resultado</th><th>Observação</th><th class="tc">Ação</th></tr></thead>'
           +'<tbody>'+rows+'</tbody>'
         +'</table></div>'
+        +'</div>'   // prot-body
       +'</div>';
     }).join('');
 
     return '<div class="ano-grupo'+(isOpen?' open':'')+'">'
-      +'<div class="ano-grupo-header" onclick="toggleAnoGrupo(this)">'
+      +'<div class="ano-grupo-header" onclick="toggleAnoGrupo(this,\'dg\',\''+g.ano+'\')">'
         +'<div class="ano-grupo-title">'
           +'<span class="ano-grupo-badge">'+g.protocolos.length+'</span>'
           +'&#127968; Ano Reprodutivo '+g.ano
@@ -10954,215 +10955,387 @@ function dgSalvarEdicao(pid, brinco){
 }
 
 // ─── HISTÓRICO ───────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// HISTÓRICO REPRODUTIVO — linha do tempo por animal
+// ═══════════════════════════════════════════════════════════════════════════
+// A tela agrupava por ano reprodutivo: a vida de uma matriz ficava partida em
+// uma seção por safra, e a leitura que interessa — "falhou duas vezes, emprenhou
+// na terceira, abortou, está prenhe de novo" — não aparecia em lugar nenhum.
+// Cada safra a mais empurrava o histórico do animal mais para longe.
+//
+// Agora a unidade é o ANIMAL, e dentro dele a linha é o SERVIÇO (uma IATF ou uma
+// monta). A safra vira só a primeira coluna. Sem busca, a tela mostra o rebanho
+// inteiro em uma linha por fêmea, que serve de visão geral e de ponto de partida.
+//
+// Duas decisões de projeto:
+//
+// • As bolinhas verde/vermelha/cinza saíram. Elas comprimiam três perguntas
+//   diferentes em três símbolos iguais, e "cinza" tanto podia ser "aguardando
+//   diagnóstico" quanto "ninguém lançou". Texto curto cabe no mesmo espaço e
+//   não precisa de legenda.
+//
+// • Só entram serviços vindos de protocolo. O módulo legado (DB.rep) ficou de
+//   fora porque no rebanho ele guarda um único registro, que é a linha de
+//   cabeçalho da planilha — não um animal.
+// ═══════════════════════════════════════════════════════════════════════════
+
+var histBrincoSel = '';
+
+// Um serviço = uma cobertura registrada (IATF ou monta) com o desfecho que se
+// conhece dela. A fonte é DB_iatf_reg (a cobertura em si) somada a DB_dg_reg (o
+// diagnóstico e o parto). Uma prenhez lançada à mão, sem protocolo, também vira
+// serviço — ela existe em DB_dg_reg com protId nulo.
+function histServicosDoAnimal(brinco){
+  var servicos = {};
+
+  function achar(chave, protId, prot, dataRef){
+    if(!servicos[chave]){
+      servicos[chave] = {
+        chave: chave,
+        protId: protId,
+        protNome: prot ? prot.nome : (protId == null ? 'Sem protocolo' : 'Protocolo #' + protId),
+        tipo: prot ? (prot.tipo === 'natural' ? 'Monta' : 'IATF') : 'Manual',
+        safra: prot ? (prot.ano || anoReproFromD0(prot.d0) || '—') : (anoReproFromD0(dataRef) || '—'),
+        dataCobertura: '', touro: '', inseminador: '',
+        dataDG: '', resultado: '',
+        partoResultado: '', partoData: '',
+        terneiro: '', terneiroSexo: '',
+        catEpoca: '',
+        ordem: 0
+      };
+    }
+    return servicos[chave];
+  }
+
+  DB_iatf_reg.forEach(function(r){
+    if(r.brinco !== brinco) return;
+    var prot = DB_protocolos.find(function(p){ return p.id === r.protId; });
+    var s = achar('prot-' + r.protId, r.protId, prot, r.data);
+    s.dataCobertura = r.data || '';
+    s.touro = r.touro || r.semen || '';
+    s.inseminador = r.inseminador || '';
+  });
+
+  DB_dg_reg.forEach(function(r){
+    if(r.brinco !== brinco) return;
+    var semProt = (r.protId === null || r.protId === undefined);
+    var prot = semProt ? null : DB_protocolos.find(function(p){ return p.id === r.protId; });
+    var chave = semProt ? ('manual-' + (r.dataDG || '')) : ('prot-' + r.protId);
+    var s = achar(chave, semProt ? null : r.protId, prot, r.dataDG);
+    s.dataDG = r.dataDG || '';
+    s.resultado = r.resultado || '';
+    s.partoResultado = r.partoResultado || '';
+    s.partoData = r.partoData || '';
+    s.terneiro = r.terneiroBrinco || '';
+    s.terneiroSexo = (typeof generoTerneiroReal === 'function') ? (generoTerneiroReal(r) || '') : (r.terneiroGenero || '');
+    s.catEpoca = (typeof catEpocaDoDG === 'function') ? catEpocaDoDG(r) : (r.catEpoca || '');
+  });
+
+  // Ordem cronológica pela cobertura; sem ela, pelo diagnóstico.
+  var lista = Object.keys(servicos).map(function(k){ return servicos[k]; });
+  lista.forEach(function(s){
+    var d = toDate(s.dataCobertura) || toDate(s.dataDG);
+    s.ordem = d ? d.getTime() : 0;
+  });
+  return lista.sort(function(a, b){ return a.ordem - b.ordem; });
+}
+
+// Resumo da vida reprodutiva. Conta só o que tem desfecho conhecido: um serviço
+// ainda sem diagnóstico não entra na taxa de prenhez, senão a vaca em protocolo
+// no momento apareceria sempre pior do que é.
+function histResumoAnimal(brinco, servicos){
+  servicos = servicos || histServicosDoAnimal(brinco);
+  var comDG = 0, prenhes = 0, partos = 0, perdas = 0, desmames = 0, aguardando = 0;
+
+  servicos.forEach(function(s){
+    var res = (s.resultado || '').toLowerCase();
+    if(res.indexOf('prenh') === 0){ comDG++; prenhes++; }
+    else if(res === 'vazia'){ comDG++; }
+    else aguardando++;
+
+    if(s.partoResultado === 'pariu' || s.partoResultado === 'natimorto') partos++;
+    if(s.partoResultado === 'abortou' || s.partoResultado === 'natimorto') perdas++;
+
+    if(s.partoResultado === 'pariu' && s.terneiro){
+      var t = DB.dg.find(function(d){ return d.brinco === s.terneiro; });
+      if(t && (t.dataDesmame || t.condAtual === 'Desmamado')) desmames++;
+    }
+  });
+
+  var iep = (typeof intervalosEntrePartos === 'function') ? intervalosEntrePartos() : {porMatriz:{}};
+  return {
+    servicos: servicos.length,
+    comDG: comDG,
+    aguardando: aguardando,
+    prenhes: prenhes,
+    taxaPrenhez: comDG ? Math.round(prenhes * 100 / comDG) : null,
+    partos: partos,
+    perdas: perdas,
+    desmames: desmames,
+    iep: (iep.porMatriz && iep.porMatriz[brinco]) || 0
+  };
+}
+
+// Fêmeas que a tela lista. Machos não têm histórico reprodutivo a mostrar aqui.
+function histFemeas(){
+  return DB.id.filter(function(r){ return (r.gen || '').toUpperCase() === 'F'; })
+    .slice().sort(function(a, b){
+      return (a.brinco || '').localeCompare(b.brinco || '', undefined, {numeric:true});
+    });
+}
+
+function histSelecionar(brinco){
+  histBrincoSel = brinco || '';
+  var inp = document.getElementById('hist-search');
+  if(inp) inp.value = histBrincoSel;
+  renderHistorico();
+}
+
+function histLimpar(){
+  histBrincoSel = '';
+  var inp = document.getElementById('hist-search');
+  if(inp) inp.value = '';
+  renderHistorico();
+}
+
 function renderHistorico(){
   var lista = document.getElementById('hist-lista');
   if(!lista) return;
-  var filtro = (document.getElementById('hist-search')||{}).value||'';
-  filtro = filtro.trim().toLowerCase();
 
-  // Agrupa dados por brinco → lista de quadros (1 quadro por protocolo/período de entoura,
-  // ou por registro legado individual). Animais com mais de um protocolo/período — mesmo que
-  // no mesmo ano reprodutivo — recebem quadros SEPARADOS, NUNCA mesclados ou apagados: um
-  // resultado prenhe em um protocolo novo não sobrescreve o quadro de um protocolo anterior.
-  // Cada quadro é identificado pelo nome do protocolo de origem, preservando o histórico
-  // completo para apoiar a tomada de decisões.
-  // Estrutura: animais[brinco] = [ {anoRepro, nome, chave, ordem, emprenhou, pariu, desmamou}, ... ]
-  var animais = {};
+  var busca = ((document.getElementById('hist-search') || {}).value || '').trim();
+  // Brinco exato: buscar "1" não pode trazer "10", "21" e "100" junto.
+  var achado = busca ? DB.id.find(function(r){ return r.brinco === busca; }) : null;
+  var brinco = achado ? achado.brinco : (busca ? '' : histBrincoSel);
+  if(brinco && !DB.id.find(function(r){ return r.brinco === brinco; })) brinco = '';
 
-  function novoQuadro(brinco, anoRepro, nome, chave, ordem){
-    if(!animais[brinco]) animais[brinco] = [];
-    var q = {anoRepro:anoRepro, nome:nome, chave:chave, ordem:ordem, emprenhou:null, pariu:null, desmamou:null, terneiroBrinco:null, terneiroGenero:null};
-    animais[brinco].push(q);
-    return q;
-  }
-  function achaQuadro(brinco, chave){
-    if(!animais[brinco]) return null;
-    for(var i=0;i<animais[brinco].length;i++){ if(animais[brinco][i].chave===chave) return animais[brinco][i]; }
-    return null;
-  }
-
-  // ── Módulo legado DB.rep ── (cada registro é um período distinto, nunca mescla)
-  // emp/par/des são dados históricos do ano anterior ao registro
-  DB.rep.forEach(function(r, idx){
-    if(!r.brinco) return;
-    // Determina ano reprodutivo a partir da data de diagnóstico ou ano atual
-    var anoRepro = '—';
-    var dt = null;
-    if(r.dtdiag && /^\d{2}\/\d{2}\/\d{4}$/.test(r.dtdiag)){
-      anoRepro = anoReproFromD0(r.dtdiag) || r.dtdiag.split('/')[2];
-      dt = toDate(r.dtdiag);
-    }
-    var nome = r.proto || 'Registro manual';
-    var entry = novoQuadro(r.brinco, anoRepro, nome, 'legado-'+idx, dt ? dt.getTime() : -idx);
-    if((r.emp||'').toLowerCase()==='sim')      entry.emprenhou = true;
-    else if((r.emp||'').toLowerCase()==='nao') entry.emprenhou = false;
-    if((r.par||'').toLowerCase()==='sim')      entry.pariu = true;
-    else if((r.par||'').toLowerCase()==='nao') entry.pariu = false;
-    if((r.des||'').toLowerCase()==='sim')      entry.desmamou = true;
-    else if((r.des||'').toLowerCase()==='nao') entry.desmamou = false;
-  });
-
-  // ── Novo módulo DG (DB_dg_reg) ── (1 quadro por protocolo/período de entoura)
-  // Cada registro de DG indica emprenhou; pariu/desmamou ainda não disponíveis neste módulo
-  DB_dg_reg.forEach(function(r){
-    if(!r.brinco) return;
-    // Acha o protocolo para obter o nome, o ano reprodutivo e a data (para ordenação)
-    var prot = DB_protocolos.find(function(p){ return p.id === r.protId; });
-    // Prenhez registrada manualmente não pertence a nenhum protocolo: ganha um quadro próprio
-    // por animal/data, rotulado como tal, em vez de virar "Protocolo #null".
-    var semProt = (r.protId===null || r.protId===undefined);
-    var anoRepro = prot ? (prot.ano || anoReproFromD0(prot.d0) || '—')
-                 : (semProt ? (anoReproFromD0(r.dataDG) || '—') : '—');
-    var nome = prot ? prot.nome : (semProt ? 'Sem protocolo (registro manual)' : ('Protocolo #'+r.protId));
-    var chave = semProt ? ('manual-'+r.brinco+'-'+(r.dataDG||'')) : ('prot-'+r.protId);
-    var dt = semProt ? toDate(r.dataDG) : toDate(protDataInicio(prot));
-    var entry = achaQuadro(r.brinco, chave) || novoQuadro(r.brinco, anoRepro, nome, chave, dt ? dt.getTime() : (r.protId||0));
-    var prenhou = (r.resultado||'').toLowerCase()==='prenhe';
-    // Só sobrescreve emprenhou se ainda não havia dado mais preciso (nunca apaga outros quadros)
-    if(entry.emprenhou === null) entry.emprenhou = prenhou;
-    // Resultado do parto (registrado via botão "Atualizar Estado" na Ficha do Animal)
-    if(r.partoResultado==='pariu'){
-      entry.pariu = true;
-      entry.terneiroBrinco = r.terneiroBrinco || null;
-      entry.terneiroGenero = generoTerneiroReal(r) || null;
-    }
-    else if(r.partoResultado==='abortou'){ entry.pariu = false; }
-    else if(r.partoResultado==='natimorto'){ entry.pariu = true; entry.desmamou = false; }
-  });
-
-  // ── IATF/Monta sem DG: cria quadro do protocolo aguardando resultado (emprenhou=null) ──
-  DB_iatf_reg.forEach(function(r){
-    if(!r.brinco) return;
-    var prot = DB_protocolos.find(function(p){ return p.id === r.protId; });
-    var anoRepro = prot ? (prot.ano || anoReproFromD0(prot.d0) || '—') : '—';
-    var nome = prot ? prot.nome : ('Protocolo #'+r.protId);
-    var chave = 'prot-'+r.protId;
-    // Só cria quadro se este protocolo ainda não tiver um (ex.: via DG)
-    if(!achaQuadro(r.brinco, chave)){
-      var dt = toDate(protDataInicio(prot));
-      novoQuadro(r.brinco, anoRepro, nome, chave, dt ? dt.getTime() : (r.protId||0));
-      // emprenhou permanece null = aguardando DG
-    }
-  });
-
-  // ── Agrupa por Ano Reprodutivo (mesmo padrão visual da tela de Diagnóstico) ──
-  // porAno[anoRepro][brinco] = [quadros daquele animal específico naquele ano]
-  var porAno = {};
-  Object.keys(animais).forEach(function(b){
-    // Busca por brinco exato (não por trecho) — evita retornar vários animais cujo número
-    // apenas contém a sequência digitada (ex.: buscar "1" não deve trazer "10", "21" etc.).
-    if(filtro && b.toLowerCase()!==filtro) return;
-    animais[b].forEach(function(q){
-      var a = q.anoRepro || '—';
-      if(!porAno[a]) porAno[a] = {};
-      if(!porAno[a][b]) porAno[a][b] = [];
-      porAno[a][b].push(q);
-    });
-  });
-
-  var anos = Object.keys(porAno).sort(function(x,z){ return z.localeCompare(x); });
-
-  // ── Barra de anos ──
-  (function(){
-    var bar = document.getElementById('hist-ano-tabs-bar');
-    if(!bar) return;
-    if(!anos.length){ bar.style.display='none'; return; }
-    bar.style.display='flex';
-    var html='<button class="ano-tab all'+(histAnoFiltro==='todos'?' active':'')+'" onclick="histSetAno(this.dataset.ano)" data-ano="todos">Todos</button>';
-    html+=anos.map(function(a){
-      var n = Object.keys(porAno[a]).length;
-      return '<button class="ano-tab'+(histAnoFiltro===a?' active':'')+'" onclick="histSetAno(this.dataset.ano)" data-ano="'+a+'">'+a+' <small>('+n+')</small></button>';
-    }).join('');
-    bar.innerHTML = html;
-  })();
-
-  if(!anos.length){
-    lista.innerHTML = '<div class="empty"><div class="empty-ic">&#128200;</div>'
-      +(DB_protocolos.length||DB.rep.length ? 'Nenhum animal encontrado com esse filtro.' : 'Nenhum histórico disponível. Crie protocolos e registre diagnósticos na aba Reprodução.')
-      +'</div>';
+  if(busca && !achado){
+    lista.innerHTML = '<div class="empty"><div class="empty-ic">&#128269;</div>'
+      + 'Nenhum animal com o brinco <strong>' + busca + '</strong>.<br>'
+      + '<span style="font-size:12px">A busca é pelo brinco inteiro, não por parte dele.</span></div>';
     return;
   }
 
-  var anosFiltrados = histAnoFiltro==='todos' ? anos : anos.filter(function(a){ return a===histAnoFiltro; });
-  if(!anosFiltrados.length){
-    lista.innerHTML = '<div class="empty"><div class="empty-ic">&#128200;</div>Nenhum animal encontrado com esse filtro.</div>';
-    return;
-  }
-
-  // Função que gera o ícone de bola com símbolo interno
-  function bola(v, title){
-    var cls, sym;
-    if(v===true)        { cls='bola-verde';    sym='&#10003;'; }
-    else if(v===false)  { cls='bola-vermelha'; sym='&#10007;'; }
-    else                { cls='bola-cinza';    sym='?'; }
-    return '<span class="bola '+cls+'" title="'+title+'">'+sym+'</span>';
-  }
-
-  var anoMaisRecente = anos[0]||'';
-
-  lista.innerHTML = anosFiltrados.map(function(ano){
-    var isOpen = (histAnoFiltro !== 'todos') || (ano === anoMaisRecente);
-    var animaisDoAno = porAno[ano];
-    var keys = Object.keys(animaisDoAno).sort(function(a,b){
-      var na=parseInt(a), nb=parseInt(b);
-      return (!isNaN(na)&&!isNaN(nb)) ? na-nb : a.localeCompare(b);
-    });
-
-    var linhasHtml = keys.map(function(b){
-      var id = DB.id.find(function(r){ return r.brinco===b; })||{};
-      // Ordena quadros em ordem crescente de data (mais antigo à esquerda, mais recente à
-      // direita), dentro do próprio ano. Cada protocolo/período vira um quadro distinto,
-      // identificado pelo seu nome, lado a lado.
-      var quadros = animaisDoAno[b].slice().sort(function(x,z){ return x.ordem - z.ordem; });
-
-      var quadrosHtml = quadros.map(function(a){
-        return '<div class="hist-ano" title="Protocolo: '+a.nome+' &#183; Ano Reprodutivo '+a.anoRepro+'">'
-          +'<div style="font-size:9px;font-weight:700;color:var(--tx2);text-align:center;margin-bottom:4px;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis">'+a.nome+'</div>'
-          +'<div class="hist-bolas">'
-            +bola(a.emprenhou, 'Emprenhou')
-            +bola(a.pariu,     'Pariu')
-            +bola(a.desmamou,  'Desmamou')
-          +'</div>'
-          +'<div style="display:flex;gap:2px;justify-content:center;margin-top:3px">'
-            +'<span style="font-size:7px;color:var(--tx3)">E</span>'
-            +'<span style="font-size:7px;color:var(--tx3)">P</span>'
-            +'<span style="font-size:7px;color:var(--tx3)">D</span>'
-          +'</div>'
-          +(a.pariu===true && a.terneiroBrinco
-            ? '<div style="font-size:8px;color:var(--tx2);text-align:center;margin-top:3px;white-space:nowrap" title="Terneiro nascido">'+(a.terneiroGenero||'—')+' &middot; '+brincoLbl(a.terneiroBrinco)+'</div>'
-            : '')
-        +'</div>';
-      }).join('');
-
-      return '<div class="hist-row">'
-        +'<div class="hist-brinco">'+brincoLbl(b)+'</div>'
-        +'<div style="font-size:11px;color:var(--tx2);min-width:120px">'+(id.cat||'—')+(id.raca?' &middot; '+id.raca:'')+'</div>'
-        +'<div class="hist-anos">'+quadrosHtml+'</div>'
-      +'</div>';
-    }).join('');
-
-    return '<div class="ano-grupo'+(isOpen?' open':'')+'">'
-      +'<div class="ano-grupo-header" onclick="toggleAnoGrupo(this)">'
-        +'<div class="ano-grupo-title">'
-          +'<span class="ano-grupo-badge">'+keys.length+'</span>'
-          +'&#127968; Ano Reprodutivo '+ano
-        +'</div>'
-        +'<div class="ano-grupo-stats">'
-          +'<span>'+keys.length+' animal(is)</span>'
-        +'</div>'
-        +'<span class="ano-grupo-arrow">&#9660;</span>'
-      +'</div>'
-      +'<div class="ano-grupo-body">'
-        +'<div style="display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surf2);border-bottom:2px solid var(--bord);font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;flex-wrap:wrap">'
-          +'<span style="min-width:60px">Brinco</span>'
-          +'<span style="min-width:120px">Cat. / Raça</span>'
-          +'<span style="flex:1">Protocolos do Ano (E = Emprenhou &nbsp; P = Pariu &nbsp; D = Desmamou)</span>'
-        +'</div>'
-        +linhasHtml
-      +'</div>'
-    +'</div>';
-  }).join('');
+  lista.innerHTML = brinco ? histHtmlAnimal(brinco) : histHtmlRebanho();
 }
+
+// ── Visão do rebanho: uma linha por fêmea ─────────────────────────────────
+// A ordenação vive fora do DOM, como o resto dos estados desta tela: a lista se
+// redesenha a cada busca e a cada gravação, e a ordem escolhida tem de sobreviver.
+var histOrdem = { col: 'brinco', dir: 'asc' };
+
+// Direção inicial de cada coluna, na primeira vez que ela é clicada. Texto começa
+// crescente (A→Z, brinco 1→200); contagens começam decrescentes, porque quem
+// procura "quantos serviços" ou "quantas perdas" quer ver o maior primeiro. Taxa
+// de prenhez começa crescente: a fila de descarte abre pelas piores.
+var HIST_DIR_INICIAL = {
+  brinco:'asc', categoria:'asc', situacao:'asc',
+  servicos:'desc', partos:'desc', perdas:'desc', desmames:'desc',
+  prenhez:'asc'
+};
+
+function histOrdenar(col){
+  if(histOrdem.col === col){
+    histOrdem.dir = (histOrdem.dir === 'asc') ? 'desc' : 'asc';
+  } else {
+    histOrdem.col = col;
+    histOrdem.dir = HIST_DIR_INICIAL[col] || 'asc';
+  }
+  renderHistorico();
+}
+
+function histTh(col, rotulo, classe){
+  var ativa = (histOrdem.col === col);
+  var seta = ativa ? (histOrdem.dir === 'asc' ? ' &#9650;' : ' &#9660;') : '';
+  return '<th' + (classe ? ' class="' + classe + '"' : '') + ' style="cursor:pointer;user-select:none'
+    + (ativa ? ';color:var(--grnt)' : '') + '" '
+    + 'title="Ordenar por ' + rotulo + '" onclick="histOrdenar(\'' + col + '\')">'
+    + rotulo + '<span style="font-size:9px">' + seta + '</span></th>';
+}
+
+function histHtmlRebanho(){
+  var femeas = histFemeas();
+  if(!femeas.length){
+    return '<div class="empty"><div class="empty-ic">&#128200;</div>Nenhuma fêmea cadastrada.</div>';
+  }
+
+  var dados = femeas.map(function(r){
+    var servicos = histServicosDoAnimal(r.brinco);
+    var res = histResumoAnimal(r.brinco, servicos);
+    var ultimo = servicos.length ? servicos[servicos.length - 1] : null;
+
+    var sitTxt = 'nunca entourada', sitHtml = '<span style="color:var(--tx3)">nunca entourada</span>';
+    if(ultimo){
+      var lbl = (ultimo.resultado || '').toLowerCase();
+      if(ultimo.partoResultado === 'pariu'){
+        sitTxt = 'Pariu'; sitHtml = 'Pariu em ' + fmtD(ultimo.partoData);
+      } else if(ultimo.partoResultado === 'abortou'){
+        sitTxt = 'Aborto'; sitHtml = '<span style="color:var(--red)">Aborto em ' + fmtD(ultimo.partoData) + '</span>';
+      } else if(ultimo.partoResultado === 'natimorto'){
+        sitTxt = 'Natimorto'; sitHtml = '<span style="color:var(--red)">Natimorto em ' + fmtD(ultimo.partoData) + '</span>';
+      } else if(lbl.indexOf('prenh') === 0){
+        sitTxt = 'Prenhe'; sitHtml = '<span style="color:var(--grnt)">Prenhe</span>';
+      } else if(lbl === 'vazia'){
+        sitTxt = 'Vazia'; sitHtml = '<span style="color:var(--red)">Vazia</span>';
+      } else {
+        sitTxt = 'aguardando DG'; sitHtml = '<span style="color:var(--tx3)">aguardando DG</span>';
+      }
+    }
+    return { brinco:r.brinco, categoria:r.cat || '', res:res, sitTxt:sitTxt, sitHtml:sitHtml };
+  });
+
+  var dir = (histOrdem.dir === 'desc') ? -1 : 1;
+  var col = histOrdem.col;
+  function txt(a, b){ return (a || '').localeCompare(b || '', 'pt-BR', {numeric:true, sensitivity:'base'}); }
+
+  dados.sort(function(a, b){
+    var r = 0;
+    if(col === 'brinco')          r = txt(a.brinco, b.brinco);
+    else if(col === 'categoria')  r = txt(a.categoria, b.categoria);
+    else if(col === 'situacao')   r = txt(a.sitTxt, b.sitTxt);
+    else if(col === 'prenhez'){
+      // Fêmea sem serviço tem taxa NULA, não zero. Ela vai para o fim em
+      // qualquer direção — ordenar "piores primeiro" não pode abrir com 49
+      // novilhas que nunca foram entouradas.
+      var ta = a.res.taxaPrenhez, tb = b.res.taxaPrenhez;
+      if(ta === null && tb === null) r = 0;
+      else if(ta === null) return 1;
+      else if(tb === null) return -1;
+      else r = ta - tb;
+    }
+    else r = (a.res[col] || 0) - (b.res[col] || 0);
+
+    // Desempate sempre pelo brinco, para a ordem não dançar entre desenhos
+    // quando muitos animais têm o mesmo valor na coluna escolhida.
+    if(r === 0) return txt(a.brinco, b.brinco);
+    return r * dir;
+  });
+
+  var linhas = dados.map(function(d){
+    var taxa = d.res.taxaPrenhez === null ? '—' : (d.res.taxaPrenhez + '%');
+    var corTaxa = d.res.taxaPrenhez === null ? 'var(--tx3)'
+                : (d.res.taxaPrenhez >= 60 ? 'var(--grnt)' : (d.res.taxaPrenhez >= 40 ? 'var(--amb)' : 'var(--red)'));
+    return '<tr style="cursor:pointer" onclick="histSelecionar(\'' + d.brinco + '\')">'
+      + '<td><strong>' + d.brinco + '</strong></td>'
+      + '<td>' + (d.categoria || '—') + '</td>'
+      + '<td class="tc">' + d.res.servicos + '</td>'
+      + '<td class="tc" style="color:' + corTaxa + ';font-weight:600">' + taxa + '</td>'
+      + '<td class="tc">' + d.res.partos + '</td>'
+      + '<td class="tc">' + (d.res.perdas ? '<span style="color:var(--red)">' + d.res.perdas + '</span>' : '0') + '</td>'
+      + '<td class="tc">' + d.res.desmames + '</td>'
+      + '<td style="font-size:12px">' + d.sitHtml + '</td>'
+      + '</tr>';
+  }).join('');
+
+  return '<div style="font-size:12px;color:var(--tx2);margin-bottom:10px">'
+      + femeas.length + ' fêmea(s). Clique numa linha — ou digite o brinco na busca — para ver a vida '
+      + 'reprodutiva completa do animal, serviço por serviço. Clique num título de coluna para ordenar.</div>'
+    + '<div class="tscroll"><table>'
+    + '<thead><tr>'
+    +   histTh('brinco', 'Brinco')
+    +   histTh('categoria', 'Categoria')
+    +   histTh('servicos', 'Serviços', 'tc')
+    +   histTh('prenhez', 'Prenhez', 'tc')
+    +   histTh('partos', 'Partos', 'tc')
+    +   histTh('perdas', 'Perdas', 'tc')
+    +   histTh('desmames', 'Desmames', 'tc')
+    +   histTh('situacao', 'Última situação')
+    + '</tr></thead>'
+    + '<tbody>' + linhas + '</tbody></table></div>';
+}
+
+// ── Visão de um animal: linha do tempo ────────────────────────────────────
+function histHtmlAnimal(brinco){
+  var idRec = DB.id.find(function(r){ return r.brinco === brinco; }) || {};
+  var dgRec = DB.dg.find(function(d){ return d.brinco === brinco; }) || {};
+  var servicos = histServicosDoAnimal(brinco);
+  var res = histResumoAnimal(brinco, servicos);
+
+  var idade = dgRec.nasc ? calcAge(dgRec.nasc) : '';
+  var cabecalho = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">'
+    + '<button class="btn btn-ghost btn-sm" onclick="histLimpar()">&#8592; Todas as fêmeas</button>'
+    + '<div style="font-size:16px;font-weight:700">Brinco ' + brinco + '</div>'
+    + '<div style="font-size:12px;color:var(--tx2)">'
+    +   [idRec.cat, idRec.raca, idade].filter(Boolean).join(' &middot; ')
+    + '</div>'
+    + '<button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="abrirFichaDe(\'' + brinco + '\')">&#128203; Abrir ficha</button>'
+    + '</div>';
+
+  function kpi(rotulo, valor, cor){
+    return '<div style="background:var(--surf2);border-radius:var(--rsm);padding:10px 12px;min-width:92px">'
+      + '<div style="font-size:11px;color:var(--tx2)">' + rotulo + '</div>'
+      + '<div style="font-size:21px;font-weight:700;line-height:1.2;color:' + (cor || 'var(--tx)') + '">' + valor + '</div>'
+      + '</div>';
+  }
+  var taxa = res.taxaPrenhez === null ? '—' : (res.taxaPrenhez + '%');
+  var corTaxa = res.taxaPrenhez === null ? 'var(--tx3)'
+              : (res.taxaPrenhez >= 60 ? 'var(--grnt)' : (res.taxaPrenhez >= 40 ? 'var(--amb)' : 'var(--red)'));
+
+  var resumo = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">'
+    + kpi('Serviços', res.servicos)
+    + kpi('Prenhez', taxa, corTaxa)
+    + kpi('Partos', res.partos)
+    + kpi('Desmames', res.desmames)
+    + kpi('Perdas', res.perdas, res.perdas ? 'var(--red)' : 'var(--tx)')
+    + (res.iep ? kpi('Interv. partos', res.iep + ' d') : '')
+    + '</div>'
+    + (res.aguardando
+        ? '<div style="font-size:11.5px;color:var(--tx2);margin:-8px 0 14px">'
+          + res.aguardando + ' serviço(s) ainda sem diagnóstico — não entram na taxa de prenhez.</div>'
+        : '');
+
+  if(!servicos.length){
+    return cabecalho + resumo
+      + '<div class="empty"><div class="empty-ic">&#128200;</div>'
+      + 'Este animal nunca entrou em um protocolo reprodutivo.</div>';
+  }
+
+  var safraAnterior = '';
+  var linhas = servicos.map(function(s){
+    var celulaSafra = (s.safra !== safraAnterior) ? s.safra : '';
+    safraAnterior = s.safra;
+
+    var servico = '<strong>' + s.protNome + '</strong>';
+    var det = [];
+    if(s.dataCobertura) det.push(fmtD(s.dataCobertura));
+    if(s.touro) det.push(nomeGenealogico(s.touro) || s.touro);
+    if(det.length) servico += '<br><span style="font-size:11px;color:var(--tx3)">' + det.join(' &middot; ') + '</span>';
+
+    var dg;
+    var resL = (s.resultado || '').toLowerCase();
+    if(resL.indexOf('prenh') === 0)  dg = '<span class="bdg bdg-prenha">Prenhe</span>';
+    else if(resL === 'vazia')        dg = '<span class="bdg bdg-vazia">Vazia</span>';
+    else                             dg = '<span style="font-size:11px;color:var(--tx3)">aguardando</span>';
+    if(s.dataDG) dg += '<br><span style="font-size:10.5px;color:var(--tx3)">' + fmtD(s.dataDG) + '</span>';
+
+    var desfecho;
+    if(s.partoResultado === 'pariu'){
+      desfecho = 'Parto em ' + fmtD(s.partoData);
+      if(s.terneiro) desfecho += '<br><span style="font-size:11px;color:var(--tx3)">terneiro '
+        + (typeof brincoHistLbl === 'function' ? brincoHistLbl(s.terneiro) : s.terneiro)
+        + (s.terneiroSexo ? ' &middot; ' + s.terneiroSexo : '') + '</span>';
+    }
+    else if(s.partoResultado === 'abortou')   desfecho = '<span style="color:var(--red)">Aborto em ' + fmtD(s.partoData) + '</span>';
+    else if(s.partoResultado === 'natimorto') desfecho = '<span style="color:var(--red)">Natimorto em ' + fmtD(s.partoData) + '</span>';
+    else if(resL.indexOf('prenh') === 0)      desfecho = '<span style="font-size:11.5px;color:var(--tx2)">gestação em curso</span>';
+    else                                      desfecho = '<span style="color:var(--tx3)">—</span>';
+
+    return '<tr>'
+      + '<td style="white-space:nowrap;color:var(--tx2)">' + celulaSafra + '</td>'
+      + '<td>' + servico + '</td>'
+      + '<td style="font-size:12px;color:var(--tx2)">' + (s.catEpoca || '—') + '</td>'
+      + '<td>' + dg + '</td>'
+      + '<td style="font-size:12.5px">' + desfecho + '</td>'
+      + '</tr>';
+  }).join('');
+
+  return cabecalho + resumo
+    + '<div class="tscroll"><table>'
+    + '<thead><tr><th>Safra</th><th>Serviço</th><th>Categoria</th><th>Diagnóstico</th><th>Desfecho</th></tr></thead>'
+    + '<tbody>' + linhas + '</tbody></table></div>'
+    + '<div style="font-size:11px;color:var(--tx3);margin-top:8px">'
+    + 'Do serviço mais antigo para o mais recente. A categoria é a que o animal tinha na data do diagnóstico.</div>';
+}
+
 
 // ─── DASHBOARD DE REPRODUÇÃO ─────────────────────────────────────────────────
 function renderRepDash(){
