@@ -412,9 +412,22 @@
   --amb:#e65100;--ambbg:#fff3e0;
   --r:8px;--rsm:5px;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
-.app{display:flex;min-height:100vh}
-.sidebar{width:210px;background:var(--grnd);flex-shrink:0;display:flex;flex-direction:column}
+/* Rolagem independente entre barra lateral e área de trabalho.
+   Antes, .main tinha overflow:auto mas nenhuma altura limitada — sem limite não há o
+   que transbordar, então quem rolava era a página inteira e o menu subia junto com o
+   conteúdo. Travar a altura em 100% faz de cada coluna seu próprio contêiner de rolagem.
+   No celular isso NÃO se aplica: lá a lateral já é uma gaveta sobreposta, e prender a
+   página quebraria o recolher da barra de endereço (ver @media abaixo). */
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);overflow:hidden}
+.app{display:flex;height:100%;overflow:hidden}
+/* A lateral rola inteira — logo, navegação e botões de salvar juntos.
+   A barra de rolagem fica escondida: num menu estreito e escuro ela vira um risco
+   claro colado no conteúdo, e o ganho de informação é nenhum (a lista é curta e o
+   usuário já sabe que ela rola). Esconder é só visual — roda do mouse, teclado e
+   gesto de toque continuam funcionando. */
+.sidebar{width:210px;background:var(--grnd);flex-shrink:0;display:flex;flex-direction:column;height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none}
+.sidebar::-webkit-scrollbar{width:0;height:0}
 .mobile-topbar{display:none}
 .sb-overlay{display:none}
 .sb-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
@@ -429,7 +442,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sb-bottom{padding:12px 8px 16px;border-top:1px solid rgba(255,255,255,.1)}
 .sb-file-name{font-size:11px;color:rgba(255,255,255,.5);padding:0 8px 8px;word-break:break-all;line-height:1.4}
 .sb-file-name strong{display:block;color:rgba(255,255,255,.8);margin-bottom:2px}
-.main{flex:1;padding:26px 28px 28px;overflow:auto}
+/* min-width:0 impede que uma tabela larga estique a coluna e empurre a lateral:
+   filho de flex não encolhe abaixo do conteúdo sem isso. */
+.main{flex:1;min-width:0;padding:26px 28px 28px;overflow-y:auto;overscroll-behavior:contain}
 .btn{display:inline-flex;align-items:center;gap:5px;height:36px;padding:0 15px;border-radius:var(--rsm);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:opacity .15s,filter .15s}
 .btn:hover{filter:brightness(.93)}
 .btn-primary{background:var(--grn);color:#fff}
@@ -510,10 +525,15 @@ tr:hover td{background:#fafaf7}
 .toast.ok{background:#1b5e20}
 .toast.err{background:#b71c1c}
 @media(max-width:650px){
-  .sidebar{position:fixed;top:0;left:0;bottom:0;z-index:200;transform:translateX(-100%);transition:transform .22s ease;box-shadow:2px 0 18px rgba(0,0,0,.3);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  /* Desfaz o travamento de altura do computador. No celular a página volta a rolar
+     inteira — é o que deixa a barra de endereço recolher — e a lateral já é uma gaveta
+     sobreposta, então as duas rolagens nunca se atrapalham. */
+  html,body{height:auto;overflow:visible}
+  .app{height:auto;min-height:100vh;overflow:visible}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;z-index:200;transform:translateX(-100%);transition:transform .22s ease;box-shadow:2px 0 18px rgba(0,0,0,.3);height:auto;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .sidebar.open{transform:translateX(0)}
   .sb-nav{overflow-y:auto;min-height:0}
-  .main{padding:66px 12px 20px;overflow-x:hidden}
+  .main{padding:66px 12px 20px;overflow-y:visible;overflow-x:hidden}
   .g4,.g3,.g2{grid-template-columns:1fr}
   .mobile-topbar{display:flex;align-items:center;gap:10px;position:fixed;top:0;left:0;right:0;height:52px;background:var(--grnd);z-index:150;padding:0 14px;box-shadow:0 1px 6px rgba(0,0,0,.15)}
   .mobile-menu-btn{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;line-height:1}
@@ -934,7 +954,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.33.0</span><br>
+              Versão: <span id="app-versao">2.42.0</span><br>
               Data da versão: <span id="app-versao-data">16/09/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -1298,7 +1318,7 @@ tr:hover td{background:#fafaf7}
           <div class="fcard-title">Histórico Reprodutivo por Animal</div>
           <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <input type="text" id="hist-search" placeholder="Buscar pelo brinco inteiro..." style="height:32px;padding:0 10px;font-size:13px;border:1px solid var(--bord);border-radius:var(--rsm);width:210px;outline:none" oninput="renderHistorico()">
-            <span style="font-size:11.5px;color:var(--tx3)">Sem busca, a tela lista todas as fêmeas.</span>
+            <span style="font-size:11.5px;color:var(--tx3)">Sem busca, a tela lista as fêmeas com histórico reprodutivo. A busca alcança qualquer animal.</span>
           </div>
           <div id="hist-lista"><div class="empty"><div class="empty-ic">&#128200;</div>Nenhum histórico disponível.</div></div>
         </div>
@@ -1311,11 +1331,16 @@ tr:hover td{background:#fafaf7}
         </div>
         <div id="dash-ano-tabs-bar" class="ano-tabs-bar" style="display:none"></div>
         <div id="rep-dash-alertas" style="margin-bottom:18px"></div>
+        <!-- Aba "Desempenho": acumulado da vida dos animais, não de uma safra. Vive
+             separada do resto porque os quadros abaixo (KPIs, resumo por protocolo,
+             desempenho por categoria) só fazem sentido dentro de um ano reprodutivo. -->
+        <div id="rep-dash-desempenho" style="display:none"></div>
+        <div id="rep-dash-safra">
         <div class="rep-dash-grid" id="rep-dash-kpis">
-          <div class="rep-kpi rep-kpi-grn"><div class="rep-kpi-lbl">Protocolos</div><div class="rep-kpi-val" id="rdkpi-prot">—</div><div class="rep-kpi-sub">registrados</div></div>
-          <div class="rep-kpi rep-kpi-blu"><div class="rep-kpi-lbl">Animais Protocolados</div><div class="rep-kpi-val" id="rdkpi-anim">—</div><div class="rep-kpi-sub">total</div></div>
-          <div class="rep-kpi rep-kpi-amb"><div class="rep-kpi-lbl">Taxa de Prenhez</div><div class="rep-kpi-val" id="rdkpi-taxa">—</div><div class="rep-kpi-sub">diagnósticos realizados</div></div>
-          <div class="rep-kpi rep-kpi-red"><div class="rep-kpi-lbl">Animais Vazios</div><div class="rep-kpi-val" id="rdkpi-vazios">—</div><div class="rep-kpi-sub">após DG</div></div>
+          <div class="rep-kpi rep-kpi-grn"><div class="rep-kpi-lbl">Manejos Reprodutivos</div><div class="rep-kpi-val" id="rdkpi-prot">—</div><div class="rep-kpi-sub">registrados</div></div>
+          <div class="rep-kpi rep-kpi-blu"><div class="rep-kpi-lbl">Protocolos Realizados</div><div class="rep-kpi-val" id="rdkpi-anim">—</div><div class="rep-kpi-sub" id="rdkpi-anim-sub">total</div></div>
+          <div class="rep-kpi rep-kpi-amb"><div class="rep-kpi-lbl">Taxa de Concepção</div><div class="rep-kpi-val" id="rdkpi-taxa">—</div><div class="rep-kpi-sub">diagnósticos realizados</div></div>
+          <div class="rep-kpi rep-kpi-red"><div class="rep-kpi-lbl">Fêmeas que Permaneceram Vazias</div><div class="rep-kpi-val" id="rdkpi-vazios">—</div><div class="rep-kpi-sub" id="rdkpi-vazios-sub">após a temporada</div></div>
         </div>
         <div class="rep-chart-row">
           <div class="tcard">
@@ -1339,7 +1364,7 @@ tr:hover td{background:#fafaf7}
             <div class="tbar"><span style="font-size:13px;font-weight:600">Desempenho por Touro/Sêmen</span></div>
             <div class="tscroll">
               <table>
-                <thead><tr><th>Reprodutor</th><th>IATF/Coberturas</th><th>DG Real.</th><th>Prenhas</th><th>Taxa (%)</th></tr></thead>
+                <thead><tr><th>Reprodutor</th><th>IATF/Coberturas</th><th>DG Real.</th><th>Prenhas</th><th>Concepção (%)</th></tr></thead>
                 <tbody id="tbl-rep-dash-touro"><tr><td colspan="5"><div class="empty">Sem dados</div></td></tr></tbody>
               </table>
             </div>
@@ -1349,7 +1374,7 @@ tr:hover td{background:#fafaf7}
               <span style="font-size:10px;color:var(--tx3)">categoria na data do DG</span></div>
             <div class="tscroll">
               <table>
-                <thead><tr><th>Categoria</th><th>DG Real.</th><th>Prenhas</th><th>Taxa (%)</th></tr></thead>
+                <thead><tr><th>Categoria</th><th>DG Real.</th><th>Prenhas</th><th>Concepção (%)</th></tr></thead>
                 <tbody id="tbl-rep-dash-cat"><tr><td colspan="4"><div class="empty">Sem dados</div></td></tr></tbody>
               </table>
             </div>
@@ -1364,15 +1389,13 @@ tr:hover td{background:#fafaf7}
           <div class="tscroll">
             <table>
               <thead><tr>
-                <th>Protocolo</th><th>Início / D0</th><th>Fim / IATF (D10)</th><th>Reprodutor</th><th>Animais</th><th>Cobertura Reg.</th><th>DG Real.</th><th>Prenhas</th><th>Vazias</th><th>Taxa (%)</th>
+                <th>Protocolo</th><th>Início / D0</th><th>Fim / IATF (D10)</th><th>Reprodutor</th><th>Animais</th><th>Cobertura Reg.</th><th>DG Real.</th><th>Prenhas</th><th>Vazias</th><th>Concepção (%)</th>
               </tr></thead>
               <tbody id="tbl-rep-dash"></tbody>
             </table>
           </div>
         </div>
-        <!-- Desempenho das matrizes: acumulado da vida do animal, por isso só aparece
-             na aba "Todos" (ver renderRepDash). -->
-        <div id="rep-dash-matrizes"></div>
+        </div><!-- /rep-dash-safra -->
       </div><!-- /tab-rep-dash-rep -->
 
       <!-- SANIDADE -->
@@ -2230,10 +2253,10 @@ tr:hover td{background:#fafaf7}
         <div class="sh">
           <div class="sh-title">&#127919; Indicadores de Cria <small>Os números que sustentam a decisão</small></div>
         </div>
-        <div class="tcard" style="margin-bottom:14px">
-          <div class="tbar"><span style="font-size:13px;font-weight:600">Safra</span></div>
-          <div id="ind-safra-tabs" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px"></div>
-        </div>
+        <!-- Mesma barra de safras do Dashboard Reprodutivo (.ano-tabs-bar/.ano-tab):
+             as duas telas recortam pela mesma safra, e ter dois seletores diferentes
+             para a mesma escolha fazia parecer que eram coisas distintas. -->
+        <div id="ind-safra-tabs" class="ano-tabs-bar" style="display:none"></div>
         <div id="ind-conteudo"></div>
       </div><!-- /tab-indicadores -->
 
@@ -3072,7 +3095,7 @@ function mostrarTelaInicial(){
   if(typeof admAtualizarIndicador === 'function') admAtualizarIndicador();
   if(typeof checkAutoSaveRecovery === 'function') checkAutoSaveRecovery();
   if(typeof closeMobileNav === 'function') closeMobileNav();
-  window.scrollTo(0,0);
+  rolarTopo();
 }
 
 // Carregar um arquivo por cima de dados já abertos merece um aviso — ainda mais com a nuvem
@@ -3091,6 +3114,21 @@ function atualizarAvisoTelaInicial(){
           + 'Para voltar a um ponto anterior sem sair da nuvem, prefira o botão <strong>Versões</strong> na barra lateral.'
         : '')
     + '<br><span style="color:var(--tx2)">Para apenas voltar ao sistema, escolha qualquer item do menu.</span>';
+}
+
+// Volta ao topo da área de trabalho.
+//
+// Desde que a rolagem da lateral e da principal ficaram independentes, quem rola no
+// computador é .main — a janela não rola mais, e window.scrollTo(0,0) não faz nada.
+// No celular o modelo antigo continua valendo (a página inteira rola), então a função
+// mexe nos dois: o que não for o rolador simplesmente ignora.
+function rolarTopo(suave){
+  var comp = suave ? {top:0, behavior:'smooth'} : {top:0};
+  var m = document.getElementById('main');
+  if(m && m.scrollHeight > m.clientHeight){
+    if(m.scrollTo) m.scrollTo(comp); else m.scrollTop = 0;
+  }
+  if(suave) window.scrollTo({top:0, behavior:'smooth'}); else window.scrollTo(0,0);
 }
 
 function goTab(tab){
@@ -3644,7 +3682,7 @@ function editRow(sec,idx){
     // San records are now view-only in Sanidade; editing not supported from this panel
     toast('Para editar um manejo sanitário, exclua e recadastre via Manejo Individual.','err');
   }
-  window.scrollTo({top:0,behavior:'smooth'});
+  rolarTopo(true);
 }
 
 function cancelEdit(sec){
@@ -8347,7 +8385,7 @@ function baixaDoAnimal(brinco){
 var _anonSeq = 1;
 
 // Um brinco "anônimo" (ex.: "baixado-7") identifica um registro de reprodução mantido só para
-// preservar as estatísticas (totais de protocolo, taxa de prenhez, desempenho por touro/sêmen)
+// preservar as estatísticas (totais de protocolo, taxa de concepção, desempenho por touro/sêmen)
 // depois que o animal foi baixado — o número real não fica mais visível nessas telas.
 function brincoAnon(b){
   return typeof b === 'string' && b.indexOf('baixado-')===0;
@@ -8359,7 +8397,7 @@ function brincoLbl(b){
 
 // Remove o animal do cadastro (Identificação/Pesagens/Sanidade/Manejo Individual) e apaga o
 // número do brinco das telas de Reprodução — mas mantém os registros de reprodução (IATF/Monta,
-// DG e o legado DB.rep) para não alterar as estatísticas (totais, taxa de prenhez, desempenho
+// DG e o legado DB.rep) para não alterar as estatísticas (totais, taxa de concepção, desempenho
 // por touro/sêmen). O brinco original fica registrado apenas na observação de cada registro
 // mantido, seguido da palavra "baixado". O único cadastro que permanece plenamente identificado
 // é o de Saída do Rebanho (DB_baixas) — histórico independente, sem relação com as demais abas.
@@ -10031,7 +10069,12 @@ try{
 var ultimaDataManejo = '';
 try{ ultimaDataManejo = localStorage.getItem('ultimaDataManejo_rebanho') || ''; }catch(e){}
 var dgEditKey       = null;     // chave 'protId-brinco' do registro de DG em edição
-var dashAnoFiltro   = 'todos';  // filtro de ano no Dashboard Reprodutivo
+// Aba selecionada no Dashboard Reprodutivo: uma safra ('2025/2026') ou 'desempenho'.
+// null = ainda não escolhida; o primeiro render abre na safra corrente, que é o que se
+// consulta no dia a dia. A antiga aba 'todos' — o somatório de todos os protocolos de
+// todos os anos — foi substituída pela de desempenho: somar safras diferentes numa taxa
+// só não respondia nenhuma pergunta de manejo.
+var dashAnoFiltro   = null;
 var DB_iatf_reg   = [];  // [{protId, brinco, data, touro, inseminador, semen, obs}]
 var DB_dg_reg     = [];  // [{protId, brinco, dataDG, resultado, obs}]
 var agBrincosSel  = [];
@@ -10533,7 +10576,7 @@ function agEditar(idx){
   agBrincosSel = (p.brincos||[]).slice();
   agRenderChips();
   agSyncCount();
-  window.scrollTo(0,0);
+  rolarTopo();
 }
 
 function agExcluir(idx){
@@ -10588,7 +10631,7 @@ function renderAgenda(){
           +'<span>&#128004; '+totalAnim+' animais</span>'
           +'<span>&#128297; '+totalIatf+' IATFs</span>'
           +'<span>&#128269; '+totalDg+' DGs</span>'
-          +(totalDg>0?'<span style="color:var(--grn);font-weight:700">'+taxaGrupo+' prenhez</span>':'')
+          +(totalDg>0?'<span style="color:var(--grn);font-weight:700">'+taxaGrupo+' concepção</span>':'')
         +'</div>'
         +'<span class="ano-grupo-arrow">&#9660;</span>'
       +'</div>'
@@ -10637,7 +10680,7 @@ function renderAgenda(){
           +'</div>'
         +'</div>'
         +'<div style="display:flex;gap:6px;align-items:center">'
-          +(taxa!=='—'?'<span style="font-size:18px;font-weight:700;color:'+(parseInt(taxa)>=50?'var(--grn)':'var(--red)')+'">'+taxa+'</span><span style="font-size:10px;color:var(--tx3);margin-right:4px">prenhez</span>':'')
+          +(taxa!=='—'?'<span style="font-size:18px;font-weight:700;color:'+(parseInt(taxa)>=50?'var(--grn)':'var(--red)')+'">'+taxa+'</span><span style="font-size:10px;color:var(--tx3);margin-right:4px">concepção</span>':'')
           +protBtnHtml('agenda', p.id)
           +'<button class="btn btn-ghost btn-sm" onclick="agEditar('+i+')" title="Editar">&#9998;</button>'
           +'<button class="btn btn-danger btn-sm" onclick="agExcluir('+i+')" title="Excluir">&#128465;</button>'
@@ -10677,6 +10720,10 @@ function renderAgenda(){
         +'<span><span class="san-chip sel status-protocolado" style="pointer-events:none;font-size:9px;padding:1px 6px">•</span> '+(isNatural?'Coberta':'IATF realizada')+'</span>'
         +'<span><span class="san-chip" style="pointer-events:none;font-size:9px;padding:1px 6px">•</span> Aguardando</span>'
       +'</div>'
+      // Terneiros ao pé: a lista de apartação do dia.
+      + terneirosBlocoHtml('&#128118; Terneiros ao pé (apartar)',
+          terneirosAoPeDe(p.brincos), 'var(--amb)', 'var(--ambbg)',
+          'Nenhuma vaca deste protocolo está amamentando.')
       +(p.obs?'<div style="font-size:11px;color:var(--tx2);margin-top:8px;padding:8px 12px;background:var(--blubg);border-radius:var(--rsm);border-left:3px solid #90caf9">'+p.obs+'</div>':'')
       +'</div>'   // prot-body
     +'</div>';
@@ -10684,6 +10731,58 @@ function renderAgenda(){
       +'</div>'  // ano-grupo-body
     +'</div>';   // ano-grupo
   }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TERNEIROS AO PÉ DAS VACAS DE UM PROTOCOLO
+// ═══════════════════════════════════════════════════════════════════════════
+// No dia do manejo, quem aparta precisa da lista dos terneiros, não das vacas: a
+// vaca vai para o brete, o terneiro fica de fora. Essa lista existia só na ficha de
+// cada vaca, uma por uma — inútil no curral.
+//
+// O vínculo vem de estadoAmamentacao(), derivado do registro de parto, e não de
+// condAtual: protocolar a vaca durante a lactação sobrescreve condAtual, e o terneiro
+// sumiria justamente no dia em que a lista é necessária.
+//
+// Devolve [{vaca, terneiro, lbl}] ordenado pelo brinco do terneiro — é essa a ordem
+// em que eles vão passar pela porteira.
+function terneirosAoPeDe(brincos){
+  var out = [];
+  (brincos||[]).forEach(function(b){
+    var am = (typeof estadoAmamentacao==='function') ? estadoAmamentacao(b) : {ativo:false};
+    if(!am.ativo || !am.terneiro) return;
+    out.push({
+      vaca: b,
+      terneiro: am.terneiro,
+      lbl: (typeof brincoHistLbl==='function') ? brincoHistLbl(am.terneiro) : am.terneiro
+    });
+  });
+  out.sort(function(x, y){
+    return String(x.terneiro).localeCompare(String(y.terneiro), undefined, {numeric:true});
+  });
+  return out;
+}
+
+// Bloco visual da lista. `cor` pinta a borda e o título; usada para separar o lote das
+// prenhas do lote das vazias no Diagnóstico.
+function terneirosBlocoHtml(titulo, lista, cor, fundo, vazioMsg){
+  if(!lista.length){
+    return vazioMsg
+      ? '<div style="font-size:11px;color:var(--tx3);margin-top:6px">'+vazioMsg+'</div>'
+      : '';
+  }
+  return '<div style="margin-top:10px;padding:8px 12px;background:'+fundo+';'
+    + 'border-left:3px solid '+cor+';border-radius:var(--rsm)">'
+    + '<div style="font-size:10px;font-weight:700;color:'+cor+';text-transform:uppercase;'
+    +   'letter-spacing:.4px;margin-bottom:6px">'+titulo+' &middot; '+lista.length+'</div>'
+    + '<div class="san-animal-list">'
+    + lista.map(function(o){
+        // O brinco da mãe vai no title: no curral se confere o par, não só o número.
+        return '<span class="san-chip sel" style="pointer-events:default;cursor:default" '
+          + 'title="terneiro '+o.lbl+' &mdash; mãe '+o.vaca+'">'+o.lbl
+          + '<span style="font-size:9px;opacity:.7;margin-left:4px">('+o.vaca+')</span></span>';
+      }).join('')
+    + '</div></div>';
 }
 
 // ─── REGISTRO DE IATF ────────────────────────────────────────────────────────
@@ -11154,7 +11253,7 @@ function renderDiagnostico(){
       return '<div class="dg-proto-section '+protCardCls('dg', p.id)+'" style="margin-bottom:14px;border:1px solid var(--bord);border-radius:var(--rsm);overflow:hidden">'
         +'<div style="background:var(--surf2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px">'
           +'<span class="dg-proto-title">&#128269; '+p.nome+(isNatural?' <span style="font-size:9px;font-weight:700;color:var(--blut);background:var(--blubg);padding:1px 6px;border-radius:8px;margin-left:6px">&#128004; MONTA NATURAL</span>':'')+'</span>'
-          +'<span style="font-size:11px;color:var(--tx2)">'+dgFeitosCnt+'/'+animaisIatf.length+' DG &nbsp;|&nbsp; Taxa: '+(dgFeitosCnt>0?Math.round(prenhasCnt/dgFeitosCnt*100)+'%':'—')+'</span>'
+          +'<span style="font-size:11px;color:var(--tx2)">'+dgFeitosCnt+'/'+animaisIatf.length+' DG &nbsp;|&nbsp; Concepção: '+(dgFeitosCnt>0?Math.round(prenhasCnt/dgFeitosCnt*100)+'%':'—')+'</span>'
           +protBtnHtml('dg', p.id)
         +'</div>'
         +'<div class="prot-body">'
@@ -11167,6 +11266,34 @@ function renderDiagnostico(){
             +'<th>Observação</th><th class="tc">Ação</th></tr></thead>'
           +'<tbody>'+rows+'</tbody>'
         +'</table></div>'
+        // Terneiros ao pé, separados pelo resultado do DG. A separação acompanha o
+        // diagnóstico: enquanto a vaca não tem resultado, o terneiro dela fica no
+        // grupo "aguardando" — é assim que a lista serve para apartar no meio do
+        // trabalho, e não só depois de tudo pronto.
+        + (function(){
+            var prenhas = [], vazias = [], pendentes = [];
+            linhas.forEach(function(l){
+              var res = l.existing ? (l.existing.resultado||'').toLowerCase() : '';
+              if(res === 'prenhe')      prenhas.push(l.brinco);
+              else if(res === 'vazia')  vazias.push(l.brinco);
+              else                      pendentes.push(l.brinco);
+            });
+            var tP = terneirosAoPeDe(prenhas);
+            var tV = terneirosAoPeDe(vazias);
+            var tA = terneirosAoPeDe(pendentes);
+            if(!tP.length && !tV.length && !tA.length){
+              return '<div style="padding:0 16px 10px;font-size:11px;color:var(--tx3)">'
+                + 'Nenhuma vaca deste protocolo está amamentando.</div>';
+            }
+            return '<div style="padding:0 16px 12px">'
+              + terneirosBlocoHtml('&#128118; Terneiros &mdash; lote das PRENHAS', tP,
+                  'var(--grnt)', 'var(--grnbg)', '')
+              + terneirosBlocoHtml('&#128118; Terneiros &mdash; lote das VAZIAS', tV,
+                  'var(--red)', 'var(--redbg)', '')
+              + terneirosBlocoHtml('&#128118; Terneiros &mdash; aguardando diagnóstico', tA,
+                  'var(--tx3)', 'var(--surf2)', '')
+              + '</div>';
+          })()
         +'</div>'   // prot-body
       +'</div>';
     }).join('');
@@ -11179,7 +11306,7 @@ function renderDiagnostico(){
         +'</div>'
         +'<div class="ano-grupo-stats">'
           +'<span>'+totalDg+'/'+totalAnim+' DGs realizados</span>'
-          +(taxaGrupo!=='—'?'<span style="color:'+(parseInt(taxaGrupo)>=50?'var(--grn)':'var(--red)')+';font-weight:700">'+taxaGrupo+' prenhez</span>':'')
+          +(taxaGrupo!=='—'?'<span style="color:'+(parseInt(taxaGrupo)>=50?'var(--grn)':'var(--red)')+';font-weight:700">'+taxaGrupo+' concepção</span>':'')
         +'</div>'
         +'<span class="ano-grupo-arrow">&#9660;</span>'
       +'</div>'
@@ -11379,7 +11506,7 @@ function histServicosDoAnimal(brinco){
 }
 
 // Resumo da vida reprodutiva. Conta só o que tem desfecho conhecido: um serviço
-// ainda sem diagnóstico não entra na taxa de prenhez, senão a vaca em protocolo
+// ainda sem diagnóstico não entra na taxa de concepção, senão a vaca em protocolo
 // no momento apareceria sempre pior do que é.
 function histResumoAnimal(brinco, servicos){
   servicos = servicos || histServicosDoAnimal(brinco);
@@ -11415,11 +11542,24 @@ function histResumoAnimal(brinco, servicos){
 }
 
 // Fêmeas que a tela lista. Machos não têm histórico reprodutivo a mostrar aqui.
+// Fêmeas com pelo menos um manejo reprodutivo na vida.
+//
+// A tela existe para comparar histórico reprodutivo. Terneira e sobreana que nunca
+// foram servidas não têm histórico nenhum — entravam só para ocupar uma linha de
+// zeros, e ano após ano essas linhas iam sendo a maioria da lista, escondendo as
+// matrizes que se quer olhar.
+//
+// O critério é o mesmo que monta a tela: se histServicosDoAnimal() devolve algum
+// serviço, o animal aparece. Usar aqui uma checagem mais barata (procurar o brinco
+// em DB_iatf_reg, por exemplo) criaria duas definições de "tem histórico" que podem
+// divergir — e uma prenhez lançada à mão, sem protocolo, cairia fora da segunda.
 function histFemeas(){
-  return DB.id.filter(function(r){ return (r.gen || '').toUpperCase() === 'F'; })
-    .slice().sort(function(a, b){
-      return (a.brinco || '').localeCompare(b.brinco || '', undefined, {numeric:true});
-    });
+  return DB.id.filter(function(r){
+    if((r.gen || '').toUpperCase() !== 'F') return false;
+    return histServicosDoAnimal(r.brinco).length > 0;
+  }).slice().sort(function(a, b){
+    return (a.brinco || '').localeCompare(b.brinco || '', undefined, {numeric:true});
+  });
 }
 
 function histSelecionar(brinco){
@@ -11464,7 +11604,7 @@ var histOrdem = { col: 'brinco', dir: 'asc' };
 // Direção inicial de cada coluna, na primeira vez que ela é clicada. Texto começa
 // crescente (A→Z, brinco 1→200); contagens começam decrescentes, porque quem
 // procura "quantos serviços" ou "quantas perdas" quer ver o maior primeiro. Taxa
-// de prenhez começa crescente: a fila de descarte abre pelas piores.
+// de concepção começa crescente: a fila de descarte abre pelas piores.
 var HIST_DIR_INICIAL = {
   brinco:'asc', categoria:'asc', situacao:'asc',
   servicos:'desc', partos:'desc', perdas:'desc', desmames:'desc',
@@ -11493,7 +11633,16 @@ function histTh(col, rotulo, classe){
 function histHtmlRebanho(){
   var femeas = histFemeas();
   if(!femeas.length){
-    return '<div class="empty"><div class="empty-ic">&#128200;</div>Nenhuma fêmea cadastrada.</div>';
+    // Distingue os dois vazios possíveis: rebanho sem fêmeas, ou fêmeas que ainda não
+    // foram servidas. O segundo é o estado normal de um plantel de reposição novo.
+    var temFemea = DB.id.some(function(r){ return (r.gen || '').toUpperCase() === 'F'; });
+    return '<div class="empty"><div class="empty-ic">&#128200;</div>'
+      + (temFemea
+          ? 'Nenhuma f&ecirc;mea passou por manejo reprodutivo ainda.'
+            + '<div style="font-size:12px;margin-top:6px">Terneiras e sobreanas sem servi&ccedil;o '
+            + 'n&atilde;o aparecem nesta lista &mdash; busque pelo brinco para abrir a ficha de qualquer animal.</div>'
+          : 'Nenhuma f&ecirc;mea cadastrada.')
+      + '</div>';
   }
 
   var dados = femeas.map(function(r){
@@ -11572,7 +11721,7 @@ function histHtmlRebanho(){
     +   histTh('brinco', 'Brinco')
     +   histTh('categoria', 'Categoria')
     +   histTh('servicos', 'Serviços', 'tc')
-    +   histTh('prenhez', 'Prenhez', 'tc')
+    +   histTh('prenhez', 'Concepção', 'tc')
     +   histTh('partos', 'Partos', 'tc')
     +   histTh('perdas', 'Perdas', 'tc')
     +   histTh('desmames', 'Desmames', 'tc')
@@ -11610,7 +11759,7 @@ function histHtmlAnimal(brinco){
 
   var resumo = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">'
     + kpi('Serviços', res.servicos)
-    + kpi('Prenhez', taxa, corTaxa)
+    + kpi('Concepção', taxa, corTaxa)
     + kpi('Partos', res.partos)
     + kpi('Desmames', res.desmames)
     + kpi('Perdas', res.perdas, res.perdas ? 'var(--red)' : 'var(--tx)')
@@ -11618,7 +11767,7 @@ function histHtmlAnimal(brinco){
     + '</div>'
     + (res.aguardando
         ? '<div style="font-size:11.5px;color:var(--tx2);margin:-8px 0 14px">'
-          + res.aguardando + ' serviço(s) ainda sem diagnóstico — não entram na taxa de prenhez.</div>'
+          + res.aguardando + ' serviço(s) ainda sem diagnóstico — não entram na taxa de concepção.</div>'
         : '');
 
   if(!servicos.length){
@@ -11675,22 +11824,121 @@ function histHtmlAnimal(brinco){
 }
 
 
+// ═══════════════════════════════════════════════════════════════════════════
+// ABA "DESEMPENHO" DO DASHBOARD REPRODUTIVO
+// ═══════════════════════════════════════════════════════════════════════════
+// Substituiu a aba "Todos", que somava os protocolos de todos os anos numa taxa só.
+// Aquele número não respondia nada: juntava safras com manejo, sêmen e clima
+// diferentes, e o resultado não servia nem para comparar anos nem para decidir hoje.
+//
+// O que se quer olhar no acumulado é outra coisa: quem produz e quem emprenha. Matriz
+// e touro se avaliam pela vida inteira — uma vaca não se descarta por uma safra ruim,
+// um touro não se julga por dez doses. Por isso esta aba ignora o recorte de safra.
+function repDashDesempenhoHtml(){
+  // Desempenho por touro/sêmen sobre TODO o histórico, não sobre a safra.
+  var agg = {};
+  DB_iatf_reg.forEach(function(r){
+    var k = r.touro || r.semen || 'Não informado';
+    if(!agg[k]) agg[k] = { iatf:0, dg:0, prenhas:0 };
+    agg[k].iatf++;
+  });
+  DB_dg_reg.forEach(function(d){
+    var i = DB_iatf_reg.find(function(x){ return x.protId===d.protId && x.brinco===d.brinco; });
+    var k = i ? (i.touro || i.semen || 'Não informado') : null;
+    if(!k || !agg[k]) return;
+    agg[k].dg++;
+    if((d.resultado||'').toLowerCase()==='prenhe') agg[k].prenhas++;
+  });
+
+  var touros = Object.keys(agg).map(function(k){
+    var a = agg[k];
+    return { nome:k, iatf:a.iatf, dg:a.dg, prenhas:a.prenhas,
+             taxa: a.dg ? Math.round(a.prenhas*100/a.dg) : null };
+  }).sort(function(x, y){
+    // Sem DG não tem taxa: vai para o fim, não para o topo com "—".
+    if(x.taxa === null && y.taxa === null) return y.iatf - x.iatf;
+    if(x.taxa === null) return 1;
+    if(y.taxa === null) return -1;
+    if(y.taxa !== x.taxa) return y.taxa - x.taxa;
+    return y.dg - x.dg;   // empate na taxa: mais serviços decide
+  });
+
+  var linhasTouro = touros.length
+    ? touros.map(function(t){
+        var cor = t.taxa===null ? 'var(--tx3)'
+                : (t.taxa>=60 ? 'var(--grnt)' : (t.taxa>=40 ? 'var(--amb)' : 'var(--red)'));
+        return '<tr><td><strong>'+t.nome+'</strong></td>'
+          + '<td>'+t.iatf+'</td><td>'+t.dg+'</td>'
+          + '<td><span class="bdg bdg-prenha">'+t.prenhas+'</span></td>'
+          + '<td style="color:'+cor+';font-weight:700">'+(t.taxa===null?'—':t.taxa+'%')+'</td></tr>';
+      }).join('')
+    : '<tr><td colspan="5"><div class="empty">Nenhuma cobertura registrada</div></td></tr>';
+
+  var totalDG = touros.reduce(function(s,t){ return s+t.dg; }, 0);
+
+  return '<div style="font-size:12px;color:var(--tx2);background:var(--blubg);border-left:3px solid #90caf9;'
+    +   'border-radius:var(--rsm);padding:10px 14px;margin-bottom:16px;line-height:1.6">'
+    +   '<strong>&#127942; Desempenho acumulado.</strong> Matrizes e reprodutores somando '
+    +   '<strong>todos os anos</strong> — não é o resultado de uma safra. '
+    +   'Para os números de uma temporada, use as abas de ano ao lado.</div>'
+    + '<div class="tcard" style="margin-bottom:16px">'
+    +   '<div class="tbar"><span style="font-size:13px;font-weight:600">Desempenho por Touro/Sêmen</span>'
+    +     '<span style="font-size:11px;color:var(--tx3)">'+touros.length+' reprodutor(es) &middot; '
+    +       totalDG+' diagnóstico(s) &middot; da maior para a menor concepção</span></div>'
+    +   '<div class="tscroll"><table>'
+    +     '<thead><tr><th>Reprodutor</th><th>IATF/Coberturas</th><th>DG Real.</th>'
+    +       '<th>Prenhas</th><th>Concepção (%)</th></tr></thead>'
+    +     '<tbody>'+linhasTouro+'</tbody>'
+    +   '</table></div>'
+    + '</div>'
+    + ((typeof cardRanking === 'function') ? cardRanking() : '');
+}
+
 // ─── DASHBOARD DE REPRODUÇÃO ─────────────────────────────────────────────────
 function renderRepDash(){
-  // ── Barra de anos (safra reprodutiva) ──
+  var anosDash = anosUnicos();
+
+  // Primeira abertura: safra corrente. Se ela ainda não tem protocolo, cai na aba de
+  // desempenho, que funciona com qualquer histórico — nunca numa safra inexistente.
+  if(dashAnoFiltro === null || (dashAnoFiltro !== 'desempenho' && anosDash.indexOf(dashAnoFiltro) === -1)){
+    var corrente = (typeof dashAnoCorrente === 'function') ? dashAnoCorrente() : null;
+    dashAnoFiltro = corrente || (anosDash.length ? anosDash[0] : 'desempenho');
+  }
+
+  // ── Barra de abas: safras + Desempenho ──
   (function(){
     var bar = document.getElementById('dash-ano-tabs-bar');
     if(!bar) return;
-    var anos = anosUnicos();
-    if(!anos.length){ bar.style.display='none'; return; }
+    if(!anosDash.length){ bar.style.display='none'; return; }
     bar.style.display='flex';
-    var html='<button class="ano-tab all'+(dashAnoFiltro==='todos'?' active':'')+'" onclick="dashSetAno(this.dataset.ano)" data-ano="todos">Todos</button>';
-    html+=anos.map(function(a){
+    var html = anosDash.map(function(a){
       var n=DB_protocolos.filter(function(p){return (p.ano||anoReproFromD0(p.d0)||'—')===a;}).length;
       return '<button class="ano-tab'+(dashAnoFiltro===a?' active':'')+'" onclick="dashSetAno(this.dataset.ano)" data-ano="'+a+'">'+a+' <small>('+n+')</small></button>';
     }).join('');
+    // Por último e destacada: não é mais uma safra, é outra pergunta.
+    html += '<button class="ano-tab all'+(dashAnoFiltro==='desempenho'?' active':'')
+          + '" onclick="dashSetAno(this.dataset.ano)" data-ano="desempenho"'
+          + ' title="Matrizes e touros somando todos os anos">&#127942; Desempenho</button>';
     bar.innerHTML=html;
   })();
+
+  // ── Aba Desempenho: acumulado da vida dos animais ──
+  var boxDes   = document.getElementById('rep-dash-desempenho');
+  var boxSafra = document.getElementById('rep-dash-safra');
+  var ehDesempenho = (dashAnoFiltro === 'desempenho');
+  if(boxDes)   boxDes.style.display   = ehDesempenho ? 'block' : 'none';
+  if(boxSafra) boxSafra.style.display = ehDesempenho ? 'none'  : 'block';
+  if(ehDesempenho){
+    if(boxDes) boxDes.innerHTML = repDashDesempenhoHtml();
+    // O quadro de alertas é de safra (DG atrasado, fêmeas fora da estação). Como esta
+    // aba retorna antes de montá-lo, o conteúdo da aba anterior ficava pendurado na
+    // tela — um aviso de 2025/2026 aparecendo sob o desempenho acumulado. Limpa e some.
+    var alertasDes = document.getElementById('rep-dash-alertas');
+    if(alertasDes){ alertasDes.innerHTML = ''; alertasDes.style.display = 'none'; }
+    return;   // os quadros de safra não são desenhados nesta aba
+  }
+  var alertasBox = document.getElementById('rep-dash-alertas');
+  if(alertasBox) alertasBox.style.display = '';
 
   // ── Recorte pela safra selecionada ──
   var protosF = protocolosFiltrados(dashAnoFiltro);
@@ -11700,16 +11948,72 @@ function renderRepDash(){
 
   // KPIs
   var totalProt  = protosF.length;
-  // Animais protocolados: conta quem já tem registro de cobertura (IATF ou Monta Natural)
+  // Protocolos realizados = coberturas lançadas (IATF ou monta). Uma vaca servida duas
+  // vezes na safra conta duas vezes: o que se mede aqui é o serviço, não o animal.
   var totalAnim  = iatfF.length;
   var totalDG    = dgF.length;
   var totalPrenha= dgF.filter(function(r){ return (r.resultado||'').toLowerCase()==='prenhe'; }).length;
   var totalVazia = dgF.filter(function(r){ return (r.resultado||'').toLowerCase()==='vazia'; }).length;
+  var semDG      = Math.max(0, totalAnim - totalDG);
   var taxa = totalDG>0 ? Math.round(totalPrenha/totalDG*100)+'%' : '—';
+
+  // ── Fêmeas que permaneceram vazias ──
+  // Não é a contagem de DGs vazios: uma vaca repassada e diagnosticada vazia duas vezes
+  // apareceria como duas, e a que falhou no primeiro serviço mas emprenhou no segundo
+  // apareceria como uma — quando na verdade não ficou vazia nenhuma das duas coisas.
+  //
+  // Conta ANIMAIS, uma vez cada, entre os que foram servidos ao menos uma vez na safra:
+  // entra quem tem diagnóstico e em nenhum deles deu prenhe.
+  //
+  // Quem concebeu e depois perdeu a prenhez NÃO entra: aquilo é falha de gestação, não
+  // de concepção, e somar as duas esconderia qual dos dois problemas o rebanho tem. Essas
+  // perdas aparecem à parte, na linha de baixo.
+  var porAnimal = {};
+  iatfF.forEach(function(r){
+    if(!r.brinco) return;
+    if(!porAnimal[r.brinco]) porAnimal[r.brinco] = { dgs:0, prenhe:false, perdeu:false };
+  });
+  dgF.forEach(function(d){
+    var a = porAnimal[d.brinco];
+    if(!a) return;                      // DG sem cobertura lançada: fora da conta
+    var res = (d.resultado||'').toLowerCase();
+    if(res !== 'prenhe' && res !== 'vazia') return;
+    a.dgs++;
+    if(res === 'prenhe'){
+      a.prenhe = true;
+      if(d.partoResultado === 'abortou' || d.partoResultado === 'natimorto') a.perdeu = true;
+    }
+  });
+  var brincosServidos = Object.keys(porAnimal);
+  var femeasVazias = brincosServidos.filter(function(b){
+    return porAnimal[b].dgs > 0 && !porAnimal[b].prenhe;
+  }).length;
+  var femeasPerderam = brincosServidos.filter(function(b){ return porAnimal[b].perdeu; }).length;
+  var femeasComDG = brincosServidos.filter(function(b){ return porAnimal[b].dgs > 0; }).length;
+
   document.getElementById('rdkpi-prot').textContent  = totalProt||'0';
   document.getElementById('rdkpi-anim').textContent  = totalAnim||'0';
   document.getElementById('rdkpi-taxa').textContent  = taxa;
-  document.getElementById('rdkpi-vazios').textContent= totalVazia||'0';
+  document.getElementById('rdkpi-vazios').textContent= femeasVazias||'0';
+
+  var subAnim = document.getElementById('rdkpi-anim-sub');
+  if(subAnim){
+    subAnim.innerHTML = totalAnim
+      ? '<span style="color:var(--grnt);font-weight:700">'+totalPrenha+'</span> com sucesso &middot; '
+        + '<span style="color:var(--red);font-weight:700">'+totalVazia+'</span> falhos'
+        + (semDG ? ' &middot; '+semDG+' aguardando DG' : '')
+      : 'nenhuma cobertura lançada';
+  }
+  var subVaz = document.getElementById('rdkpi-vazios-sub');
+  if(subVaz){
+    var pctVaz = femeasComDG ? Math.round(femeasVazias*100/femeasComDG) : null;
+    subVaz.innerHTML = femeasComDG
+      ? 'de '+femeasComDG+' fêmea(s) diagnosticada(s)'
+        + (pctVaz!==null ? ' &middot; '+pctVaz+'%' : '')
+        + (femeasPerderam ? '<br><span style="color:var(--amb)">+'+femeasPerderam
+            +' que perderam a prenhez</span>' : '')
+      : 'nenhum diagnóstico na safra';
+  }
 
   // ── Alertas: DG atrasado + fêmeas fora da estação ──
   var alertasEl = document.getElementById('rep-dash-alertas');
@@ -11724,8 +12028,9 @@ function renderRepDash(){
       return feitos < (p.brincos||[]).length;
     });
 
-    // Fêmeas aptas sem protocolo ativo: usa o ano selecionado, ou a safra mais recente se "Todos"
-    var anoAlvo = dashAnoFiltro!=='todos' ? dashAnoFiltro : (anosUnicos()[0]||null);
+    // Fêmeas aptas sem protocolo ativo. Aqui dashAnoFiltro é sempre uma safra: a aba
+    // 'desempenho' retorna antes de chegar neste bloco.
+    var anoAlvo = dashAnoFiltro || (anosUnicos()[0]||null);
     var protosAlvo = anoAlvo ? protocolosFiltrados(anoAlvo) : [];
     var brincosNaSafra = {};
     protosAlvo.forEach(function(p){ (p.brincos||[]).forEach(function(b){ brincosNaSafra[b]=true; }); });
@@ -11808,7 +12113,7 @@ function renderRepDash(){
   // em 2023/2024 ela mostraria o rebanho de hoje ao lado de números de três anos atrás.
   // Os resultados por protocolo/safra ficam em "Resultados do Último Ano Reprodutivo".
   var sitCard = document.getElementById('rep-dash-situacao-card');
-  var sitVisivel = (dashAnoFiltro !== 'todos' && dashAnoFiltro === dashAnoCorrente());
+  var sitVisivel = (dashAnoFiltro === dashAnoCorrente());
   if(sitCard) sitCard.style.display = sitVisivel ? '' : 'none';
   var sitDiv = sitVisivel ? document.getElementById('rep-dash-situacao') : null;
   if(sitDiv){
@@ -11903,17 +12208,8 @@ function renderRepDash(){
     }
   }
 
-  // ── Desempenho das matrizes ──
-  // Só na aba "Todos". O ranking soma partos, perdas e quilos desmamados da VIDA
-  // INTEIRA da matriz — recortar isso por safra daria uma lista em que toda vaca
-  // que não pariu naquele ano aparece como candidata a descarte, que é o oposto
-  // do que a tabela serve para decidir.
-  var matrizesBox = document.getElementById('rep-dash-matrizes');
-  if(matrizesBox){
-    matrizesBox.innerHTML = (dashAnoFiltro === 'todos' && typeof cardRanking === 'function')
-      ? cardRanking()
-      : '';
-  }
+  // O ranking de matrizes saiu daqui: soma a vida inteira do animal, então vive na aba
+  // "Desempenho" (repDashDesempenhoHtml), junto do desempenho por touro.
 
   // O bloco "Consumo de Doses de Sêmen" que existia aqui foi removido: era a mesma
   // tabela de renderSemenDoses() (Estoque de Materiais → Doses Sêmen), calculada sobre
@@ -13187,14 +13483,24 @@ function renderIndicadores(){
     box.innerHTML = '<div class="empty"><div class="empty-ic">&#128202;</div>'
       + 'Ainda não há protocolos de IATF ou monta cadastrados.<br>'
       + '<span style="font-size:12px">Os indicadores nascem dos protocolos: são eles que definem quantas fêmeas foram expostas.</span></div>';
+    // Sem safra não há o que escolher: a barra some em vez de ficar vazia ou velha.
+    var semAbas = document.getElementById('ind-safra-tabs');
+    if(semAbas){ semAbas.innerHTML = ''; semAbas.style.display = 'none'; }
     return;
   }
   if(!indSafraSel || safras.indexOf(indSafraSel)===-1) indSafraSel = safras[0];
 
+  // Mesma barra do Dashboard Reprodutivo, inclusive a contagem de protocolos por safra.
   var abas = document.getElementById('ind-safra-tabs');
   if(abas){
+    abas.style.display = 'flex';
     abas.innerHTML = safras.map(function(s){
-      return '<button class="san-lote-cat'+(s===indSafraSel?' sel':'')+'" onclick="indSetSafra(\''+s+'\')">'+s+'</button>';
+      var n = DB_protocolos.filter(function(p){
+        return (p.ano || anoReproFromD0(p.d0) || '—') === s;
+      }).length;
+      return '<button class="ano-tab'+(s===indSafraSel?' active':'')
+        + '" onclick="indSetSafra(\''+s+'\')" data-ano="'+s+'">'+s
+        + ' <small>('+n+')</small></button>';
     }).join('');
   }
 
@@ -13225,7 +13531,7 @@ function renderIndicadores(){
   box.innerHTML = aviso
     + '<div class="dash-grid" style="margin-bottom:16px">'
       + kpi('Fêmeas expostas', i.expostas, 'entraram em protocolo nesta safra')
-      + kpi('Taxa de prenhez', pc(i.taxaPrenhez), i.prenhes+' prenhe(s) &middot; '+i.vazias+' vazia(s)', corTaxa(i.taxaPrenhez,85,70))
+      + kpi('Taxa de concepção', pc(i.taxaPrenhez), i.prenhes+' prenhe(s) &middot; '+i.vazias+' vazia(s)', corTaxa(i.taxaPrenhez,85,70))
       + kpi('Taxa de parição', pc(i.taxaParicao), i.partos+' parto(s)'+(i.parcial?' &middot; parcial':''), corTaxa(i.taxaParicao,80,65))
       + kpi('Taxa de desmame', pc(i.taxaDesmame), i.desmamados+' desmamado(s)'+(i.parcial?' &middot; parcial':''), corTaxa(i.taxaDesmame,80,65))
     + '</div>'
@@ -13271,18 +13577,113 @@ function cardTabela(titulo, nota, cabs, linhas){
     + '</tbody></table></div></div>';
 }
 
+// ── Ordenação da tabela de matrizes ────────────────────────────────────────
+// Mesmo desenho de histOrdem/dgOrdem: estado fora do DOM, porque a aba inteira se
+// redesenha a cada clique e a ordem escolhida tem de sobreviver ao redesenho.
+//
+// col === null é a ORDEM DE FÁBRICA do ranking — composta (menos desmamados, mais
+// perdas, mais velha) e por isso impossível de exprimir como uma coluna só. É a fila
+// de descarte, e continua sendo com o que a tabela abre. Clicar num cabeçalho troca
+// para aquela coluna; clicar no cabeçalho ativo inverte a direção.
+var rkOrdem = { col: null, dir: 'asc' };
+
+// Texto abre crescente (A→Z, brinco 1→200). Números abrem decrescentes: quem clica em
+// "Perdas" ou "kg desmamados" quer ver o extremo, e o extremo que interessa é o maior.
+var RK_DIR_INICIAL = {
+  brinco:'asc', categoria:'asc', condicao:'asc',
+  idade:'desc', partos:'desc', perdas:'desc',
+  desmamados:'desc', kgDesmamados:'desc', iep:'desc'
+};
+
+function rkOrdenar(col){
+  if(rkOrdem.col === col){
+    rkOrdem.dir = (rkOrdem.dir === 'asc') ? 'desc' : 'asc';
+  } else {
+    rkOrdem.col = col;
+    rkOrdem.dir = RK_DIR_INICIAL[col] || 'asc';
+  }
+  renderRepDash();
+}
+
+// Rótulo de cada coluna, num lugar só: o cabeçalho e o aviso de "ordenado por…"
+// precisam dizer a mesma coisa, e o aviso não pode expor o nome interno do campo.
+var RK_ROTULO = {
+  brinco:'Brinco', categoria:'Categoria', idade:'Idade', partos:'Partos', perdas:'Perdas',
+  desmamados:'Desmamados', kgDesmamados:'kg desmamados', iep:'IEP', condicao:'Condição'
+};
+
+function rkTh(col){
+  var rotulo = RK_ROTULO[col] || col;
+  var ativa = (rkOrdem.col === col);
+  var seta = ativa ? (rkOrdem.dir === 'asc' ? ' &#9650;' : ' &#9660;') : '';
+  return '<th style="cursor:pointer;user-select:none' + (ativa ? ';color:var(--grnt)' : '') + '" '
+    + 'title="Ordenar por ' + rotulo + '" onclick="rkOrdenar(\'' + col + '\')">'
+    + rotulo + '<span style="font-size:9px">' + seta + '</span></th>';
+}
+
 function cardRanking(){
   var r = rankingMatrizes();
   if(!r.length) return '';
+
+  if(rkOrdem.col){
+    var dir = (rkOrdem.dir === 'desc') ? -1 : 1;
+    var col = rkOrdem.col;
+    var txt = function(a, b){
+      return (a || '').localeCompare(b || '', 'pt-BR', {numeric:true, sensitivity:'base'});
+    };
+    r = r.slice().sort(function(a, b){
+      var x = a[col], y = b[col], res;
+      if(col === 'brinco' || col === 'categoria' || col === 'condicao'){
+        res = txt(x, y);
+      } else {
+        // Idade e IEP valem 0 quando NÃO SE SABE — sem data de nascimento, sem dois
+        // partos para medir o intervalo. A tela já mostra "—" nesses casos, e eles vão
+        // para o fim nas duas direções: ordenar "da mais velha" não pode abrir com
+        // matrizes cuja idade ninguém registrou.
+        //
+        // Partos, perdas, desmamados e kg são diferentes: zero ali é um fato apurado
+        // (a vaca não entregou nada), e é justamente o que se procura na fila de
+        // descarte. Esses ordenam como número.
+        if(col === 'idade' || col === 'iep'){
+          if(!x && !y) res = 0;
+          else if(!x) return 1;
+          else if(!y) return -1;
+          else res = x - y;
+        } else {
+          res = (x || 0) - (y || 0);
+        }
+      }
+      // Desempate sempre pelo brinco: sem isso a ordem dança entre desenhos quando
+      // muitas matrizes empatam na coluna escolhida — e empate é o normal aqui.
+      if(res === 0) return txt(a.brinco, b.brinco);
+      return res * dir;
+    });
+  }
+
+  var nota = rkOrdem.col
+    ? 'Ordenado por <strong>' + (RK_ROTULO[rkOrdem.col] || rkOrdem.col) + '</strong> '
+      + (rkOrdem.dir === 'asc' ? '(crescente)' : '(decrescente)') + '. '
+      + 'Clique de novo no cabeçalho para inverter, ou use o botão para voltar à fila de descarte.'
+    : 'Ordenado do menor para o maior desempenho — as primeiras linhas são as candidatas a descarte. '
+      + 'Confira a condição antes de decidir: uma primípara sem desmame ainda não teve chance.';
+
   return '<div class="tcard">'
     + '<div class="tbar"><span style="font-size:13px;font-weight:600">Desempenho das matrizes</span>'
     + '<span class="tcnt">'+r.length+' matriz(es)</span></div>'
     + '<div style="font-size:11px;color:var(--tx2);padding:9px 16px;border-bottom:1px solid var(--bord)">'
-    + 'Ordenado do menor para o maior desempenho — as primeiras linhas são as candidatas a descarte. '
-    + 'Confira a condição antes de decidir: uma primípara sem desmame ainda não teve chance.</div>'
+    + nota
+    + (rkOrdem.col
+        ? ' <button onclick="rkOrdenar(null)" style="margin-left:6px;font-size:11px;padding:2px 8px;'
+          + 'border:1px solid var(--bord);border-radius:var(--rsm);background:var(--surf2);'
+          + 'color:var(--tx2);cursor:pointer">&#8634; fila de descarte</button>'
+        : '')
+    + '</div>'
     + '<div class="tscroll"><table><thead><tr>'
-    + '<th>Brinco</th><th>Categoria</th><th>Idade</th><th>Partos</th><th>Perdas</th>'
-    + '<th>Desmamados</th><th>kg desmamados</th><th>IEP</th><th>Condição</th></tr></thead><tbody>'
+    + rkTh('brinco') + rkTh('categoria') + rkTh('idade')
+    + rkTh('partos') + rkTh('perdas')
+    + rkTh('desmamados') + rkTh('kgDesmamados')
+    + rkTh('iep') + rkTh('condicao')
+    + '</tr></thead><tbody>'
     + r.map(function(m){
         return '<tr>'
           + '<td><strong>'+m.brinco+'</strong></td><td>'+m.categoria+'</td>'
@@ -13324,7 +13725,7 @@ function relBloco_indicadores(){
     + 'as taxas vão subir. Intervalo entre partos do rebanho: '
     + (iep.medio ? '<strong>'+iep.medio+' dias</strong> ('+iep.n+' medições)' : 'ainda sem duas parições da mesma vaca')
     + '.</p>'
-    + relTabela(['Safra','Expostas','Prenhez','Parição','Desmame','Peso desmame','kg/vaca'], linhas)
+    + relTabela(['Safra','Expostas','Concepção','Parição','Desmame','Peso desmame','kg/vaca'], linhas)
     + '<h3>Matrizes de menor desempenho</h3>'
     + '<p class="nota">As 15 primeiras da fila de descarte, da pior para a melhor.</p>'
     + relTabela(['Brinco','Categoria','Idade','Partos','Perdas','Desmamados','kg desm.','IEP'], rank);
@@ -14042,10 +14443,10 @@ var REL_BLOCOS = [
   { id:'composicao', nome:'Composição do rebanho',        desc:'Quantidade por categoria, raça e gênero.',                      grupo:'Rebanho',    periodo:false },
   { id:'inventario', nome:'Inventário de animais',        desc:'Lista completa com idade, peso, condição e genealogia.',       grupo:'Rebanho',    periodo:false },
   { id:'ponderal',   nome:'Desempenho ponderal',          desc:'Peso médio e ganho diário por categoria.',                      grupo:'Rebanho',    periodo:false },
-  { id:'indicadores',nome:'Indicadores de ciclo de cria', desc:'Prenhez, parição, desmame, kg por vaca exposta e ranking de matrizes.', grupo:'Reprodução', periodo:false },
+  { id:'indicadores',nome:'Indicadores de ciclo de cria', desc:'Concepção, parição, desmame, kg por vaca exposta e ranking de matrizes.', grupo:'Reprodução', periodo:false },
   { id:'reproducao', nome:'Situação reprodutiva',         desc:'Prenhes, vazias, amamentando e previsões de parto.',            grupo:'Reprodução', periodo:false },
   { id:'nascimentos',nome:'Nascimentos',                  desc:'Partos ocorridos no período, com sexo e mãe.',                  grupo:'Reprodução', periodo:true  },
-  { id:'iatf',       nome:'Resultado de IATF/Monta',      desc:'Coberturas e diagnósticos do período, com taxa de prenhez.',    grupo:'Reprodução', periodo:true  },
+  { id:'iatf',       nome:'Resultado de IATF/Monta',      desc:'Coberturas e diagnósticos do período, com taxa de concepção.',    grupo:'Reprodução', periodo:true  },
   { id:'sanitario',  nome:'Manejos sanitários',           desc:'Manejos realizados no período, por animal.',                    grupo:'Sanidade',   periodo:true  },
   { id:'estoque',    nome:'Estoque',                      desc:'Saldo de medicamentos, materiais e doses de sêmen.',            grupo:'Sanidade',   periodo:false },
   { id:'saidas',     nome:'Saídas do rebanho',            desc:'Vendas, mortes e demais baixas do período.',                    grupo:'Financeiro', periodo:true  },
@@ -14336,7 +14737,7 @@ function relBloco_iatf(p){
   var taxa = comDG ? (prenhes*100/comDG).toFixed(1).replace('.',',')+'%' : '—';
   return '<h2>Resultado de IATF / Monta</h2>'
     + '<p class="nota"><strong>'+linhas.length+'</strong> cobertura(s) &middot; '+comDG+' com diagnóstico &middot; '
-    + prenhes+' prenhe(s) &middot; taxa de prenhez: <strong>'+taxa+'</strong></p>'
+    + prenhes+' prenhe(s) &middot; taxa de concepção: <strong>'+taxa+'</strong></p>'
     + relTabela(['Data','Animal','Touro/Sêmen','Inseminador','Resultado'], linhas);
 }
 
