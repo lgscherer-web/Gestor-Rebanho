@@ -816,6 +816,15 @@ tr:hover td{background:#fafaf7}
 .ov-check small{color:var(--tx3);font-size:10.5px}
 .ov-check-off{opacity:.5;cursor:not-allowed}
 @media(max-width:650px){.ov-kpis{grid-template-columns:1fr 1fr}.ov-check-grid{grid-template-columns:1fr 1fr}}
+/* ── MENU LATERAL: grupos por criação ─────────────── */
+.sb-grp{display:flex;align-items:center;gap:7px;width:100%;margin-top:12px;padding:7px 8px;border:none;border-radius:var(--rsm);background:rgba(255,255,255,.08);color:#fff;font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;text-align:left}
+.sb-grp:hover{background:rgba(255,255,255,.13)}
+.sb-sub{display:flex;align-items:center;gap:7px;width:100%;padding:9px 8px 4px 14px;border:none;background:none;color:rgba(255,255,255,.45);font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;text-align:left}
+.sb-sub:hover{color:rgba(255,255,255,.7)}
+.sb-grp-seta{display:inline-block;width:10px;font-size:10px}
+.sb-grp-corpo{padding-left:8px;margin-top:2px}
+.sb-grp-corpo.sb-nivel2{padding-left:10px}
+.sb-grp-corpo.oculto{display:none}
 </style>
 </head>
 <body>
@@ -889,45 +898,51 @@ tr:hover td{background:#fafaf7}
   <div class="sb-overlay" id="sb-overlay" onclick="closeMobileNav()"></div>
   <div class="sidebar" id="sidebar">
     <div class="sb-logo">
-      <h1>Rebanho</h1>
+      <h1>Gestor de Propriedade</h1>
       <p>Gerenciamento de dados</p>
     </div>
     <div class="sb-nav">
       <button class="nb" onclick="mostrarTelaInicial()" id="nb-inicio"><span class="ic">&#127968;</span>Tela Inicial</button>
-      <button class="nb" onclick="goTab('dashboard')" id="nb-dashboard"><span class="ic">&#128200;</span>Visão Geral do Rebanho</button>
-      <div class="sb-sec">Controle Animal</div>
-      <button class="nb" onclick="goTab('ficha')" id="nb-ficha"><span class="ic">&#128269;</span>Ficha do Animal</button>
-      <button class="nb" onclick="goTab('registro')" id="nb-registro"><span class="ic">&#128004;</span>Registro de Animais</button>
-      <button class="nb" onclick="goTab('baixas')" id="nb-baixas"><span class="ic">&#128683;</span>Saída de Rebanho</button>
-      <div class="sb-sec">Controle Sanitário</div>
-      <button class="nb" onclick="goTab('manejo-ind')" id="nb-manejo-ind"><span class="ic">&#128203;</span>Cadastro de Manejos</button>
+
+      <button class="sb-grp" id="grp-bov-cab" onclick="menuAlternar('bov')" aria-expanded="true"><span class="sb-grp-seta">&#9662;</span>&#128004; Bovinos</button>
+      <div class="sb-grp-corpo" id="grp-bov">
+        <button class="nb" onclick="goTab('dashboard')" id="nb-dashboard"><span class="ic">&#128200;</span>Visão Geral do Rebanho</button>
+        <button class="nb" onclick="goTab('ficha')" id="nb-ficha"><span class="ic">&#128269;</span>Ficha do Animal</button>
+        <button class="nb" onclick="goTab('registro')" id="nb-registro"><span class="ic">&#128004;</span>Registro de Animais</button>
+        <button class="nb" onclick="goTab('baixas')" id="nb-baixas"><span class="ic">&#128683;</span>Saída de Rebanho</button>
+        <button class="nb" onclick="goTab('manejo-ind')" id="nb-manejo-ind"><span class="ic">&#128203;</span>Cadastro de Manejos</button>
+        <button class="sb-sub" id="grp-rep-cab" onclick="menuAlternar('rep')" aria-expanded="true"><span class="sb-grp-seta">&#9662;</span>Reprodução</button>
+        <div class="sb-grp-corpo sb-nivel2" id="grp-rep">
+          <button class="nb" onclick="goRepTab('agenda')" id="nb-rep-agenda"><span class="ic">&#128197;</span>Agenda</button>
+          <button class="nb" onclick="goRepTab('reg-iatf')" id="nb-rep-reg-iatf"><span class="ic">&#128297;</span>Registro de IATF/Monta</button>
+          <button class="nb" onclick="goRepTab('diagnostico')" id="nb-rep-diagnostico"><span class="ic">&#128269;</span>Diagnóstico</button>
+          <button class="nb" onclick="goRepTab('historico')" id="nb-rep-historico"><span class="ic">&#128200;</span>Histórico Reprod.</button>
+          <button class="nb" onclick="goTab('reprodutores')" id="nb-reprodutores"><span class="ic">&#9878;</span>Cadastro Reprodutores</button>
+          <button class="nb" onclick="goRepTab('dash-rep')" id="nb-rep-dash-rep"><span class="ic">&#128293;</span>Dashboard Reprod.</button>
+          <button class="nb" onclick="goTab('indicadores')" id="nb-indicadores"><span class="ic">&#127919;</span>Indicadores de Cria</button>
+        </div>
+      </div>
+
+      <div id="ov-menu" style="display:none">
+        <button class="sb-grp" id="grp-ovi-cab" onclick="menuAlternar('ovi')" aria-expanded="true"><span class="sb-grp-seta">&#9662;</span>&#128017; Ovinos</button>
+        <div class="sb-grp-corpo" id="grp-ovi">
+          <div id="ov-nv-status" style="font-size:10px;color:#b0bec5;padding:0 12px 4px 24px;line-height:1.4"></div>
+          <button class="nb" onclick="goTab('ov-rebanho')" id="nb-ov-rebanho"><span class="ic">&#128017;</span>Rebanho Ovino</button>
+          <button class="nb" onclick="goTab('ov-monta')" id="nb-ov-monta"><span class="ic">&#128150;</span>Estação de Monta</button>
+          <button class="nb" onclick="goTab('ov-paricao')" id="nb-ov-paricao"><span class="ic">&#127804;</span>Parição</button>
+          <button class="nb" onclick="goTab('ov-indicadores')" id="nb-ov-indicadores"><span class="ic">&#127919;</span>Indicadores Ovinos</button>
+        </div>
+      </div>
+
+      <div class="sb-sec">Propriedade</div>
       <button class="nb" onclick="goTab('sanidade')" id="nb-sanidade"><span class="ic">&#128138;</span>Agenda Sanitária</button>
       <button class="nb" onclick="goTab('medicamentos')" id="nb-medicamentos"><span class="ic">&#128230;</span>Estoque de Materiais</button>
-      <div class="sb-sec">Reprodução</div>
-      <button class="nb" onclick="goRepTab('agenda')" id="nb-rep-agenda"><span class="ic">&#128197;</span>Agenda</button>
-      <button class="nb" onclick="goRepTab('reg-iatf')" id="nb-rep-reg-iatf"><span class="ic">&#128297;</span>Registro de IATF/Monta</button>
-      <button class="nb" onclick="goRepTab('diagnostico')" id="nb-rep-diagnostico"><span class="ic">&#128269;</span>Diagnóstico</button>
-      <button class="nb" onclick="goRepTab('historico')" id="nb-rep-historico"><span class="ic">&#128200;</span>Histórico Reprod.</button>
-      <button class="nb" onclick="goTab('reprodutores')" id="nb-reprodutores"><span class="ic">&#9878;</span>Cadastro Reprodutores</button>
-      <button class="nb" onclick="goRepTab('dash-rep')" id="nb-rep-dash-rep"><span class="ic">&#128293;</span>Dashboard Reprod.</button>
-      <button class="nb" onclick="goTab('indicadores')" id="nb-indicadores"><span class="ic">&#127919;</span>Indicadores de Cria</button>
-      <div class="sb-sec">Relatórios</div>
       <button class="nb" onclick="goTab('relatorios')" id="nb-relatorios"><span class="ic">&#128438;</span>Relatórios</button>
-      <div class="sb-sec">Financeiro</div>
       <button class="nb" onclick="goTab('financeiro')" id="nb-financeiro"><span class="ic">&#128176;</span>Controle Financeiro</button>
       <button class="nb" onclick="goTab('fin-dashboard')" id="nb-fin-dashboard"><span class="ic">&#128202;</span>Dashboard Financeiro</button>
-      <div id="ov-menu" style="display:none">
-        <div class="sb-sec">Ovinos</div>
-        <div id="ov-nv-status" style="font-size:10px;color:#b0bec5;padding:0 12px 4px;line-height:1.4"></div>
-        <button class="nb" onclick="goTab('ov-rebanho')" id="nb-ov-rebanho"><span class="ic">&#128017;</span>Rebanho Ovino</button>
-        <button class="nb" onclick="goTab('ov-monta')" id="nb-ov-monta"><span class="ic">&#128150;</span>Estação de Monta</button>
-        <button class="nb" onclick="goTab('ov-paricao')" id="nb-ov-paricao"><span class="ic">&#127804;</span>Parição</button>
-        <button class="nb" onclick="goTab('ov-indicadores')" id="nb-ov-indicadores"><span class="ic">&#127919;</span>Indicadores Ovinos</button>
-      </div>
       <button class="nb" onclick="ovAbrirModulos()" id="nb-ov-modulos" style="margin-top:6px;opacity:.75"><span class="ic">&#9881;</span>Módulos</button>
     </div>
     <div class="sb-bottom">
-      <button class="btn btn-ghost btn-sm" onclick="goTab('relatorios')" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px">&#128438; Relatórios / PDF</button>
       <div id="nv-painel" style="display:none;background:rgba(255,255,255,.06);border-radius:var(--rsm);padding:8px 10px;margin-bottom:8px">
         <div id="nv-status" style="font-size:11px;font-weight:600;line-height:1.5">&#9729; Conectando...</div>
         <div id="nv-quem" style="font-size:10px;color:#b0bec5;margin-top:2px;overflow:hidden;text-overflow:ellipsis"></div>
@@ -977,7 +992,7 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.43.0</span><br>
+              Versão: <span id="app-versao">2.44.0</span><br>
               Data da versão: <span id="app-versao-data">28/09/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
@@ -15920,6 +15935,43 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
     <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="ovFecharConflito()">Decidir depois</button>
   </div>
 </div>
+<script>
+// ═══ MENU LATERAL: grupos que abrem e fecham ═══════════════════════════════
+// O aparelho lembra quais grupos ficaram fechados.
+var MENU_CHAVE = 'menu_grupos_fechados_v1';
+var MENU_GRUPOS = { bov:'grp-bov', rep:'grp-rep', ovi:'grp-ovi' };
+function menuLerFechados(){ try{ return JSON.parse(localStorage.getItem(MENU_CHAVE) || '{}') || {}; }catch(e){ return {}; } }
+function menuAplicar(g, fechado){
+  var corpo = document.getElementById(MENU_GRUPOS[g]), cab = document.getElementById(MENU_GRUPOS[g] + '-cab');
+  if(!corpo || !cab) return;
+  corpo.classList.toggle('oculto', fechado);
+  cab.classList.toggle('sb-fechado', fechado);
+  cab.setAttribute('aria-expanded', fechado ? 'false' : 'true');
+  var seta = cab.querySelector('.sb-grp-seta'); if(seta) seta.innerHTML = fechado ? '&#9656;' : '&#9662;';
+}
+function menuAlternar(g){
+  var f = menuLerFechados();
+  f[g] = !f[g];
+  try{ localStorage.setItem(MENU_CHAVE, JSON.stringify(f)); }catch(e){}
+  menuAplicar(g, f[g]);
+}
+// Ao abrir uma tela que está dentro de um grupo fechado, o grupo abre sozinho.
+function menuRevelar(tab){
+  var nb = document.getElementById('nb-' + tab); if(!nb) return;
+  var f = menuLerFechados(), mudou = false;
+  Object.keys(MENU_GRUPOS).forEach(function(g){
+    var corpo = document.getElementById(MENU_GRUPOS[g]);
+    if(corpo && corpo.contains(nb) && f[g]){ f[g] = false; mudou = true; menuAplicar(g, false); }
+  });
+  if(mudou) try{ localStorage.setItem(MENU_CHAVE, JSON.stringify(f)); }catch(e){}
+}
+(function(){
+  var f = menuLerFechados();
+  Object.keys(MENU_GRUPOS).forEach(function(g){ menuAplicar(g, !!f[g]); });
+  var goTabOriginal = goTab;
+  goTab = function(tab){ goTabOriginal(tab); menuRevelar(tab); };
+})();
+</script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // MÓDULO OVINOS
