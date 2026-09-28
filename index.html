@@ -911,6 +911,7 @@ tr:hover td{background:#fafaf7}
         <button class="nb" onclick="goTab('registro')" id="nb-registro"><span class="ic">&#128004;</span>Registro de Animais</button>
         <button class="nb" onclick="goTab('baixas')" id="nb-baixas"><span class="ic">&#128683;</span>Saída de Rebanho</button>
         <button class="nb" onclick="goTab('manejo-ind')" id="nb-manejo-ind"><span class="ic">&#128203;</span>Cadastro de Manejos</button>
+        <button class="nb" onclick="goTab('sanidade')" id="nb-sanidade"><span class="ic">&#128138;</span>Agenda Sanitária</button>
         <button class="sb-sub" id="grp-rep-cab" onclick="menuAlternar('rep')" aria-expanded="true"><span class="sb-grp-seta">&#9662;</span>Reprodução</button>
         <div class="sb-grp-corpo sb-nivel2" id="grp-rep">
           <button class="nb" onclick="goRepTab('agenda')" id="nb-rep-agenda"><span class="ic">&#128197;</span>Agenda</button>
@@ -930,20 +931,22 @@ tr:hover td{background:#fafaf7}
           <button class="nb" onclick="goTab('ov-rebanho')" id="nb-ov-rebanho"><span class="ic">&#128017;</span>Rebanho Ovino</button>
           <button class="nb" onclick="goTab('ov-monta')" id="nb-ov-monta"><span class="ic">&#128150;</span>Estação de Monta</button>
           <button class="nb" onclick="goTab('ov-paricao')" id="nb-ov-paricao"><span class="ic">&#127804;</span>Parição</button>
+          <button class="nb" onclick="goTab('ov-sanidade')" id="nb-ov-sanidade"><span class="ic">&#128138;</span>Agenda Sanitária</button>
           <button class="nb" onclick="goTab('ov-indicadores')" id="nb-ov-indicadores"><span class="ic">&#127919;</span>Indicadores Ovinos</button>
         </div>
       </div>
 
-      <div class="sb-sec">Propriedade</div>
-      <div id="pr-nv-status" style="font-size:10px;color:#b0bec5;padding:0 12px 4px;line-height:1.4"></div>
-      <button class="nb" onclick="goTab('sanidade')" id="nb-sanidade"><span class="ic">&#128138;</span>Agenda Sanitária</button>
-      <button class="nb" onclick="goTab('medicamentos')" id="nb-medicamentos"><span class="ic">&#128230;</span>Estoque de Materiais</button>
-      <button class="nb" onclick="goTab('relatorios')" id="nb-relatorios"><span class="ic">&#128438;</span>Relatórios</button>
-      <button class="nb" onclick="goTab('financeiro')" id="nb-financeiro"><span class="ic">&#128176;</span>Controle Financeiro</button>
-      <button class="nb" onclick="goTab('fin-dashboard')" id="nb-fin-dashboard"><span class="ic">&#128202;</span>Dashboard Financeiro</button>
+      <button class="sb-grp" id="grp-pro-cab" onclick="menuAlternar('pro')" aria-expanded="true"><span class="sb-grp-seta">&#9662;</span>&#127969; Propriedade</button>
+      <div class="sb-grp-corpo" id="grp-pro">
+        <div id="pr-nv-status" style="font-size:10px;color:#b0bec5;padding:0 12px 4px 24px;line-height:1.4"></div>
+        <button class="nb" onclick="goTab('medicamentos')" id="nb-medicamentos"><span class="ic">&#128230;</span>Estoque de Materiais</button>
+        <button class="nb" onclick="goTab('financeiro')" id="nb-financeiro"><span class="ic">&#128176;</span>Controle Financeiro</button>
+        <button class="nb" onclick="goTab('fin-dashboard')" id="nb-fin-dashboard"><span class="ic">&#128202;</span>Dashboard Financeiro</button>
+      </div>
       <button class="nb" onclick="ovAbrirModulos()" id="nb-ov-modulos" style="margin-top:6px;opacity:.75"><span class="ic">&#9881;</span>Módulos</button>
     </div>
     <div class="sb-bottom">
+      <button class="btn btn-ghost btn-sm" onclick="goTab('relatorios')" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px">&#128438; Relatórios / PDF</button>
       <div id="nv-painel" style="display:none;background:rgba(255,255,255,.06);border-radius:var(--rsm);padding:8px 10px;margin-bottom:8px">
         <div id="nv-status" style="font-size:11px;font-weight:600;line-height:1.5">&#9729; Conectando...</div>
         <div id="nv-quem" style="font-size:10px;color:#b0bec5;margin-top:2px;overflow:hidden;text-overflow:ellipsis"></div>
@@ -2456,6 +2459,55 @@ tr:hover td{background:#fafaf7}
         <div id="ov-ind-conteudo"></div>
       </div><!-- /tab-ov-indicadores -->
 
+      <!-- OVINOS: AGENDA SANITÁRIA -->
+      <div id="tab-ov-sanidade" style="display:none">
+        <div class="ov-sh">
+          <div class="sh-title">&#128138; Agenda Sanitária Ovinos <small>Vacinas, vermifugações e demais manejos</small></div>
+        </div>
+
+        <div class="tcard">
+          <div class="tbar"><span style="font-size:13px;font-weight:600">&#9888;&#65039; Alertas</span><span class="tcnt">atrasados e próximos 15 dias</span></div>
+          <div id="ovs-alertas"></div>
+        </div>
+
+        <div class="fcard" id="ovs-form-card">
+          <div class="fcard-title" id="ovs-form-titulo">Nova previsão</div>
+          <div class="grid g4">
+            <div class="fg"><label>Data prevista *</label><input type="text" id="ovs-data" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"></div>
+            <div class="fg"><label>Produto / manejo *</label><input type="text" id="ovs-produto" list="ovs-produtos" placeholder="Escolha ou digite"></div>
+            <div class="fg"><label>Repetir a cada (dias)</label><input type="number" id="ovs-repetir" min="0" step="1" placeholder="Ex: 90 (opcional)"></div>
+            <div class="fg"><label>Observações</label><input type="text" id="ovs-obs" placeholder="Dose, via, etc."></div>
+          </div>
+          <datalist id="ovs-produtos"></datalist>
+          <div class="fg" style="margin-bottom:10px"><label>Categorias</label><div id="ovs-cats" class="ov-chips"></div></div>
+          <div class="grid g2" style="margin-bottom:8px">
+            <div class="fg"><label>Incluir animal individualmente</label>
+              <div style="display:flex;gap:6px"><input type="text" id="ovs-brinco" list="ovs-brincos" placeholder="Brinco" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();ovsAddBrinco();}">
+              <button type="button" class="btn btn-ghost btn-sm" style="height:38px" onclick="ovsAddBrinco()">+ Incluir</button></div></div>
+            <div class="fg"><label>&nbsp;</label><div id="ovs-n" style="font-size:12px;color:var(--grnt);font-weight:600;padding-top:10px"></div></div>
+          </div>
+          <datalist id="ovs-brincos"></datalist>
+          <div id="ovs-individuais" class="ov-chips" style="margin-bottom:10px"></div>
+          <input type="hidden" id="ovs-edit-id" value="">
+          <div class="form-actions">
+            <button class="btn btn-ghost btn-sm" onclick="ovsLimpar()">Cancelar</button>
+            <button class="btn btn-primary" onclick="ovsSalvarPrevisao()">&#10003; Salvar previsão</button>
+          </div>
+        </div>
+
+        <div class="tcard">
+          <div class="tbar"><span style="font-size:13px;font-weight:600">Manejos programados</span><span class="tcnt" id="ovs-prog-total"></span></div>
+          <div class="tscroll"><table><thead><tr><th>Data prevista</th><th>Produto / manejo</th><th>Aplicar em</th><th class="tc">Animais</th><th>Repete</th><th class="tc">Ações</th></tr></thead>
+          <tbody id="ovs-prog"></tbody></table></div>
+        </div>
+
+        <div class="tcard">
+          <div class="tbar"><span style="font-size:13px;font-weight:600">Manejos realizados</span><span class="tcnt" id="ovs-real-total"></span></div>
+          <div class="tscroll"><table><thead><tr><th>Data</th><th>Produto / manejo</th><th>Aplicado em</th><th class="tc">Animais</th><th>Obs.</th><th class="tc">Ação</th></tr></thead>
+          <tbody id="ovs-real"></tbody></table></div>
+        </div>
+      </div><!-- /tab-ov-sanidade -->
+
     </div><!-- /screen-data -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -2785,7 +2837,7 @@ function parseWB(wb){
   }
   // Calendario de Prevencoes
   calEventos=[];
-  var shCal = findSh(wb,['alendario','Calendario Prev','CalendarioPrev']);
+  var shCal = findSh(wb,['alendario','alendário','Calendario Prev','CalendarioPrev']);
   if(shCal){
     var rows=XLSX.utils.sheet_to_json(shCal,{header:1,defval:'',raw:false});
     for(var i=3;i<rows.length;i++){
@@ -15851,6 +15903,7 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
     <div style="padding:10px 16px;font-size:11px;color:var(--tx2);border-bottom:1px solid var(--bord)">
       As 100 gravações mais recentes. Restaurar carrega o conteúdo daquela versão na tela — nada é apagado da nuvem.
     </div>
+    <div id="nv-espaco" style="display:none;padding:8px 16px;font-size:11px;color:var(--tx2);border-bottom:1px solid var(--bord);line-height:1.5"></div>
     <div id="nv-versoes-abas" class="mnav" style="padding:0 12px;margin-bottom:0"></div>
     <div id="nv-versoes-lista" class="tscroll" style="overflow:auto;flex:1"></div>
   </div>
@@ -15952,11 +16005,28 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
     <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="prFecharConflito()">Decidir depois</button>
   </div>
 </div>
+
+<!-- ═══ OVINOS: marcar manejo como feito ═══ -->
+<div id="ovs-modal-feito" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(20,25,20,.9);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg);border-radius:var(--r);max-width:470px;width:100%;padding:22px">
+    <div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:4px">&#10003; Registrar manejo realizado</div>
+    <div id="ovs-feito-desc" style="font-size:12.5px;color:var(--tx2);margin-bottom:14px;line-height:1.5"></div>
+    <div class="grid g2">
+      <div class="fg"><label>Data em que foi feito *</label><input type="text" id="ovs-feito-data" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"></div>
+      <div class="fg"><label>Observações</label><input type="text" id="ovs-feito-obs" placeholder="Opcional"></div>
+    </div>
+    <div id="ovs-feito-prox" style="font-size:12px;color:var(--grnt);margin:-4px 0 12px"></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('ovs-modal-feito').style.display='none'">Cancelar</button>
+      <button class="btn btn-primary" onclick="ovsConfirmarFeito()">&#10003; Registrar</button>
+    </div>
+  </div>
+</div>
 <script>
 // ═══ MENU LATERAL: grupos que abrem e fecham ═══════════════════════════════
 // O aparelho lembra quais grupos ficaram fechados.
 var MENU_CHAVE = 'menu_grupos_fechados_v1';
-var MENU_GRUPOS = { bov:'grp-bov', rep:'grp-rep', ovi:'grp-ovi' };
+var MENU_GRUPOS = { bov:'grp-bov', rep:'grp-rep', ovi:'grp-ovi', pro:'grp-pro' };
 function menuLerFechados(){ try{ return JSON.parse(localStorage.getItem(MENU_CHAVE) || '{}') || {}; }catch(e){ return {}; } }
 function menuAplicar(g, fechado){
   var corpo = document.getElementById(MENU_GRUPOS[g]), cab = document.getElementById(MENU_GRUPOS[g] + '-cab');
@@ -16005,7 +16075,7 @@ function menuRevelar(tab){
 // inclusive depois de fechar e reabrir o app.
 // ═══════════════════════════════════════════════════════════════════════════
 
-var OV = { animais:[], estacoes:[], diagnosticos:[], partos:[] };
+var OV = { animais:[], estacoes:[], diagnosticos:[], partos:[], sanitario:{ previsoes:[], realizados:[] } };
 var OV_GESTACAO_MIN = 142, OV_GESTACAO_MAX = 152;   // dias (média ~147)
 var OV_CHAVE_LOCAL  = 'ovinos_local_v1';
 var OV_CHAVE_MODULO = 'modulo_ovinos_ativo';
@@ -16095,7 +16165,11 @@ function ovNormalizar(d){
     animais:      Array.isArray(d.animais)      ? d.animais      : [],
     estacoes:     Array.isArray(d.estacoes)     ? d.estacoes     : [],
     diagnosticos: Array.isArray(d.diagnosticos) ? d.diagnosticos : [],
-    partos:       Array.isArray(d.partos)       ? d.partos       : []
+    partos:       Array.isArray(d.partos)       ? d.partos       : [],
+    sanitario:    {
+      previsoes:  (d.sanitario && Array.isArray(d.sanitario.previsoes))  ? d.sanitario.previsoes  : [],
+      realizados: (d.sanitario && Array.isArray(d.sanitario.realizados)) ? d.sanitario.realizados : []
+    }
   };
 }
 function ovGravarLocal(){
@@ -16283,6 +16357,7 @@ function ovRenderTab(tab){
   else if(tab === 'ov-monta')   ovRenderMonta();
   else if(tab === 'ov-paricao') ovRenderParicao();
   else if(tab === 'ov-indicadores') ovRenderIndicadores();
+  else if(tab === 'ov-sanidade') ovRenderSanidade();
   if(/^ov-/.test(tab) && !ovSincronizando && ovNuvemLigada()) ovSincronizar();
 }
 function ovRenderAtual(){ if(/^ov-/.test(currentTab)) ovRenderTab(currentTab); }
@@ -16497,6 +16572,11 @@ function ovAbrirFicha(id){
       }
     });
   });
+  var sans = OV.sanitario.realizados.filter(function(r){ return (r.animais || []).indexOf(a.id) >= 0; })
+    .sort(function(x, y){ return ovOrdData(y.data) - ovOrdData(x.data); });
+  h += '<div class="sub-label">Manejos sanitários (' + sans.length + ')</div>';
+  h += sans.length ? sans.map(function(r){ return '<div>' + r.data + ' — ' + ovEsc(r.produto) + (r.obs ? ' <span style="color:var(--tx3)">(' + ovEsc(r.obs) + ')</span>' : '') + '</div>'; }).join('')
+    : '<span style="color:var(--tx3)">Nenhum manejo registrado.</span>';
   h += '<div class="sub-label">Estações de monta (' + mont.length + ')</div>';
   h += mont.length ? mont.map(function(t){ return '<div>' + t + '</div>'; }).join('') : '<span style="color:var(--tx3)">Não participou de estações.</span>';
 
@@ -17050,10 +17130,273 @@ window.addEventListener('load', function(){
 });
 </script>
 <script>
+// ═══ BACKUP ÚNICO: os ovinos entram no mesmo .xlsx dos bovinos e da propriedade ═══
+// Três abas para leitura (Ovinos Animais, Ovinos Monta, Ovinos Partos) e uma aba
+// técnica (Ovinos Dados) com o conteúdo completo em JSON — é ela que o carregamento
+// usa para restaurar, porque guarda os vínculos (lotes, diagnósticos, crias) que as
+// abas de leitura não conseguem representar com fidelidade.
+var OV_ABA_DADOS = 'Ovinos Dados';
+
+function ovAbasLeitura(){
+  function r(id){ return ovRotulo(ovAnimal(id)); }
+  var animais = OV.animais.slice().sort(ovOrdBrinco).map(function(a){
+    return [a.brinco || '', a.anoNasc || '', a.sexo, OV_CAT_NOME[a.cat] || a.cat || '', a.raca || '',
+            a.pai ? r(a.pai) : (a.paiExt || ''), a.mae ? r(a.mae) : '', OV_STATUS_NOME[a.status] || a.status || '', a.dataStatus || '', a.obs || ''];
+  });
+  var monta = [];
+  OV.estacoes.forEach(function(e){
+    (e.lotes || []).forEach(function(l){
+      (l.ovelhas || []).forEach(function(oid){
+        var d = ovDiag(e.id, oid);
+        monta.push([e.nome, e.inicio, e.fim, r(l.carneiro), r(oid), d ? d.resultado : '', d && d.fetos ? d.fetos : '', d ? d.data : '']);
+      });
+    });
+  });
+  var partos = OV.partos.slice().sort(function(a, b){ return ovOrdData(a.data) - ovOrdData(b.data); }).map(function(p){
+    var est = ovEstacao(p.estacao);
+    return [p.data, r(p.ovelha), p.pai ? r(p.pai) : '', est ? est.nome : '', p.nascidos, p.vivos, (p.crias || []).map(r).join(', '), p.obs || ''];
+  });
+  return [
+    ['Ovinos Animais', [['REBANHO OVINO'],['Somente leitura — a restauração usa a aba "' + OV_ABA_DADOS + '".'],
+      ['Brinco','Ano nasc.','Sexo','Categoria','Raça','Pai','Mãe','Situação','Data saída','Obs.']].concat(animais)],
+    ['Ovinos Monta', [['ESTAÇÕES DE MONTA — OVINOS'],['Uma linha por ovelha em lote.'],
+      ['Estação','Início','Fim','Carneiro','Ovelha','Diagnóstico','Nº fetos','Data diag.']].concat(monta)],
+    ['Ovinos Partos', [['PARTOS — OVINOS'],[''],
+      ['Data','Ovelha','Pai','Estação','Nascidos','Vivos','Cordeiros','Obs.']].concat(partos)],
+    ['Ovinos Agenda Sanit', [['AGENDA SANITÁRIA — OVINOS'],['Programados e realizados.'],
+      ['Situação','Data','Produto / manejo','Aplicar em / aplicado em','Nº animais','Repete (dias)','Obs.']]
+      .concat(OV.sanitario.previsoes.slice().sort(function(a, b){ return ovOrdData(a.data) - ovOrdData(b.data); }).map(function(x){
+        return ['Programado', x.data, x.produto, ovsDescAlvo(x.cats, x.individuais), ovsAlvo(x.cats, x.individuais).length, x.repetir || '', x.obs || ''];
+      }))
+      .concat(OV.sanitario.realizados.slice().sort(function(a, b){ return ovOrdData(a.data) - ovOrdData(b.data); }).map(function(x){
+        return ['Realizado', x.data, x.produto, ovsDescAlvo(x.cats, x.individuais), (x.animais || []).length, '', x.obs || ''];
+      }))]
+  ];
+}
+
+(function(){
+  var buildOriginal = _buildWorkbook;
+  _buildWorkbook = function(){
+    var wb = buildOriginal.apply(this, arguments);
+    try{
+      if(OV.animais.length || OV.estacoes.length || OV.partos.length || OV.sanitario.previsoes.length || OV.sanitario.realizados.length){
+        ovAbasLeitura().forEach(function(a){ XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(a[1]), a[0]); });
+        var json = JSON.stringify({ formato:'ovinos-v1', dados: OV });
+        var linhas = [['DADOS COMPLETOS DOS OVINOS (não editar)'],['Usada para restaurar os ovinos ao carregar esta planilha.'],['JSON']];
+        for(var i = 0; i < json.length; i += 30000) linhas.push([json.slice(i, i + 30000)]);
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(linhas), OV_ABA_DADOS);
+      }
+    }catch(e){ toast('Aviso: os ovinos não puderam ser incluídos no backup (' + e.message + ').', 'err'); }
+    return wb;
+  };
+
+  var parseOriginal = parseWB;
+  parseWB = function(wb){
+    var r = parseOriginal.apply(this, arguments);
+    var sh = wb.Sheets[OV_ABA_DADOS];
+    if(sh){
+      try{
+        var rows = XLSX.utils.sheet_to_json(sh, { header:1, defval:'', raw:true });
+        var json = '';
+        for(var i = 3; i < rows.length; i++) json += String(rows[i][0] || '');
+        var o = JSON.parse(json);
+        if(!o || o.formato !== 'ovinos-v1') throw new Error('formato desconhecido');
+        OV = ovNormalizar(o.dados);
+        ovAlterou();
+        setTimeout(function(){ toast('Ovinos restaurados da planilha: ' + OV.animais.length + ' animais, ' + OV.partos.length + ' partos.', 'ok'); }, 3500);
+      }catch(e){
+        setTimeout(function(){ toast('A aba dos ovinos está danificada e foi ignorada — os ovinos atuais foram mantidos.', 'err'); }, 3500);
+      }
+    }
+    return r;
+  };
+})();
+</script>
+<script>
+// ═══ OVINOS: AGENDA SANITÁRIA ══════════════════════════════════════════════
+// OV.sanitario.previsoes : {id, data, produto, cats:[], individuais:[ids], repetir, obs}
+// OV.sanitario.realizados: {id, data, produto, cats:[], animais:[ids aplicados], obs, previsto}
+// Os produtos sugeridos vêm do cadastro de medicamentos e materiais da Propriedade
+// (compartilhado com os bovinos); um nome digitado fora da lista fica só no manejo.
+var OVS_CATS = [['matriz','Matriz'],['borrega','Borrega'],['carneiro','Carneiro'],['borrego','Borrego'],['capao','Capão']];
+var ovsSelCats = {}, ovsSelInd = [];
+var ovsFeitoId = '';
+
+function ovsHojeT(){ var d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }
+function ovsAlvo(cats, individuais){
+  // Animais ativos das categorias marcadas + os incluídos individualmente
+  var ids = {};
+  OV.animais.forEach(function(a){ if(a.status === 'ativo' && (cats || []).indexOf(a.cat) >= 0) ids[a.id] = true; });
+  (individuais || []).forEach(function(id){ var a = ovAnimal(id); if(a && a.status === 'ativo') ids[id] = true; });
+  return Object.keys(ids);
+}
+function ovsDescAlvo(cats, individuais){
+  var p = (cats || []).map(function(c){ return OV_CAT_NOME[c] || c; });
+  if((individuais || []).length) p.push((individuais.length === 1 ? 'brinco ' : 'brincos ') + individuais.map(function(id){ return ovRotulo(ovAnimal(id)); }).join(', '));
+  return p.length ? p.join(', ') : '—';
+}
+function ovsProdutos(){
+  var nomes = {};
+  (typeof DB_med !== 'undefined' ? DB_med : []).forEach(function(m){ if(m && m.nome) nomes[m.nome] = 1; });
+  (typeof DB_mat !== 'undefined' ? DB_mat : []).forEach(function(m){ if(m && m.nome) nomes[m.nome] = 1; });
+  OV.sanitario.realizados.concat(OV.sanitario.previsoes).forEach(function(r){ if(r.produto) nomes[r.produto] = 1; });
+  return Object.keys(nomes).sort(function(a, b){ return a.localeCompare(b, 'pt-BR'); });
+}
+
+// ── Formulário ─────────────────────────────────────────────────────────────
+function ovsDesenharForm(){
+  document.getElementById('ovs-cats').innerHTML = OVS_CATS.map(function(c){
+    var n = OV.animais.filter(function(a){ return a.status === 'ativo' && a.cat === c[0]; }).length;
+    return '<label class="ov-check" style="padding:5px 9px"><input type="checkbox"' + (ovsSelCats[c[0]] ? ' checked' : '')
+      + ' onchange="ovsSelCats[\'' + c[0] + '\']=this.checked;ovsContar()"> ' + c[1] + ' <small>' + n + '</small></label>';
+  }).join('');
+  document.getElementById('ovs-individuais').innerHTML = ovsSelInd.map(function(id){
+    return '<span class="ov-chip">' + ovEsc(ovRotulo(ovAnimal(id))) + ' <a href="javascript:void(0)" style="margin-left:6px;color:var(--red);text-decoration:none" onclick="ovsTirarBrinco(\'' + id + '\')">&times;</a></span>';
+  }).join('');
+  document.getElementById('ovs-produtos').innerHTML = ovsProdutos().map(function(n){ return '<option value="' + ovEsc(n) + '">'; }).join('');
+  document.getElementById('ovs-brincos').innerHTML = OV.animais.filter(function(a){ return a.status === 'ativo' && a.brinco; })
+    .sort(ovOrdBrinco).map(function(a){ return '<option value="' + ovEsc(a.brinco) + '">'; }).join('');
+  ovsContar();
+}
+function ovsCatsSel(){ return OVS_CATS.map(function(c){ return c[0]; }).filter(function(c){ return ovsSelCats[c]; }); }
+function ovsContar(){
+  var n = ovsAlvo(ovsCatsSel(), ovsSelInd).length;
+  document.getElementById('ovs-n').textContent = n + (n === 1 ? ' animal' : ' animais');
+}
+function ovsAddBrinco(){
+  var b = ovVal('ovs-brinco').toLowerCase();
+  var a = OV.animais.filter(function(x){ return x.status === 'ativo' && (x.brinco || '').toLowerCase() === b; })[0];
+  if(!a){ toast('Brinco não encontrado entre os animais ativos.', 'err'); return; }
+  if(ovsSelInd.indexOf(a.id) < 0) ovsSelInd.push(a.id);
+  ovSet('ovs-brinco', '');
+  ovsDesenharForm();
+}
+function ovsTirarBrinco(id){ ovsSelInd = ovsSelInd.filter(function(x){ return x !== id; }); ovsDesenharForm(); }
+
+function ovsLimpar(){
+  ['ovs-data','ovs-produto','ovs-repetir','ovs-obs','ovs-edit-id'].forEach(function(id){ ovSet(id, ''); });
+  ovsSelCats = {}; ovsSelInd = [];
+  document.getElementById('ovs-form-titulo').textContent = 'Nova previsão';
+  ovsDesenharForm();
+}
+function ovsSalvarPrevisao(){
+  var id = ovVal('ovs-edit-id'), data = ovVal('ovs-data'), produto = ovVal('ovs-produto');
+  var rep = ovVal('ovs-repetir');
+  if(!ovParse(data)){ toast('Data prevista inválida (use DD/MM/AAAA).', 'err'); return; }
+  if(!produto){ toast('Informe o produto ou manejo.', 'err'); return; }
+  if(rep && (!/^\d+$/.test(rep) || +rep < 1)){ toast('"Repetir a cada" deve ser um número de dias.', 'err'); return; }
+  var cats = ovsCatsSel();
+  if(!cats.length && !ovsSelInd.length){ toast('Marque ao menos uma categoria ou inclua um animal.', 'err'); return; }
+  var p = id ? OV.sanitario.previsoes.filter(function(x){ return x.id === id; })[0] : { id: ovId() };
+  p.data = data; p.produto = produto; p.cats = cats; p.individuais = ovsSelInd.slice();
+  p.repetir = rep ? +rep : null; p.obs = ovVal('ovs-obs');
+  if(!id) OV.sanitario.previsoes.push(p);
+  ovAlterou();
+  toast(id ? 'Previsão atualizada.' : 'Manejo programado para ' + data + '.', 'ok');
+  ovsLimpar();
+  ovRenderSanidade();
+}
+function ovsEditar(id){
+  var p = OV.sanitario.previsoes.filter(function(x){ return x.id === id; })[0]; if(!p) return;
+  ovSet('ovs-edit-id', p.id); ovSet('ovs-data', p.data); ovSet('ovs-produto', p.produto);
+  ovSet('ovs-repetir', p.repetir || ''); ovSet('ovs-obs', p.obs);
+  ovsSelCats = {}; (p.cats || []).forEach(function(c){ ovsSelCats[c] = true; });
+  ovsSelInd = (p.individuais || []).slice();
+  document.getElementById('ovs-form-titulo').textContent = 'Editando previsão de ' + p.data;
+  ovsDesenharForm();
+  document.getElementById('ovs-form-card').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function ovsExcluirPrevisao(id){
+  var p = OV.sanitario.previsoes.filter(function(x){ return x.id === id; })[0]; if(!p) return;
+  if(!confirm('Excluir a previsão de ' + p.produto + ' em ' + p.data + '?')) return;
+  OV.sanitario.previsoes = OV.sanitario.previsoes.filter(function(x){ return x.id !== id; });
+  ovAlterou(); ovRenderSanidade();
+}
+
+// ── Marcar como feito ──────────────────────────────────────────────────────
+function ovsAbrirFeito(id){
+  var p = OV.sanitario.previsoes.filter(function(x){ return x.id === id; })[0]; if(!p) return;
+  ovsFeitoId = id;
+  var n = ovsAlvo(p.cats, p.individuais).length;
+  document.getElementById('ovs-feito-desc').innerHTML = '<strong>' + ovEsc(p.produto) + '</strong> — ' + ovEsc(ovsDescAlvo(p.cats, p.individuais))
+    + ' (' + n + ' animais ativos hoje). Previsto para ' + p.data + '.';
+  ovSet('ovs-feito-data', ovHoje()); ovSet('ovs-feito-obs', p.obs || '');
+  document.getElementById('ovs-feito-prox').innerHTML = p.repetir ? '&#128260; O próximo fica agendado ' + p.repetir + ' dias depois da data informada.' : '';
+  document.getElementById('ovs-modal-feito').style.display = 'flex';
+}
+function ovsConfirmarFeito(){
+  var p = OV.sanitario.previsoes.filter(function(x){ return x.id === ovsFeitoId; })[0]; if(!p) return;
+  var data = ovVal('ovs-feito-data');
+  if(!ovParse(data)){ toast('Data inválida (use DD/MM/AAAA).', 'err'); return; }
+  if(ovOrdData(data) > Date.now() + 86400000){ toast('A data do manejo feito não pode estar no futuro.', 'err'); return; }
+  var animais = ovsAlvo(p.cats, p.individuais);
+  OV.sanitario.realizados.push({ id: ovId(), data: data, produto: p.produto, cats: (p.cats || []).slice(),
+    individuais: (p.individuais || []).slice(), animais: animais, obs: ovVal('ovs-feito-obs'), previsto: p.data });
+  OV.sanitario.previsoes = OV.sanitario.previsoes.filter(function(x){ return x.id !== p.id; });
+  var prox = '';
+  if(p.repetir){
+    prox = ovSomaDias(data, p.repetir);
+    OV.sanitario.previsoes.push({ id: ovId(), data: prox, produto: p.produto, cats: (p.cats || []).slice(),
+      individuais: (p.individuais || []).slice(), repetir: p.repetir, obs: p.obs || '' });
+  }
+  document.getElementById('ovs-modal-feito').style.display = 'none';
+  ovAlterou();
+  toast('Manejo registrado em ' + animais.length + ' animais.' + (prox ? ' Próximo agendado para ' + prox + '.' : ''), 'ok');
+  ovRenderSanidade();
+}
+function ovsExcluirRealizado(id){
+  var r = OV.sanitario.realizados.filter(function(x){ return x.id === id; })[0]; if(!r) return;
+  if(!confirm('Excluir o registro de ' + r.produto + ' em ' + r.data + '? Ele também sai da ficha dos animais.')) return;
+  OV.sanitario.realizados = OV.sanitario.realizados.filter(function(x){ return x.id !== id; });
+  ovAlterou(); ovRenderSanidade();
+}
+
+// ── Tela ───────────────────────────────────────────────────────────────────
+function ovRenderSanidade(){
+  if(!document.getElementById('ovs-cats').innerHTML) ovsLimpar(); else ovsDesenharForm();
+  var hoje = ovsHojeT(), dia = 86400000;
+  var prev = OV.sanitario.previsoes.slice().sort(function(a, b){ return ovOrdData(a.data) - ovOrdData(b.data); });
+
+  var alertas = prev.filter(function(p){ return ovOrdData(p.data) <= hoje + 15 * dia; });
+  document.getElementById('ovs-alertas').innerHTML = alertas.length ? '<table><tbody>' + alertas.map(function(p){
+      var dd = Math.round((ovOrdData(p.data) - hoje) / dia);
+      var tag = dd < 0 ? '<span class="bdg bdg-vazia">' + (-dd) + (dd === -1 ? ' dia' : ' dias') + ' atrasado</span>'
+              : dd === 0 ? '<span class="bdg bdg-diag">hoje</span>' : '<span class="bdg bdg-diag">em ' + dd + (dd === 1 ? ' dia' : ' dias') + '</span>';
+      return '<tr><td style="white-space:nowrap">' + tag + '</td><td><strong>' + ovEsc(p.produto) + '</strong> — ' + ovEsc(ovsDescAlvo(p.cats, p.individuais)) + '</td>'
+        + '<td class="tc">' + ovsAlvo(p.cats, p.individuais).length + ' animais</td>'
+        + '<td class="tc"><button class="btn btn-primary btn-sm" onclick="ovsAbrirFeito(\'' + p.id + '\')">&#10003; Feito</button></td></tr>';
+    }).join('') + '</tbody></table>'
+    : '<div class="empty" style="padding:18px">&#10003; Nenhum manejo atrasado nem para os próximos 15 dias.</div>';
+
+  document.getElementById('ovs-prog-total').textContent = prev.length + (prev.length === 1 ? ' previsão' : ' previsões');
+  document.getElementById('ovs-prog').innerHTML = prev.length ? prev.map(function(p){
+      var atras = ovOrdData(p.data) < hoje;
+      return '<tr><td' + (atras ? ' style="color:var(--red);font-weight:600"' : '') + '>' + p.data + '</td>'
+        + '<td><strong>' + ovEsc(p.produto) + '</strong>' + (p.obs ? '<div style="font-size:11px;color:var(--tx3)">' + ovEsc(p.obs) + '</div>' : '') + '</td>'
+        + '<td style="font-size:12px">' + ovEsc(ovsDescAlvo(p.cats, p.individuais)) + '</td>'
+        + '<td class="tc">' + ovsAlvo(p.cats, p.individuais).length + '</td>'
+        + '<td style="font-size:12px">' + (p.repetir ? 'a cada ' + p.repetir + ' dias' : '—') + '</td>'
+        + '<td class="tc" style="white-space:nowrap"><button class="btn btn-primary btn-sm" onclick="ovsAbrirFeito(\'' + p.id + '\')">&#10003; Feito</button> '
+        + '<button class="btn btn-ghost btn-sm" onclick="ovsEditar(\'' + p.id + '\')">Editar</button> '
+        + '<button class="btn btn-danger btn-sm" onclick="ovsExcluirPrevisao(\'' + p.id + '\')">&#10005;</button></td></tr>';
+    }).join('') : '<tr><td colspan="6"><div class="empty">Nenhum manejo programado. Use o formulário acima.</div></td></tr>';
+
+  var real = OV.sanitario.realizados.slice().sort(function(a, b){ return ovOrdData(b.data) - ovOrdData(a.data); });
+  document.getElementById('ovs-real-total').textContent = real.length + (real.length === 1 ? ' registro' : ' registros');
+  document.getElementById('ovs-real').innerHTML = real.length ? real.map(function(r){
+      return '<tr><td>' + r.data + '</td><td><strong>' + ovEsc(r.produto) + '</strong></td>'
+        + '<td style="font-size:12px">' + ovEsc(ovsDescAlvo(r.cats, r.individuais)) + '</td>'
+        + '<td class="tc">' + (r.animais || []).length + '</td>'
+        + '<td style="font-size:12px">' + ovEsc(r.obs || '') + '</td>'
+        + '<td class="tc"><button class="btn btn-danger btn-sm" onclick="ovsExcluirRealizado(\'' + r.id + '\')">&#10005;</button></td></tr>';
+    }).join('') : '<tr><td colspan="6"><div class="empty">Nenhum manejo registrado ainda.</div></td></tr>';
+}
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════════════════════
 // PACOTE "PROPRIEDADE"
 // ═══════════════════════════════════════════════════════════════════════════
-// Financeiro, estoque, cadastros de medicamentos/materiais e agenda sanitária
+// Financeiro, estoque e cadastros de medicamentos/materiais
 // têm pacote próprio na nuvem (propriedade_versoes / propriedade_ponteiro, ver
 // supabase_propriedade.sql), separado dos bovinos.
 //
@@ -17071,7 +17414,7 @@ window.addEventListener('load', function(){
 // existirem no banco, o app continua funcionando exatamente como antes.
 // ═══════════════════════════════════════════════════════════════════════════
 
-var PR_CHAVES = ['DB_financeiro','DB_receitas','DB_contasfixas','DB_estoque','DB_med','DB_mat','calEventos'];
+var PR_CHAVES = ['DB_financeiro','DB_receitas','DB_contasfixas','DB_estoque','DB_med','DB_mat'];
 var PR_CHAVE_LOCAL = 'propriedade_local_v1';
 var prLocal = { migrado:false, versaoBase:0, seqAlt:0, seqEnv:0, dados:null, autor:'' };
 var prUltimoJson = null;
@@ -17088,10 +17431,6 @@ function prJson(s){ s = s || prColetar(); return JSON.stringify(PR_CHAVES.map(fu
 function prAplicarGlobais(d){
   if(!d) return;
   PR_CHAVES.forEach(function(k){ if(k in d) window[k] = d[k]; });
-  // A agenda sanitária também tem uma cópia de conveniência no aparelho, lida uma vez por
-  // sessão. Sem isto, essa cópia antiga poderia voltar por cima do que veio da nuvem.
-  try{ if(typeof calSalvarStorage === 'function') calSalvarStorage(); }catch(e){}
-  try{ _calStorageLido = true; }catch(e){}
   prUltimoJson = prJson();
 }
 function prPendente(){ return prLocal.seqAlt > prLocal.seqEnv; }
@@ -17310,10 +17649,10 @@ function prMigrar(){
     prUltimoJson = prJson(dados);
     prGravarLocal();
     prStatus('ok');
-    toast('Financeiro, estoque e agenda sanitária agora têm cópia própria na nuvem.', 'ok');
+    toast('Financeiro e estoque agora têm cópia própria na nuvem.', 'ok');
     // Grava uma versão dos bovinos já sem esses dados, com nota no histórico.
     setTimeout(function(){
-      if(nvLigado() && !nvEnviando) nvEnviar('Separação: financeiro, estoque e agenda passaram para o pacote Propriedade').catch(function(){});
+      if(nvLigado() && !nvEnviando) nvEnviar('Separação: financeiro e estoque passaram para o pacote Propriedade').catch(function(){});
     }, 500);
   });
 }
@@ -17385,7 +17724,7 @@ function prAbrirConflito(versao, autor){
   prVersaoConflito = versao;
   prStatus('conflito');
   document.getElementById('pr-conflito-txt').innerHTML =
-    'Este aparelho tem lançamentos da propriedade (financeiro, estoque ou agenda) que ainda não subiram, e enquanto isso <strong>'
+    'Este aparelho tem lançamentos da propriedade (financeiro ou estoque) que ainda não subiram, e enquanto isso <strong>'
     + ovEsc(autor || 'outro usuário') + '</strong> gravou uma versão mais nova na nuvem (v' + versao + ').';
   document.getElementById('pr-modal-conflito').style.display = 'flex';
 }
@@ -17412,6 +17751,7 @@ var PK_TABELA = { ovinos:'ovinos_versoes', propriedade:'propriedade_versoes' };
     pkVersoesPacote = 'bovinos';
     pkDesenharAbas();
     abrirOriginal();
+    pkMostrarEspaco();
   };
 })();
 function pkDesenharAbas(){
@@ -17423,6 +17763,22 @@ function pkDesenharAbas(){
   box.innerHTML = abas.map(function(a){
     return '<button class="mnav-btn' + (a[0] === pkVersoesPacote ? ' active' : '') + '" onclick="pkTrocarPacote(\'' + a[0] + '\')">' + a[1] + '</button>';
   }).join('');
+}
+// Espaço usado na nuvem (função espaco_nuvem, ver supabase_limpeza_versoes.sql).
+function pkMostrarEspaco(){
+  var el = document.getElementById('nv-espaco');
+  if(!el) return;
+  el.style.display = 'none';
+  nvReq('/rest/v1/rpc/espaco_nuvem', { method:'POST', body:'{}' }).then(nvJson).then(function(res){
+    if(!res.ok || !res.dados || !res.dados.banco) return;
+    var d = res.dados, mb = function(b){ return (b / 1048576).toFixed(b < 10485760 ? 1 : 0).replace('.', ','); };
+    var pct = Math.min(100, 100 * d.banco / d.limite);
+    var cor = pct > 80 ? 'var(--red)' : (pct > 60 ? 'var(--amb)' : 'var(--grn)');
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px"><span>Espaço usado na nuvem: <strong>' + mb(d.banco) + ' MB</strong> de ' + mb(d.limite) + ' MB</span>'
+      + '<span style="color:var(--tx3)">bovinos ' + mb(d.bovinos) + ' · ovinos ' + mb(d.ovinos) + ' · propriedade ' + mb(d.propriedade) + ' MB</span></div>'
+      + '<div style="height:6px;background:var(--surf2);border-radius:3px;overflow:hidden"><div style="height:100%;width:' + pct.toFixed(1) + '%;background:' + cor + '"></div></div>';
+    el.style.display = 'block';
+  }).catch(function(){});
 }
 function pkTrocarPacote(p){
   pkVersoesPacote = p;
@@ -17452,7 +17808,7 @@ function pkTrocarPacote(p){
     }).catch(function(err){ box.innerHTML = '<div style="padding:20px;color:var(--red)">' + ovEsc(err.message) + '</div>'; });
 }
 function pkRestaurar(p, versao){
-  var nome = p === 'ovinos' ? 'dos ovinos' : 'da propriedade (financeiro, estoque e agenda)';
+  var nome = p === 'ovinos' ? 'dos ovinos' : 'da propriedade (financeiro e estoque)';
   if(!confirm('Restaurar a versão ' + versao + ' ' + nome + '?\n\nNada é apagado da nuvem: a restauração vira uma versão nova a partir daquele conteúdo. As outras partes (bovinos' + (p === 'ovinos' ? ', propriedade' : ', ovinos') + ') não são afetadas.')) return;
   nvReq('/rest/v1/' + PK_TABELA[p] + '?select=versao,dados&versao=eq.' + versao)
     .then(nvJson).then(function(res){
@@ -17464,7 +17820,6 @@ function pkRestaurar(p, versao){
         ovRenderAtual();
       } else {
         PR_CHAVES.forEach(function(k){ if(k in linha.dados) window[k] = linha.dados[k]; });
-        try{ calSalvarStorage(); _calStorageLido = true; }catch(e){}
         if(prDetectar()) prSincronizar();
         prRedesenhar();
       }
