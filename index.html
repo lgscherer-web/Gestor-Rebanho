@@ -802,6 +802,20 @@ tr:hover td{background:#fafaf7}
 .hist-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--bord);flex-wrap:wrap}
 .hist-row:last-child{border-bottom:none}
 .hist-row:hover{background:#fafaf7}
+/* ── MÓDULO OVINOS ─────────────────────────────────── */
+.ov-sh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.ov-kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.ov-lote{padding:14px 16px;border-bottom:1px solid var(--bord)}
+.ov-lote:last-child{border-bottom:none}
+.ov-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ov-chip{display:inline-flex;padding:3px 9px;border-radius:12px;background:var(--surf2);border:1px solid var(--bord);font-size:12px}
+.ov-lk{color:var(--grnt);font-weight:600;text-decoration:none}
+.ov-lk:hover{text-decoration:underline}
+.ov-check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px;max-height:320px;overflow-y:auto;padding:2px}
+.ov-check{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--bord);border-radius:var(--rsm);background:var(--surf);font-size:13px;cursor:pointer}
+.ov-check small{color:var(--tx3);font-size:10.5px}
+.ov-check-off{opacity:.5;cursor:not-allowed}
+@media(max-width:650px){.ov-kpis{grid-template-columns:1fr 1fr}.ov-check-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -902,6 +916,15 @@ tr:hover td{background:#fafaf7}
       <div class="sb-sec">Financeiro</div>
       <button class="nb" onclick="goTab('financeiro')" id="nb-financeiro"><span class="ic">&#128176;</span>Controle Financeiro</button>
       <button class="nb" onclick="goTab('fin-dashboard')" id="nb-fin-dashboard"><span class="ic">&#128202;</span>Dashboard Financeiro</button>
+      <div id="ov-menu" style="display:none">
+        <div class="sb-sec">Ovinos</div>
+        <div id="ov-nv-status" style="font-size:10px;color:#b0bec5;padding:0 12px 4px;line-height:1.4"></div>
+        <button class="nb" onclick="goTab('ov-rebanho')" id="nb-ov-rebanho"><span class="ic">&#128017;</span>Rebanho Ovino</button>
+        <button class="nb" onclick="goTab('ov-monta')" id="nb-ov-monta"><span class="ic">&#128150;</span>Estação de Monta</button>
+        <button class="nb" onclick="goTab('ov-paricao')" id="nb-ov-paricao"><span class="ic">&#127804;</span>Parição</button>
+        <button class="nb" onclick="goTab('ov-indicadores')" id="nb-ov-indicadores"><span class="ic">&#127919;</span>Indicadores Ovinos</button>
+      </div>
+      <button class="nb" onclick="ovAbrirModulos()" id="nb-ov-modulos" style="margin-top:6px;opacity:.75"><span class="ic">&#9881;</span>Módulos</button>
     </div>
     <div class="sb-bottom">
       <button class="btn btn-ghost btn-sm" onclick="goTab('relatorios')" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px">&#128438; Relatórios / PDF</button>
@@ -954,8 +977,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.42.0</span><br>
-              Data da versão: <span id="app-versao-data">16/09/2026</span><br>
+              Versão: <span id="app-versao">2.43.0</span><br>
+              Data da versão: <span id="app-versao-data">28/09/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -2286,6 +2309,137 @@ tr:hover td{background:#fafaf7}
         </div>
       </div>
 
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           MÓDULO OVINOS
+           Dados próprios (variável OV), gravados em ovinos_versoes na nuvem —
+           totalmente separados dos dados de bovinos.
+           ═══════════════════════════════════════════════════════════════════ -->
+
+      <!-- OVINOS: REBANHO -->
+      <div id="tab-ov-rebanho" style="display:none">
+        <div class="ov-sh">
+          <div class="sh-title">&#128017; Rebanho Ovino <small>Cadastro por brinco</small></div>
+          <button class="btn btn-ghost btn-sm" onclick="ovExportarXlsx()">&#128190; Exportar planilha</button>
+        </div>
+        <div class="dash-grid ov-kpis" id="ov-kpis"></div>
+
+        <div class="fcard">
+          <div class="fcard-title" id="ov-form-titulo">Novo animal</div>
+          <div class="grid g4">
+            <div class="fg"><label>Brinco</label><input type="text" id="ov-brinco" placeholder="Ex: 015 (pode ficar vazio)"></div>
+            <div class="fg"><label>Ano de nascimento</label><input type="number" id="ov-ano" placeholder="Ex: 2025" min="1990" max="2100" step="1"></div>
+            <div class="fg"><label>Sexo *</label><select id="ov-sexo" onchange="ovAtualizarCategorias()"><option value="F">Fêmea</option><option value="M">Macho</option></select></div>
+            <div class="fg"><label>Categoria *</label><select id="ov-cat"></select></div>
+            <div class="fg"><label>Raça</label><input type="text" id="ov-raca" list="ov-racas" placeholder="Ex: Hampshire"></div>
+            <div class="fg"><label>Pai (carneiro)</label><select id="ov-pai" onchange="ovTogglePaiExterno()"></select></div>
+            <div class="fg" id="ov-fg-pai-ext" style="display:none"><label>Pai — identificação</label><input type="text" id="ov-pai-ext" placeholder="Nome/registro do carneiro"></div>
+            <div class="fg"><label>Mãe (ovelha)</label><select id="ov-mae"></select></div>
+            <div class="fg"><label>Situação</label><select id="ov-status" onchange="ovToggleDataStatus()"><option value="ativo">Ativo</option><option value="vendido">Vendido</option><option value="morto">Morto</option><option value="descarte">Descarte</option></select></div>
+            <div class="fg" id="ov-fg-dtstatus" style="display:none"><label>Data da saída</label><input type="text" id="ov-dtstatus" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"></div>
+          </div>
+          <div class="fg" style="margin-bottom:12px"><label>Observações</label><textarea id="ov-obs" rows="2" placeholder="Origem, características, ocorrências..."></textarea></div>
+          <datalist id="ov-racas"><option>Hampshire</option><option>Texel</option><option>Suffolk</option><option>Ile de France</option><option>Corriedale</option><option>Dorper</option><option>Crioula</option><option>Cruza</option></datalist>
+          <input type="hidden" id="ov-edit-id" value="">
+          <div class="form-actions">
+            <button class="btn btn-ghost btn-sm" onclick="ovLimparForm()">Cancelar</button>
+            <button class="btn btn-primary" onclick="ovSalvarAnimal()">&#10003; Salvar</button>
+          </div>
+        </div>
+
+        <div class="tcard">
+          <div class="tbar" style="flex-wrap:wrap;gap:8px">
+            <span style="font-size:13px;font-weight:600">Animais <span class="tcnt" id="ov-total"></span></span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select class="tsearch" id="ov-filtro" style="width:auto" onchange="ovRenderRebanho()">
+                <option value="ativo">Somente ativos</option>
+                <option value="baixa">Somente saídas</option>
+                <option value="todos">Todos</option>
+              </select>
+              <input class="tsearch" id="ov-busca" placeholder="Buscar brinco..." oninput="ovRenderRebanho()">
+            </div>
+          </div>
+          <div class="tscroll"><table><thead><tr>
+            <th>Brinco</th><th>Nasc.</th><th>Sexo</th><th>Categoria</th><th>Raça</th><th>Pai</th><th>Mãe</th><th>Situação</th><th class="tc">Ações</th>
+          </tr></thead><tbody id="ov-tbody"></tbody></table></div>
+        </div>
+      </div><!-- /tab-ov-rebanho -->
+
+      <!-- OVINOS: ESTAÇÃO DE MONTA -->
+      <div id="tab-ov-monta" style="display:none">
+        <div class="ov-sh">
+          <div class="sh-title">&#128150; Estação de Monta <small>Lotes por carneiro e diagnóstico</small></div>
+        </div>
+
+        <div class="fcard">
+          <div class="fcard-title" id="ov-est-form-titulo">Nova estação de monta</div>
+          <div class="grid g4">
+            <div class="fg"><label>Nome *</label><input type="text" id="ov-est-nome" placeholder="Ex: Monta outono 2027"></div>
+            <div class="fg"><label>Início *</label><input type="text" id="ov-est-ini" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"></div>
+            <div class="fg"><label>Fim *</label><input type="text" id="ov-est-fim" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"></div>
+            <div class="fg"><label>Observações</label><input type="text" id="ov-est-obs" placeholder="Opcional"></div>
+          </div>
+          <input type="hidden" id="ov-est-edit-id" value="">
+          <div class="form-actions">
+            <button class="btn btn-ghost btn-sm" onclick="ovLimparEstacao()">Cancelar</button>
+            <button class="btn btn-primary" onclick="ovSalvarEstacao()">&#10003; Salvar estação</button>
+          </div>
+        </div>
+
+        <div class="fcard" style="padding-bottom:14px">
+          <div class="fg" style="max-width:360px"><label>Estação selecionada</label>
+            <select id="ov-est-sel" onchange="ovEstacaoSel=this.value;ovRenderMonta()"></select></div>
+        </div>
+
+        <div id="ov-est-detalhe"></div>
+      </div><!-- /tab-ov-monta -->
+
+      <!-- OVINOS: PARIÇÃO -->
+      <div id="tab-ov-paricao" style="display:none">
+        <div class="ov-sh">
+          <div class="sh-title">&#127804; Parição <small>Registro de partos e cordeiros</small></div>
+        </div>
+
+        <div class="fcard">
+          <div class="fcard-title">Novo parto</div>
+          <div class="grid g4">
+            <div class="fg"><label>Ovelha *</label><select id="ov-pt-ovelha" onchange="ovPartoDetectar()"></select></div>
+            <div class="fg"><label>Data do parto *</label><input type="text" id="ov-pt-data" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this);ovPartoDetectar()"></div>
+            <div class="fg"><label>Estação de monta</label><select id="ov-pt-estacao" onchange="ovPartoDetectar(true)"></select></div>
+            <div class="fg"><label>Pai (carneiro do lote)</label><select id="ov-pt-pai"></select></div>
+            <div class="fg"><label>Nascidos *</label><select id="ov-pt-nasc" onchange="ovPartoCrias()"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="fg"><label>Nascidos vivos *</label><select id="ov-pt-vivos" onchange="ovPartoCrias()"><option>0</option><option selected>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="fg gfull"><label>Observações</label><input type="text" id="ov-pt-obs" placeholder="Parto assistido, rejeição, etc."></div>
+          </div>
+          <div id="ov-pt-info" style="font-size:12px;color:var(--tx2);margin:-4px 0 10px"></div>
+          <div class="sub-label" style="margin-top:4px">Cordeiros vivos <span style="font-weight:400;text-transform:none;letter-spacing:0">— entram no rebanho com mãe e pai preenchidos. O brinco pode ser colocado depois.</span></div>
+          <div id="ov-pt-crias"></div>
+          <div class="form-actions" style="margin-top:10px">
+            <button class="btn btn-ghost btn-sm" onclick="ovLimparParto()">Cancelar</button>
+            <button class="btn btn-primary" onclick="ovSalvarParto()">&#10003; Registrar parto</button>
+          </div>
+        </div>
+
+        <div class="tcard">
+          <div class="tbar"><span style="font-size:13px;font-weight:600">Partos registrados</span><span class="tcnt" id="ov-pt-total"></span></div>
+          <div class="tscroll"><table><thead><tr>
+            <th>Data</th><th>Ovelha</th><th>Pai</th><th>Estação</th><th class="tc">Nasc.</th><th class="tc">Vivos</th><th>Cordeiros</th><th>Obs.</th><th class="tc">Ação</th>
+          </tr></thead><tbody id="ov-pt-tbody"></tbody></table></div>
+        </div>
+      </div><!-- /tab-ov-paricao -->
+
+      <!-- OVINOS: INDICADORES -->
+      <div id="tab-ov-indicadores" style="display:none">
+        <div class="ov-sh">
+          <div class="sh-title">&#127919; Indicadores Ovinos <small>Resultado por estação e por carneiro</small></div>
+        </div>
+        <div class="fcard" style="padding-bottom:14px">
+          <div class="fg" style="max-width:360px"><label>Estação de monta</label>
+            <select id="ov-ind-sel" onchange="ovEstacaoSel=this.value;ovRenderIndicadores()"></select></div>
+        </div>
+        <div id="ov-ind-conteudo"></div>
+      </div><!-- /tab-ov-indicadores -->
+
     </div><!-- /screen-data -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -3221,6 +3375,7 @@ function renderTab(tab){
   else if(tab==='dashboard')    renderDash();
   else if(tab==='relatorios')   renderRelatorios();
   else if(tab==='indicadores')  renderIndicadores();
+  else if(/^ov-/.test(tab) && typeof ovRenderTab==='function') ovRenderTab(tab);
   // estoque e ficha só renderizam sob demanda (no goTab)
 }
 
@@ -15726,5 +15881,1104 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
   </div>
 </div>
 
+
+<!-- ═══ OVINOS: módulos ativos ═══ -->
+<div id="ov-modal-modulos" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(20,25,20,.9);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg);border-radius:var(--r);max-width:420px;width:100%;padding:24px">
+    <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">&#9881; Módulos</div>
+    <p style="font-size:12.5px;line-height:1.6;color:var(--tx2);margin:0 0 14px">Escolha quais criações aparecem no menu deste aparelho. Desligar um módulo só esconde as telas — nenhum dado é apagado.</p>
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bord);border-radius:var(--rsm);margin-bottom:8px;opacity:.7">
+      <input type="checkbox" checked disabled> <span style="font-size:13px"><strong>Bovinos</strong> — módulo principal</span></label>
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bord);border-radius:var(--rsm);margin-bottom:16px;cursor:pointer">
+      <input type="checkbox" id="ov-mod-chk"> <span style="font-size:13px"><strong>Ovinos</strong> — rebanho, monta, parição e indicadores</span></label>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="ovSalvarModulos()">Aplicar</button>
+  </div>
+</div>
+
+<!-- ═══ OVINOS: ficha do animal ═══ -->
+<div id="ov-modal-ficha" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(20,25,20,.9);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)ovFecharFicha()">
+  <div style="background:var(--bg);border-radius:var(--r);max-width:620px;width:100%;max-height:86vh;display:flex;flex-direction:column">
+    <div class="tbar" style="border-radius:var(--r) var(--r) 0 0">
+      <span style="font-size:14px;font-weight:700" id="ov-ficha-titulo"></span>
+      <button class="btn btn-ghost btn-sm" onclick="ovFecharFicha()">Fechar</button>
+    </div>
+    <div id="ov-ficha-corpo" style="overflow:auto;padding:14px 16px;font-size:13px;line-height:1.6"></div>
+  </div>
+</div>
+
+<!-- ═══ OVINOS: conflito de gravação ═══ -->
+<div id="ov-modal-conflito" style="display:none;position:fixed;inset:0;z-index:9150;background:rgba(20,25,20,.9);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg);border-radius:var(--r);max-width:470px;width:100%;padding:24px">
+    <div style="font-size:16px;font-weight:700;color:var(--red);margin-bottom:10px">&#9888;&#65039; Ovinos: há dados mais novos na nuvem</div>
+    <p style="font-size:13px;line-height:1.6;color:var(--tx);margin:0 0 10px" id="ov-conflito-txt"></p>
+    <p style="font-size:13px;line-height:1.6;color:var(--tx);margin:0 0 16px">
+      Antes de decidir, você pode <strong>exportar a planilha</strong> com o que está neste aparelho — assim nada se perde.
+    </p>
+    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-bottom:8px" onclick="ovExportarXlsx()">1. Exportar planilha deste aparelho</button>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:8px" onclick="ovResolverConflito('nuvem')">2a. Usar os dados da nuvem (descarta os deste aparelho)</button>
+    <button class="btn btn-save" style="width:100%;justify-content:center;margin-bottom:8px" onclick="ovResolverConflito('local')">2b. Manter os deste aparelho (grava por cima)</button>
+    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="ovFecharConflito()">Decidir depois</button>
+  </div>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// MÓDULO OVINOS
+// ═══════════════════════════════════════════════════════════════════════════
+// Tudo o que é de ovinos mora na variável OV — de propósito SEM o prefixo DB_,
+// porque nvColetar() recolhe sozinho qualquer DB_* para o pacote dos bovinos.
+// Os ovinos têm pacote próprio na nuvem (tabelas ovinos_versoes e
+// ovinos_ponteiro, ver supabase_ovinos.sql) e cópia própria no aparelho.
+//
+// Funcionamento sem internet: cada alteração é gravada no aparelho na hora
+// (localStorage) junto com um contador de alterações. O envio para a nuvem
+// acontece quando houver sinal; enquanto o contador de alterações estiver à
+// frente do contador de envios, o aparelho sabe que tem coisa para subir —
+// inclusive depois de fechar e reabrir o app.
+// ═══════════════════════════════════════════════════════════════════════════
+
+var OV = { animais:[], estacoes:[], diagnosticos:[], partos:[] };
+var OV_GESTACAO_MIN = 142, OV_GESTACAO_MAX = 152;   // dias (média ~147)
+var OV_CHAVE_LOCAL  = 'ovinos_local_v1';
+var OV_CHAVE_MODULO = 'modulo_ovinos_ativo';
+
+var ovLocal = { versaoBase:0, seqAlt:0, seqEnv:0, autor:'', ts:0 };
+var ovEstacaoSel = '';
+var ovSincronizando = false;
+var ovTimerEnvio = null, ovTimerPoll = null;
+var ovTentativas = 0;
+var ovBloqueado = false;
+var ovVersaoConflito = 0;
+
+// ── Utilidades ─────────────────────────────────────────────────────────────
+function ovId(){ return 'ov' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function ovEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function ovVal(id){ var el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; }
+function ovSet(id, v){ var el = document.getElementById(id); if(el) el.value = (v == null ? '' : v); }
+function ovHoje(){ var d = new Date(); return ovFmt(d); }
+function ovFmt(d){ return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear(); }
+function ovParse(s){
+  var m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s || '').trim());
+  if(!m) return null;
+  var d = new Date(+m[3], +m[2]-1, +m[1]);
+  return (d.getMonth() === +m[2]-1 && d.getDate() === +m[1]) ? d : null;
+}
+function ovSomaDias(s, n){ var d = ovParse(s); if(!d) return ''; d.setDate(d.getDate() + n); return ovFmt(d); }
+function ovOrdData(s){ var d = ovParse(s); return d ? d.getTime() : 0; }
+function ovPct(a, b){ return b ? (100 * a / b).toFixed(1).replace('.', ',') + '%' : '—'; }
+function ovNum(v, casas){ return (v == null || isNaN(v)) ? '—' : Number(v).toFixed(casas).replace('.', ','); }
+
+function ovAnimal(id){ for(var i=0;i<OV.animais.length;i++) if(OV.animais[i].id === id) return OV.animais[i]; return null; }
+function ovEstacao(id){ for(var i=0;i<OV.estacoes.length;i++) if(OV.estacoes[i].id === id) return OV.estacoes[i]; return null; }
+function ovRotulo(a){ if(!a) return '—'; return a.brinco ? a.brinco : '(sem brinco)'; }
+function ovRotuloLink(a){
+  if(!a) return '—';
+  return '<a href="javascript:void(0)" class="ov-lk" onclick="ovAbrirFicha(\'' + a.id + '\')">' + ovEsc(ovRotulo(a)) + '</a>';
+}
+function ovPaiTxt(a){
+  if(a.pai) return ovRotuloLink(ovAnimal(a.pai));
+  if(a.paiExt) return ovEsc(a.paiExt) + ' <span style="color:var(--tx3);font-size:10px">(externo)</span>';
+  return '—';
+}
+var OV_CATS = { F:[['matriz','Matriz'],['borrega','Borrega']], M:[['carneiro','Carneiro'],['borrego','Borrego'],['capao','Capão']] };
+var OV_CAT_NOME = { matriz:'Matriz', borrega:'Borrega', carneiro:'Carneiro', borrego:'Borrego', capao:'Capão' };
+var OV_STATUS_NOME = { ativo:'Ativo', vendido:'Vendido', morto:'Morto', descarte:'Descarte' };
+function ovStatusBdg(s){
+  var cls = s === 'ativo' ? 'bdg-sim' : (s === 'morto' ? 'bdg-vazia' : 'bdg-diag');
+  return '<span class="bdg ' + cls + '">' + (OV_STATUS_NOME[s] || s) + '</span>';
+}
+function ovOrdBrinco(a, b){
+  var x = a.brinco || '', y = b.brinco || '';
+  if(!x && y) return 1; if(x && !y) return -1;
+  return x.localeCompare(y, 'pt-BR', { numeric:true });
+}
+function ovOptions(lista, vazio, sel){
+  return (vazio != null ? '<option value="">' + vazio + '</option>' : '')
+    + lista.map(function(o){ return '<option value="' + ovEsc(o[0]) + '"' + (o[0] === sel ? ' selected' : '') + '>' + ovEsc(o[1]) + '</option>'; }).join('');
+}
+
+// ── Módulo ativo? (preferência deste aparelho) ─────────────────────────────
+function ovAtivo(){
+  try{ var v = localStorage.getItem(OV_CHAVE_MODULO); return v === null ? true : v === '1'; }catch(e){ return true; }
+}
+function ovAplicarModulo(){
+  var m = document.getElementById('ov-menu');
+  if(m) m.style.display = ovAtivo() ? 'block' : 'none';
+  if(!ovAtivo() && /^ov-/.test(currentTab)) goTab('dashboard');
+}
+function ovAbrirModulos(){
+  document.getElementById('ov-mod-chk').checked = ovAtivo();
+  document.getElementById('ov-modal-modulos').style.display = 'flex';
+  closeMobileNav();
+}
+function ovSalvarModulos(){
+  var on = document.getElementById('ov-mod-chk').checked;
+  try{ localStorage.setItem(OV_CHAVE_MODULO, on ? '1' : '0'); }catch(e){}
+  document.getElementById('ov-modal-modulos').style.display = 'none';
+  ovAplicarModulo();
+  if(on) ovSincronizar();
+  toast(on ? 'Módulo Ovinos ligado.' : 'Módulo Ovinos desligado neste aparelho.', 'ok');
+}
+
+// ── Gravação no aparelho ───────────────────────────────────────────────────
+function ovNormalizar(d){
+  d = d || {};
+  return {
+    animais:      Array.isArray(d.animais)      ? d.animais      : [],
+    estacoes:     Array.isArray(d.estacoes)     ? d.estacoes     : [],
+    diagnosticos: Array.isArray(d.diagnosticos) ? d.diagnosticos : [],
+    partos:       Array.isArray(d.partos)       ? d.partos       : []
+  };
+}
+function ovGravarLocal(){
+  try{
+    localStorage.setItem(OV_CHAVE_LOCAL, JSON.stringify({
+      dados: OV, versaoBase: ovLocal.versaoBase, seqAlt: ovLocal.seqAlt,
+      seqEnv: ovLocal.seqEnv, autor: ovLocal.autor, ts: Date.now()
+    }));
+  }catch(e){ toast('Não foi possível gravar os dados de ovinos neste aparelho (memória cheia?).', 'err'); }
+}
+function ovCarregarLocal(){
+  try{
+    var raw = localStorage.getItem(OV_CHAVE_LOCAL);
+    if(!raw) return;
+    var o = JSON.parse(raw);
+    OV = ovNormalizar(o.dados);
+    ovLocal.versaoBase = o.versaoBase || 0;
+    ovLocal.seqAlt = o.seqAlt || 0;
+    ovLocal.seqEnv = o.seqEnv || 0;
+    ovLocal.autor  = o.autor || '';
+  }catch(e){}
+}
+function ovPendente(){ return ovLocal.seqAlt > ovLocal.seqEnv; }
+
+// Toda alteração passa por aqui.
+function ovAlterou(){
+  ovLocal.seqAlt++;
+  ovGravarLocal();
+  ovStatus();
+  if(ovTimerEnvio) clearTimeout(ovTimerEnvio);
+  ovTimerEnvio = setTimeout(function(){ ovTentativas = 0; ovSincronizar(); }, 3000);
+}
+
+// ── Sincronização com a nuvem ──────────────────────────────────────────────
+function ovNuvemLigada(){ return typeof nvLigado === 'function' && nvLigado(); }
+
+function ovStatus(estado){
+  var el = document.getElementById('ov-nv-status');
+  if(!el) return;
+  var pend = ovPendente();
+  if(!estado){
+    if(!ovNuvemLigada()) estado = (typeof nvModoLocal !== 'undefined' && nvModoLocal) ? 'local' : 'semlogin';
+    else estado = pend ? 'pendente' : 'ok';
+  }
+  var mapa = {
+    ok:        ['#81c784', '&#9729; Sincronizado' + (ovLocal.versaoBase ? ' (v' + ovLocal.versaoBase + ')' : '')],
+    pendente:  ['#ffb74d', '&#9679; Alterações não enviadas'],
+    enviando:  ['#64b5f6', '&#8635; Enviando...'],
+    baixando:  ['#64b5f6', '&#8635; Baixando...'],
+    offline:   ['#e0e0e0', '&#9888;&#65039; Sem internet — salvo no aparelho'],
+    erro:      ['#e57373', '&#9888;&#65039; Falha ao sincronizar'],
+    conflito:  ['#e57373', '&#9888;&#65039; Conflito — veja o aviso'],
+    bloqueado: ['#e57373', '&#128274; Nuvem recusou a gravação'],
+    semtabela: ['#e57373', '&#9888;&#65039; Tabelas de ovinos não criadas'],
+    local:     ['#e0e0e0', '&#128187; Só neste aparelho'],
+    semlogin:  ['#e0e0e0', '&#128187; Salvo no aparelho (sem login)']
+  };
+  var m = mapa[estado] || mapa.ok;
+  el.style.color = m[0];
+  el.innerHTML = m[1];
+}
+
+function ovSincronizar(){
+  if(!ovAtivo()) return Promise.resolve();
+  if(!ovNuvemLigada()){ ovStatus(); return Promise.resolve(); }
+  if(ovSincronizando || ovBloqueado) return Promise.resolve();
+  ovSincronizando = true;
+
+  return nvReq('/rest/v1/ovinos_ponteiro?select=versao_atual,autor&id=eq.1')
+    .then(nvJson).then(function(res){
+      if(res.status === 404 || (res.dados && res.dados.code === '42P01') || (res.ok && (!res.dados || !res.dados.length))){
+        var e = new Error('SEMTABELA'); throw e;
+      }
+      if(!res.ok) throw new Error('Falha ao consultar a nuvem (erro ' + res.status + ').');
+      var vs = res.dados[0].versao_atual || 0;
+      var autorNuvem = res.dados[0].autor || '';
+
+      // Banco recriado do zero: o aparelho passa a ser a fonte.
+      if(vs < ovLocal.versaoBase){
+        ovLocal.versaoBase = vs;
+        if(OV.animais.length || OV.estacoes.length) ovLocal.seqAlt = Math.max(ovLocal.seqAlt, ovLocal.seqEnv + 1);
+      }
+      if(vs > ovLocal.versaoBase){
+        if(!ovPendente()) return ovBaixar(vs);
+        ovAbrirConflito(vs, autorNuvem);
+        return;
+      }
+      if(ovPendente()) return ovEnviar();
+      ovStatus('ok');
+    })
+    .catch(function(err){
+      if(err && err.message === 'SEMTABELA'){ ovStatus('semtabela'); return; }
+      ovStatus(navigator.onLine ? 'erro' : 'offline');
+      ovTentativas++;
+      var espera = Math.min(60000, 5000 * Math.pow(2, Math.min(ovTentativas - 1, 4)));
+      if(ovTimerEnvio) clearTimeout(ovTimerEnvio);
+      if(ovPendente()) ovTimerEnvio = setTimeout(ovSincronizar, espera);
+    })
+    .then(function(){ ovSincronizando = false; });
+}
+
+function ovBaixar(versao){
+  ovStatus('baixando');
+  var filtro = versao ? ('&versao=eq.' + versao) : '&order=versao.desc&limit=1';
+  return nvReq('/rest/v1/ovinos_versoes?select=versao,dados,autor' + filtro)
+    .then(nvJson).then(function(res){
+      if(!res.ok) throw new Error('Falha ao baixar os dados de ovinos (erro ' + res.status + ').');
+      var linha = res.dados && res.dados[0];
+      if(!linha){ ovStatus('ok'); return; }
+      OV = ovNormalizar(linha.dados);
+      ovLocal.versaoBase = linha.versao;
+      ovLocal.autor = linha.autor || '';
+      ovLocal.seqEnv = ovLocal.seqAlt;      // nada pendente
+      ovGravarLocal();
+      ovStatus('ok');
+      ovRenderAtual();
+    });
+}
+
+function ovEnviar(){
+  ovStatus('enviando');
+  var alvo = ovLocal.versaoBase + 1;
+  var seq  = ovLocal.seqAlt;
+  var dados = JSON.parse(JSON.stringify(OV));
+  var autor = (nvSessao && nvSessao.email) || '';
+  return nvReq('/rest/v1/ovinos_versoes', {
+    method:'POST',
+    headers:{ 'Prefer':'return=minimal' },
+    body: JSON.stringify({ versao: alvo, dados: dados, autor: autor })
+  }).then(nvJson).then(function(res){
+    if(res.status === 409 || (res.dados && res.dados.code === '23505')){
+      // Outro aparelho gravou esta versão antes: a próxima verificação abre o aviso.
+      ovSincronizando = false;
+      return ovSincronizar();
+    }
+    if(!res.ok){
+      var m = (res.dados && (res.dados.message || res.dados.hint)) || ('erro ' + res.status);
+      if(res.status === 403 || /Gravacao bloqueada|permission denied/i.test(m)){
+        ovBloqueado = true;
+        ovStatus('bloqueado');
+        toast('A nuvem recusou a gravação dos ovinos: ' + m, 'err');
+        return;
+      }
+      throw new Error(m);
+    }
+    ovTentativas = 0;
+    ovLocal.versaoBase = alvo;
+    ovLocal.autor = autor;
+    ovLocal.seqEnv = seq;
+    ovGravarLocal();
+    ovStatus();
+    // Mudou algo durante o envio? Sobe de novo.
+    if(ovPendente()){
+      if(ovTimerEnvio) clearTimeout(ovTimerEnvio);
+      ovTimerEnvio = setTimeout(ovSincronizar, 1500);
+    }
+  });
+}
+
+function ovAbrirConflito(versao, autor){
+  ovVersaoConflito = versao;
+  ovStatus('conflito');
+  document.getElementById('ov-conflito-txt').innerHTML =
+    'Este aparelho tem alterações de ovinos que ainda não subiram, e enquanto isso <strong>'
+    + ovEsc(autor || 'outro usuário') + '</strong> gravou uma versão mais nova na nuvem (v' + versao + ').';
+  document.getElementById('ov-modal-conflito').style.display = 'flex';
+}
+function ovFecharConflito(){ document.getElementById('ov-modal-conflito').style.display = 'none'; }
+function ovResolverConflito(qual){
+  ovFecharConflito();
+  if(qual === 'nuvem'){
+    ovBaixar(ovVersaoConflito).then(function(){ toast('Dados de ovinos atualizados a partir da nuvem.', 'ok'); })
+      .catch(function(e){ ovStatus('erro'); toast(e.message, 'err'); });
+  } else {
+    if(!confirm('Gravar os dados deste aparelho por cima da versão da nuvem?\n\nA versão da nuvem continua guardada no histórico, mas deixa de ser a atual.')) return;
+    ovLocal.versaoBase = ovVersaoConflito;
+    ovEnviar().then(function(){ toast('Dados deste aparelho gravados na nuvem.', 'ok'); })
+      .catch(function(e){ ovStatus('erro'); toast(e.message, 'err'); });
+  }
+}
+
+// ── Navegação ──────────────────────────────────────────────────────────────
+function ovRenderTab(tab){
+  if(tab === 'ov-rebanho')      ovRenderRebanho();
+  else if(tab === 'ov-monta')   ovRenderMonta();
+  else if(tab === 'ov-paricao') ovRenderParicao();
+  else if(tab === 'ov-indicadores') ovRenderIndicadores();
+  if(/^ov-/.test(tab) && !ovSincronizando && ovNuvemLigada()) ovSincronizar();
+}
+function ovRenderAtual(){ if(/^ov-/.test(currentTab)) ovRenderTab(currentTab); }
+
+// ═══ REBANHO ═══════════════════════════════════════════════════════════════
+function ovAtualizarCategorias(sel){
+  var sexo = ovVal('ov-sexo') || 'F';
+  var el = document.getElementById('ov-cat');
+  var atual = sel || el.value;
+  el.innerHTML = ovOptions(OV_CATS[sexo], null, atual);
+}
+function ovTogglePaiExterno(){
+  document.getElementById('ov-fg-pai-ext').style.display = ovVal('ov-pai') === '__ext' ? '' : 'none';
+}
+function ovToggleDataStatus(){
+  var baixa = ovVal('ov-status') !== 'ativo';
+  document.getElementById('ov-fg-dtstatus').style.display = baixa ? '' : 'none';
+  if(baixa && !ovVal('ov-dtstatus')) ovSet('ov-dtstatus', ovHoje());
+}
+function ovPreencherPais(idEditando, paiSel, maeSel){
+  var machos = OV.animais.filter(function(a){ return a.sexo === 'M' && a.id !== idEditando; }).sort(ovOrdBrinco);
+  var femeas = OV.animais.filter(function(a){ return a.sexo === 'F' && a.id !== idEditando; }).sort(ovOrdBrinco);
+  var optPai = machos.map(function(a){ return [a.id, ovRotulo(a) + (a.status !== 'ativo' ? ' (' + OV_STATUS_NOME[a.status].toLowerCase() + ')' : '')]; });
+  optPai.push(['__ext', 'Outro (de fora do rebanho)...']);
+  document.getElementById('ov-pai').innerHTML = ovOptions(optPai, '— não informado —', paiSel || '');
+  document.getElementById('ov-mae').innerHTML = ovOptions(femeas.map(function(a){
+    return [a.id, ovRotulo(a) + (a.status !== 'ativo' ? ' (' + OV_STATUS_NOME[a.status].toLowerCase() + ')' : '')];
+  }), '— não informada —', maeSel || '');
+  ovTogglePaiExterno();
+}
+
+function ovLimparForm(){
+  ['ov-brinco','ov-ano','ov-raca','ov-pai-ext','ov-dtstatus','ov-obs','ov-edit-id'].forEach(function(id){ ovSet(id, ''); });
+  ovSet('ov-sexo', 'F'); ovSet('ov-status', 'ativo');
+  ovAtualizarCategorias('matriz');
+  ovPreencherPais('', '', '');
+  ovToggleDataStatus();
+  document.getElementById('ov-form-titulo').textContent = 'Novo animal';
+}
+
+function ovSalvarAnimal(){
+  var id = ovVal('ov-edit-id');
+  var brinco = ovVal('ov-brinco');
+  var ano = ovVal('ov-ano');
+  var sexo = ovVal('ov-sexo');
+  var cat = ovVal('ov-cat');
+  var pai = ovVal('ov-pai');
+  var status = ovVal('ov-status') || 'ativo';
+
+  if(brinco){
+    var dup = OV.animais.filter(function(a){ return a.id !== id && (a.brinco || '').toLowerCase() === brinco.toLowerCase(); })[0];
+    if(dup){ toast('Já existe um animal com o brinco ' + brinco + '.', 'err'); return; }
+  }
+  if(ano && (!/^\d{4}$/.test(ano) || +ano < 1990 || +ano > new Date().getFullYear() + 1)){ toast('Ano de nascimento inválido.', 'err'); return; }
+  if(!cat){ toast('Escolha a categoria.', 'err'); return; }
+  var dtStatus = status === 'ativo' ? '' : ovVal('ov-dtstatus');
+  if(dtStatus && !ovParse(dtStatus)){ toast('Data da saída inválida (use DD/MM/AAAA).', 'err'); return; }
+
+  if(id){
+    var a0 = ovAnimal(id);
+    if(a0 && a0.sexo !== sexo && ovAnimalEmUso(a0)){
+      toast('Este animal já está em lotes, partos ou como pai/mãe. Não dá para trocar o sexo.', 'err'); return;
+    }
+  }
+
+  var rec = id ? ovAnimal(id) : { id: ovId(), criadoEm: ovHoje() };
+  rec.brinco = brinco;
+  rec.anoNasc = ano ? +ano : null;
+  rec.sexo = sexo;
+  rec.cat = cat;
+  rec.raca = ovVal('ov-raca');
+  rec.pai = (pai && pai !== '__ext') ? pai : '';
+  rec.paiExt = pai === '__ext' ? ovVal('ov-pai-ext') : '';
+  rec.mae = ovVal('ov-mae');
+  rec.status = status;
+  rec.dataStatus = dtStatus;
+  rec.obs = ovVal('ov-obs');
+  if(!id) OV.animais.push(rec);
+
+  ovAlterou();
+  toast(id ? 'Animal atualizado.' : 'Animal cadastrado.', 'ok');
+  ovLimparForm();
+  ovRenderRebanho();
+}
+
+function ovAnimalEmUso(a){
+  if(OV.animais.some(function(x){ return x.pai === a.id || x.mae === a.id; })) return true;
+  if(OV.partos.some(function(p){ return p.ovelha === a.id || p.pai === a.id; })) return true;
+  return OV.estacoes.some(function(e){ return (e.lotes || []).some(function(l){ return l.carneiro === a.id || (l.ovelhas || []).indexOf(a.id) >= 0; }); });
+}
+
+function ovEditarAnimal(id){
+  var a = ovAnimal(id); if(!a) return;
+  ovSet('ov-edit-id', a.id);
+  ovSet('ov-brinco', a.brinco);
+  ovSet('ov-ano', a.anoNasc || '');
+  ovSet('ov-sexo', a.sexo);
+  ovAtualizarCategorias(a.cat);
+  ovSet('ov-raca', a.raca);
+  ovPreencherPais(a.id, a.pai || (a.paiExt ? '__ext' : ''), a.mae);
+  ovSet('ov-pai-ext', a.paiExt);
+  ovSet('ov-status', a.status || 'ativo');
+  ovSet('ov-dtstatus', a.dataStatus);
+  ovToggleDataStatus();
+  ovSet('ov-obs', a.obs);
+  document.getElementById('ov-form-titulo').textContent = 'Editando ' + ovRotulo(a);
+  var main = document.getElementById('main'); if(main) main.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+
+function ovExcluirAnimal(id){
+  var a = ovAnimal(id); if(!a) return;
+  if(ovAnimalEmUso(a)){
+    alert('O animal ' + ovRotulo(a) + ' aparece em lotes de monta, partos ou como pai/mãe de outros animais.\n\nPara tirá-lo do rebanho sem perder o histórico, edite e mude a Situação para Vendido, Morto ou Descarte.');
+    return;
+  }
+  if(!confirm('Excluir o animal ' + ovRotulo(a) + '?\n\nUse a exclusão só para cadastros feitos por engano. Para vendas e mortes, mude a Situação.')) return;
+  OV.animais = OV.animais.filter(function(x){ return x.id !== id; });
+  OV.diagnosticos = OV.diagnosticos.filter(function(d){ return d.ovelha !== id; });
+  ovAlterou();
+  ovRenderRebanho();
+}
+
+function ovRenderRebanho(){
+  var ativos = OV.animais.filter(function(a){ return a.status === 'ativo'; });
+  function conta(c){ return ativos.filter(function(a){ return a.cat === c; }).length; }
+  var kpis = [
+    ['kpi-grn', '&#128017;', 'Matrizes', conta('matriz'), ''],
+    ['kpi-pur', '&#127800;', 'Borregas', conta('borrega'), ''],
+    ['kpi-blu', '&#128015;', 'Carneiros', conta('carneiro'), ''],
+    ['kpi-amb', '&#128016;', 'Borregos / capões', conta('borrego') + conta('capao'), conta('capao') ? conta('capao') + ' capões' : ''],
+    ['kpi-brn', '&#128202;', 'Total ativo', ativos.length, (OV.animais.length - ativos.length) + ' saídas registradas']
+  ];
+  document.getElementById('ov-kpis').innerHTML = kpis.map(function(k){
+    return '<div class="kpi ' + k[0] + '"><div class="kpi-ic">' + k[1] + '</div><div class="kpi-lbl">' + k[2] + '</div><div class="kpi-val">' + k[3] + '</div><div class="kpi-sub">' + k[4] + '</div></div>';
+  }).join('');
+
+  var form = document.getElementById('ov-cat');
+  if(form && !form.options.length) ovLimparForm();
+
+  var filtro = ovVal('ov-filtro') || 'ativo';
+  var busca = ovVal('ov-busca').toLowerCase();
+  var lista = OV.animais.filter(function(a){
+    if(filtro === 'ativo' && a.status !== 'ativo') return false;
+    if(filtro === 'baixa' && a.status === 'ativo') return false;
+    if(busca && (a.brinco || '').toLowerCase().indexOf(busca) < 0) return false;
+    return true;
+  }).sort(ovOrdBrinco);
+
+  document.getElementById('ov-total').textContent = '(' + lista.length + ')';
+  var tb = document.getElementById('ov-tbody');
+  if(!lista.length){
+    tb.innerHTML = '<tr><td colspan="9"><div class="empty"><div class="empty-ic">&#128017;</div>'
+      + (OV.animais.length ? 'Nenhum animal com este filtro.' : 'Nenhum ovino cadastrado ainda. Use o formulário acima.') + '</div></td></tr>';
+    return;
+  }
+  tb.innerHTML = lista.map(function(a){
+    return '<tr>'
+      + '<td><strong>' + ovRotuloLink(a) + '</strong></td>'
+      + '<td>' + (a.anoNasc || '—') + '</td>'
+      + '<td>' + (a.sexo === 'F' ? '<span class="bdg bdg-f">F</span>' : '<span class="bdg bdg-m">M</span>') + '</td>'
+      + '<td>' + (OV_CAT_NOME[a.cat] || a.cat || '—') + '</td>'
+      + '<td>' + ovEsc(a.raca || '—') + '</td>'
+      + '<td>' + ovPaiTxt(a) + '</td>'
+      + '<td>' + (a.mae ? ovRotuloLink(ovAnimal(a.mae)) : '—') + '</td>'
+      + '<td>' + ovStatusBdg(a.status) + (a.dataStatus ? ' <span style="font-size:10px;color:var(--tx3)">' + a.dataStatus + '</span>' : '') + '</td>'
+      + '<td class="tc" style="white-space:nowrap">'
+      +   '<button class="btn btn-ghost btn-sm" onclick="ovEditarAnimal(\'' + a.id + '\')">Editar</button> '
+      +   '<button class="btn btn-danger btn-sm" onclick="ovExcluirAnimal(\'' + a.id + '\')" title="Excluir cadastro">&#10005;</button>'
+      + '</td></tr>';
+  }).join('');
+}
+
+// ── Ficha ──────────────────────────────────────────────────────────────────
+function ovAbrirFicha(id){
+  var a = ovAnimal(id); if(!a) return;
+  document.getElementById('ov-ficha-titulo').innerHTML = '&#128017; ' + ovEsc(ovRotulo(a)) + ' — ' + (OV_CAT_NOME[a.cat] || '');
+  var h = '<div class="grid g2" style="margin-bottom:10px">'
+    + '<div><strong>Sexo:</strong> ' + (a.sexo === 'F' ? 'Fêmea' : 'Macho') + '</div>'
+    + '<div><strong>Nascimento:</strong> ' + (a.anoNasc || '—') + '</div>'
+    + '<div><strong>Raça:</strong> ' + ovEsc(a.raca || '—') + '</div>'
+    + '<div><strong>Situação:</strong> ' + ovStatusBdg(a.status) + (a.dataStatus ? ' ' + a.dataStatus : '') + '</div>'
+    + '<div><strong>Pai:</strong> ' + ovPaiTxt(a) + '</div>'
+    + '<div><strong>Mãe:</strong> ' + (a.mae ? ovRotuloLink(ovAnimal(a.mae)) : '—') + '</div>'
+    + '</div>';
+  if(a.obs) h += '<div style="margin-bottom:10px"><strong>Obs.:</strong> ' + ovEsc(a.obs) + '</div>';
+
+  if(a.parto){
+    var pn = OV.partos.filter(function(p){ return p.id === a.parto; })[0];
+    if(pn) h += '<div style="margin-bottom:10px"><strong>Nascido em:</strong> ' + pn.data + ' — parto de ' + pn.nascidos + (pn.nascidos > 1 ? ' (gemelar)' : '') + '</div>';
+  }
+
+  var filhos = OV.animais.filter(function(x){ return x.pai === a.id || x.mae === a.id; }).sort(ovOrdBrinco);
+  h += '<div class="sub-label">Crias (' + filhos.length + ')</div>';
+  h += filhos.length ? filhos.map(function(f){ return ovRotuloLink(f) + ' <span style="color:var(--tx3);font-size:11px">' + (f.sexo === 'F' ? '♀' : '♂') + ' ' + (f.anoNasc || '') + '</span>'; }).join(' &nbsp;·&nbsp; ') : '<span style="color:var(--tx3)">Nenhuma cria cadastrada.</span>';
+
+  if(a.sexo === 'F'){
+    var partos = OV.partos.filter(function(p){ return p.ovelha === a.id; }).sort(function(x, y){ return ovOrdData(y.data) - ovOrdData(x.data); });
+    h += '<div class="sub-label">Partos (' + partos.length + ')</div>';
+    h += partos.length ? '<table><thead><tr><th>Data</th><th>Pai</th><th class="tc">Nasc.</th><th class="tc">Vivos</th></tr></thead><tbody>'
+      + partos.map(function(p){ return '<tr><td>' + p.data + '</td><td>' + (p.pai ? ovRotuloLink(ovAnimal(p.pai)) : '—') + '</td><td class="tc">' + p.nascidos + '</td><td class="tc">' + p.vivos + '</td></tr>'; }).join('')
+      + '</tbody></table>' : '<span style="color:var(--tx3)">Nenhum parto registrado.</span>';
+  }
+
+  var mont = [];
+  OV.estacoes.forEach(function(e){
+    (e.lotes || []).forEach(function(l){
+      if(l.carneiro === a.id) mont.push(ovEsc(e.nome) + ': carneiro do lote com ' + (l.ovelhas || []).length + ' ovelhas');
+      else if((l.ovelhas || []).indexOf(a.id) >= 0){
+        var dg = ovDiag(e.id, a.id);
+        mont.push(ovEsc(e.nome) + ': lote do carneiro ' + ovEsc(ovRotulo(ovAnimal(l.carneiro))) + (dg ? ' — diagnóstico: ' + dg.resultado : ''));
+      }
+    });
+  });
+  h += '<div class="sub-label">Estações de monta (' + mont.length + ')</div>';
+  h += mont.length ? mont.map(function(t){ return '<div>' + t + '</div>'; }).join('') : '<span style="color:var(--tx3)">Não participou de estações.</span>';
+
+  document.getElementById('ov-ficha-corpo').innerHTML = h;
+  document.getElementById('ov-modal-ficha').style.display = 'flex';
+}
+function ovFecharFicha(){ document.getElementById('ov-modal-ficha').style.display = 'none'; }
+
+// ═══ ESTAÇÃO DE MONTA ══════════════════════════════════════════════════════
+function ovEstacoesOrdenadas(){
+  return OV.estacoes.slice().sort(function(a, b){ return ovOrdData(b.inicio) - ovOrdData(a.inicio); });
+}
+function ovPreencherSelEstacao(idSel, vazio){
+  var el = document.getElementById(idSel); if(!el) return;
+  var lista = ovEstacoesOrdenadas();
+  if(!ovEstacao(ovEstacaoSel)) ovEstacaoSel = lista.length ? lista[0].id : '';
+  el.innerHTML = lista.length
+    ? ovOptions(lista.map(function(e){ return [e.id, e.nome + ' (' + e.inicio + ' a ' + e.fim + ')']; }), vazio, ovEstacaoSel)
+    : '<option value="">Nenhuma estação cadastrada</option>';
+}
+function ovLimparEstacao(){
+  ['ov-est-nome','ov-est-ini','ov-est-fim','ov-est-obs','ov-est-edit-id'].forEach(function(id){ ovSet(id, ''); });
+  document.getElementById('ov-est-form-titulo').textContent = 'Nova estação de monta';
+}
+function ovSalvarEstacao(){
+  var id = ovVal('ov-est-edit-id');
+  var nome = ovVal('ov-est-nome'), ini = ovVal('ov-est-ini'), fim = ovVal('ov-est-fim');
+  if(!nome){ toast('Dê um nome para a estação.', 'err'); return; }
+  if(!ovParse(ini) || !ovParse(fim)){ toast('Datas inválidas (use DD/MM/AAAA).', 'err'); return; }
+  if(ovOrdData(fim) < ovOrdData(ini)){ toast('O fim não pode ser antes do início.', 'err'); return; }
+  var e = id ? ovEstacao(id) : { id: ovId(), lotes: [] };
+  e.nome = nome; e.inicio = ini; e.fim = fim; e.obs = ovVal('ov-est-obs');
+  if(!id) OV.estacoes.push(e);
+  ovEstacaoSel = e.id;
+  ovAlterou();
+  ovLimparEstacao();
+  toast(id ? 'Estação atualizada.' : 'Estação criada. Agora monte os lotes.', 'ok');
+  ovRenderMonta();
+}
+function ovEditarEstacao(id){
+  var e = ovEstacao(id); if(!e) return;
+  ovSet('ov-est-edit-id', e.id); ovSet('ov-est-nome', e.nome); ovSet('ov-est-ini', e.inicio);
+  ovSet('ov-est-fim', e.fim); ovSet('ov-est-obs', e.obs);
+  document.getElementById('ov-est-form-titulo').textContent = 'Editando ' + e.nome;
+  var main = document.getElementById('main'); if(main) main.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+function ovExcluirEstacao(id){
+  var e = ovEstacao(id); if(!e) return;
+  var nPartos = OV.partos.filter(function(p){ return p.estacao === id; }).length;
+  if(nPartos){ alert('Esta estação tem ' + nPartos + ' parto(s) vinculados. Exclua os partos antes, ou mantenha a estação como histórico.'); return; }
+  if(!confirm('Excluir a estação "' + e.nome + '" com seus lotes e diagnósticos?')) return;
+  OV.estacoes = OV.estacoes.filter(function(x){ return x.id !== id; });
+  OV.diagnosticos = OV.diagnosticos.filter(function(d){ return d.estacao !== id; });
+  ovEstacaoSel = '';
+  ovAlterou();
+  ovRenderMonta();
+}
+
+function ovLoteDaOvelha(estacao, ovelhaId){
+  var ls = (estacao && estacao.lotes) || [];
+  for(var i=0;i<ls.length;i++) if((ls[i].ovelhas || []).indexOf(ovelhaId) >= 0) return ls[i];
+  return null;
+}
+function ovDiag(estacaoId, ovelhaId){
+  return OV.diagnosticos.filter(function(d){ return d.estacao === estacaoId && d.ovelha === ovelhaId; })[0] || null;
+}
+
+// Editor de lote (fica aberto dentro da tela da estação)
+var ovLoteEdit = null;   // { estacao, loteId, carneiro, ovelhas:{id:true} }
+
+function ovNovoLote(){
+  ovLoteEdit = { estacao: ovEstacaoSel, loteId: '', carneiro: '', ovelhas: {} };
+  ovRenderMonta();
+}
+function ovEditarLote(loteId){
+  var e = ovEstacao(ovEstacaoSel); if(!e) return;
+  var l = e.lotes.filter(function(x){ return x.id === loteId; })[0]; if(!l) return;
+  var mapa = {}; (l.ovelhas || []).forEach(function(id){ mapa[id] = true; });
+  ovLoteEdit = { estacao: e.id, loteId: l.id, carneiro: l.carneiro, ovelhas: mapa };
+  ovRenderMonta();
+}
+function ovCancelarLote(){ ovLoteEdit = null; ovRenderMonta(); }
+function ovMarcarOvelha(id, on){ if(ovLoteEdit){ if(on) ovLoteEdit.ovelhas[id] = true; else delete ovLoteEdit.ovelhas[id]; ovContarLote(); } }
+function ovMarcarTodas(on){
+  if(!ovLoteEdit) return;
+  document.querySelectorAll('#ov-lote-lista input[type=checkbox]').forEach(function(c){
+    if(c.disabled) return; c.checked = on; ovMarcarOvelha(c.value, on);
+  });
+}
+function ovContarLote(){
+  var el = document.getElementById('ov-lote-cnt');
+  if(el && ovLoteEdit) el.textContent = Object.keys(ovLoteEdit.ovelhas).length + ' ovelhas marcadas';
+}
+function ovFiltrarLote(){
+  var q = ovVal('ov-lote-busca').toLowerCase();
+  document.querySelectorAll('#ov-lote-lista label').forEach(function(l){
+    l.style.display = !q || (l.getAttribute('data-b') || '').indexOf(q) >= 0 ? '' : 'none';
+  });
+}
+function ovSalvarLote(){
+  var e = ovEstacao(ovLoteEdit && ovLoteEdit.estacao); if(!e) return;
+  var carneiro = ovVal('ov-lote-carneiro');
+  if(!carneiro){ toast('Escolha o carneiro do lote.', 'err'); return; }
+  var ovelhas = Object.keys(ovLoteEdit.ovelhas);
+  if(!ovelhas.length){ toast('Marque ao menos uma ovelha.', 'err'); return; }
+  var outro = e.lotes.filter(function(l){ return l.carneiro === carneiro && l.id !== ovLoteEdit.loteId; })[0];
+  if(outro){ toast('Este carneiro já tem um lote nesta estação.', 'err'); return; }
+  // Uma ovelha só pode estar em um lote por estação
+  var conflito = ovelhas.filter(function(id){
+    var l = ovLoteDaOvelha(e, id); return l && l.id !== ovLoteEdit.loteId;
+  });
+  if(conflito.length){ toast('Há ovelhas que já estão em outro lote desta estação.', 'err'); return; }
+
+  if(ovLoteEdit.loteId){
+    var l = e.lotes.filter(function(x){ return x.id === ovLoteEdit.loteId; })[0];
+    var removidas = (l.ovelhas || []).filter(function(id){ return ovelhas.indexOf(id) < 0; });
+    l.carneiro = carneiro; l.ovelhas = ovelhas;
+    // Quem saiu do lote não tem mais diagnóstico nesta estação
+    OV.diagnosticos = OV.diagnosticos.filter(function(d){ return !(d.estacao === e.id && removidas.indexOf(d.ovelha) >= 0); });
+  } else {
+    e.lotes.push({ id: ovId(), carneiro: carneiro, ovelhas: ovelhas });
+  }
+  ovLoteEdit = null;
+  ovAlterou();
+  toast('Lote salvo.', 'ok');
+  ovRenderMonta();
+}
+function ovExcluirLote(loteId){
+  var e = ovEstacao(ovEstacaoSel); if(!e) return;
+  var l = e.lotes.filter(function(x){ return x.id === loteId; })[0]; if(!l) return;
+  if(!confirm('Excluir o lote do carneiro ' + ovRotulo(ovAnimal(l.carneiro)) + '? Os diagnósticos dessas ovelhas nesta estação também saem.')) return;
+  e.lotes = e.lotes.filter(function(x){ return x.id !== loteId; });
+  OV.diagnosticos = OV.diagnosticos.filter(function(d){ return !(d.estacao === e.id && (l.ovelhas || []).indexOf(d.ovelha) >= 0); });
+  ovAlterou();
+  ovRenderMonta();
+}
+
+function ovGravarDiag(ovelhaId, campo, valor){
+  var e = ovEstacao(ovEstacaoSel); if(!e) return;
+  var d = ovDiag(e.id, ovelhaId);
+  if(campo === 'resultado' && !valor){
+    OV.diagnosticos = OV.diagnosticos.filter(function(x){ return x !== d; });
+    ovAlterou(); ovRenderMonta(); return;
+  }
+  if(!d){ d = { id: ovId(), estacao: e.id, ovelha: ovelhaId, data: ovHoje(), resultado: '', fetos: null }; OV.diagnosticos.push(d); }
+  if(campo === 'resultado'){ d.resultado = valor; if(valor !== 'prenhe') d.fetos = null; else if(!d.fetos) d.fetos = 1; }
+  else if(campo === 'fetos') d.fetos = valor ? +valor : null;
+  else if(campo === 'data'){ if(valor && !ovParse(valor)){ toast('Data inválida.', 'err'); ovRenderMonta(); return; } d.data = valor; }
+  ovAlterou();
+  ovRenderMonta();
+}
+
+function ovRenderMonta(){
+  ovPreencherSelEstacao('ov-est-sel');
+  var box = document.getElementById('ov-est-detalhe');
+  var e = ovEstacao(ovEstacaoSel);
+  if(!e){
+    box.innerHTML = '<div class="tcard"><div class="empty"><div class="empty-ic">&#128150;</div>Cadastre a primeira estação de monta no formulário acima.</div></div>';
+    return;
+  }
+  if(ovLoteEdit && ovLoteEdit.estacao !== e.id) ovLoteEdit = null;
+
+  var totOv = 0; e.lotes.forEach(function(l){ totOv += (l.ovelhas || []).length; });
+  var h = '<div class="fcard">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">'
+    +   '<div><div style="font-size:16px;font-weight:700">' + ovEsc(e.nome) + '</div>'
+    +   '<div style="font-size:12px;color:var(--tx2);margin-top:2px">Monta de ' + e.inicio + ' a ' + e.fim
+    +   ' &middot; ' + e.lotes.length + ' lote(s) &middot; ' + totOv + ' ovelhas'
+    +   (e.obs ? ' &middot; ' + ovEsc(e.obs) : '') + '</div>'
+    +   '<div style="font-size:12px;color:var(--grnt);margin-top:4px">&#127804; Parição prevista entre <strong>' + ovSomaDias(e.inicio, OV_GESTACAO_MIN)
+    +   '</strong> e <strong>' + ovSomaDias(e.fim, OV_GESTACAO_MAX) + '</strong> (gestação de ' + OV_GESTACAO_MIN + ' a ' + OV_GESTACAO_MAX + ' dias)</div></div>'
+    +   '<div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm" onclick="ovEditarEstacao(\'' + e.id + '\')">Editar</button>'
+    +   '<button class="btn btn-danger btn-sm" onclick="ovExcluirEstacao(\'' + e.id + '\')">Excluir</button></div>'
+    + '</div></div>';
+
+  // Lotes
+  h += '<div class="tcard"><div class="tbar"><span style="font-size:13px;font-weight:600">Lotes por carneiro</span>'
+    + (ovLoteEdit ? '' : '<button class="btn btn-primary btn-sm" onclick="ovNovoLote()">+ Novo lote</button>') + '</div>';
+  if(ovLoteEdit) h += ovHtmlEditorLote(e);
+  if(!e.lotes.length && !ovLoteEdit){
+    h += '<div class="empty">Nenhum lote ainda. Clique em <strong>+ Novo lote</strong>, escolha o carneiro e marque as ovelhas.</div>';
+  }
+  e.lotes.forEach(function(l){
+    var c = ovAnimal(l.carneiro);
+    var ovs = (l.ovelhas || []).map(ovAnimal).filter(Boolean).sort(ovOrdBrinco);
+    h += '<div class="ov-lote">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">'
+      +   '<div><span style="font-size:14px;font-weight:700">&#128015; Carneiro ' + ovRotuloLink(c) + '</span>'
+      +   ' <span class="tcnt">' + ovs.length + ' ovelhas</span></div>'
+      +   '<div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm" onclick="ovEditarLote(\'' + l.id + '\')">Editar</button>'
+      +   '<button class="btn btn-danger btn-sm" onclick="ovExcluirLote(\'' + l.id + '\')">&#10005;</button></div>'
+      + '</div>'
+      + '<div class="ov-chips">' + ovs.map(function(o){ return '<span class="ov-chip">' + ovRotuloLink(o) + '</span>'; }).join('') + '</div>'
+      + '</div>';
+  });
+  h += '</div>';
+
+  // Diagnóstico de gestação
+  if(e.lotes.length){
+    var linhas = [];
+    e.lotes.forEach(function(l){
+      (l.ovelhas || []).forEach(function(oid){ var o = ovAnimal(oid); if(o) linhas.push({ o:o, l:l }); });
+    });
+    linhas.sort(function(x, y){ return ovOrdBrinco(x.o, y.o); });
+    var nDg = 0, nPr = 0;
+    h += '<div class="tcard"><div class="tbar"><span style="font-size:13px;font-weight:600">Diagnóstico de gestação</span><span class="tcnt" id="ov-dg-resumo"></span></div>'
+      + '<div class="tscroll"><table><thead><tr><th>Ovelha</th><th>Carneiro</th><th>Resultado</th><th>Nº fetos</th><th>Data</th></tr></thead><tbody>'
+      + linhas.map(function(x){
+          var d = ovDiag(e.id, x.o.id);
+          if(d && d.resultado){ nDg++; if(d.resultado === 'prenhe') nPr++; }
+          var oid = x.o.id;
+          return '<tr><td><strong>' + ovRotuloLink(x.o) + '</strong></td>'
+            + '<td>' + ovEsc(ovRotulo(ovAnimal(x.l.carneiro))) + '</td>'
+            + '<td><select class="tsearch" style="width:auto" onchange="ovGravarDiag(\'' + oid + '\',\'resultado\',this.value)">'
+            +   ovOptions([['prenhe','Prenhe'],['vazia','Vazia'],['duvidosa','Duvidosa']], '— não feito —', d ? d.resultado : '') + '</select></td>'
+            + '<td>' + (d && d.resultado === 'prenhe'
+                ? '<select class="tsearch" style="width:auto" onchange="ovGravarDiag(\'' + oid + '\',\'fetos\',this.value)">'
+                  + ovOptions([['1','1'],['2','2'],['3','3']], '?', d.fetos ? String(d.fetos) : '') + '</select>'
+                : '—') + '</td>'
+            + '<td>' + (d ? '<input class="tsearch" style="width:110px" value="' + ovEsc(d.data || '') + '" maxlength="10" oninput="maskDate(this)" onchange="ovGravarDiag(\'' + oid + '\',\'data\',this.value)">' : '—') + '</td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table></div></div>';
+    box.innerHTML = h;
+    var r = document.getElementById('ov-dg-resumo');
+    if(r) r.textContent = nDg + ' de ' + linhas.length + ' diagnosticadas · ' + nPr + ' prenhes';
+    ovContarLote();
+    return;
+  }
+  box.innerHTML = h;
+  ovContarLote();
+}
+
+function ovHtmlEditorLote(e){
+  var usados = e.lotes.filter(function(l){ return l.id !== ovLoteEdit.loteId; }).map(function(l){ return l.carneiro; });
+  var carneiros = OV.animais.filter(function(a){
+    return a.sexo === 'M' && a.cat !== 'capao' && (a.status === 'ativo' || a.id === ovLoteEdit.carneiro) && usados.indexOf(a.id) < 0;
+  }).sort(ovOrdBrinco);
+  var femeas = OV.animais.filter(function(a){ return a.sexo === 'F' && (a.status === 'ativo' || ovLoteEdit.ovelhas[a.id]); }).sort(ovOrdBrinco);
+
+  var h = '<div class="ov-lote" style="background:var(--grnbg)">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:10px">' + (ovLoteEdit.loteId ? 'Editando lote' : 'Novo lote') + '</div>'
+    + '<div class="grid g2"><div class="fg"><label>Carneiro *</label><select id="ov-lote-carneiro">'
+    + ovOptions(carneiros.map(function(a){ return [a.id, ovRotulo(a) + (a.raca ? ' — ' + a.raca : '')]; }), carneiros.length ? 'Escolha...' : 'Nenhum carneiro ativo cadastrado', ovLoteEdit.carneiro)
+    + '</select></div>'
+    + '<div class="fg"><label>Buscar ovelha</label><input type="text" id="ov-lote-busca" placeholder="Brinco..." oninput="ovFiltrarLote()"></div></div>'
+    + '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">'
+    +   '<button class="btn btn-ghost btn-sm" onclick="ovMarcarTodas(true)">Marcar disponíveis</button>'
+    +   '<button class="btn btn-ghost btn-sm" onclick="ovMarcarTodas(false)">Desmarcar</button>'
+    +   '<span class="tcnt" id="ov-lote-cnt"></span></div>'
+    + '<div id="ov-lote-lista" class="ov-check-grid">';
+  if(!femeas.length) h += '<div style="color:var(--tx3);font-size:12px">Nenhuma fêmea ativa cadastrada.</div>';
+  femeas.forEach(function(a){
+    var l = ovLoteDaOvelha(e, a.id);
+    var outroLote = l && l.id !== ovLoteEdit.loteId;
+    var marc = !!ovLoteEdit.ovelhas[a.id];
+    h += '<label class="ov-check' + (outroLote ? ' ov-check-off' : '') + '" data-b="' + ovEsc((a.brinco || '').toLowerCase()) + '">'
+      + '<input type="checkbox" value="' + a.id + '"' + (marc ? ' checked' : '') + (outroLote ? ' disabled' : '')
+      + ' onchange="ovMarcarOvelha(this.value,this.checked)"> '
+      + '<span>' + ovEsc(ovRotulo(a)) + ' <small>' + (OV_CAT_NOME[a.cat] || '') + (a.anoNasc ? ' ' + a.anoNasc : '') + '</small>'
+      + (outroLote ? ' <small>(lote ' + ovEsc(ovRotulo(ovAnimal(l.carneiro))) + ')</small>' : '') + '</span></label>';
+  });
+  h += '</div>'
+    + '<div class="form-actions" style="margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="ovCancelarLote()">Cancelar</button>'
+    + '<button class="btn btn-primary" onclick="ovSalvarLote()">&#10003; Salvar lote</button></div></div>';
+  return h;
+}
+
+// ═══ PARIÇÃO ═══════════════════════════════════════════════════════════════
+// Estação cuja janela de parição contém a data (e, se possível, onde a ovelha estava em lote)
+function ovEstacaoProvavel(ovelhaId, data){
+  var t = ovOrdData(data);
+  var cands = OV.estacoes.filter(function(e){
+    var a = ovOrdData(ovSomaDias(e.inicio, OV_GESTACAO_MIN - 10)), b = ovOrdData(ovSomaDias(e.fim, OV_GESTACAO_MAX + 10));
+    return t && t >= a && t <= b;
+  });
+  var comLote = cands.filter(function(e){ return !!ovLoteDaOvelha(e, ovelhaId); });
+  return (comLote[0] || cands[0] || null);
+}
+
+function ovPartoDetectar(estacaoManual){
+  var ov = ovVal('ov-pt-ovelha'), data = ovVal('ov-pt-data');
+  var selE = document.getElementById('ov-pt-estacao');
+  if(!estacaoManual && ov && ovParse(data)){
+    var e = ovEstacaoProvavel(ov, data);
+    selE.value = e ? e.id : '';
+  }
+  var est = ovEstacao(selE.value);
+  var lote = est && ov ? ovLoteDaOvelha(est, ov) : null;
+  var info = document.getElementById('ov-pt-info');
+  var selPai = document.getElementById('ov-pt-pai');
+  var machos = OV.animais.filter(function(a){ return a.sexo === 'M' && a.cat !== 'capao'; }).sort(ovOrdBrinco);
+  selPai.innerHTML = ovOptions(machos.map(function(a){ return [a.id, ovRotulo(a)]; }), '— não informado —', lote ? lote.carneiro : '');
+  if(!ov) info.innerHTML = '';
+  else if(lote) info.innerHTML = '&#10003; Ovelha estava no lote do carneiro <strong>' + ovEsc(ovRotulo(ovAnimal(lote.carneiro))) + '</strong> em ' + ovEsc(est.nome) + '.';
+  else if(est) info.innerHTML = '&#9888;&#65039; Esta ovelha não estava em nenhum lote de ' + ovEsc(est.nome) + '. Informe o pai, se souber.';
+  else info.innerHTML = 'Sem estação de monta correspondente a esta data.';
+  // Diagnóstico com nº de fetos ajuda a pré-preencher
+  var d = est && ov ? ovDiag(est.id, ov) : null;
+  if(d && d.fetos && !estacaoManual && !ovPartoTocado){ ovSet('ov-pt-nasc', String(d.fetos)); ovSet('ov-pt-vivos', String(d.fetos)); ovPartoCrias(); }
+}
+var ovPartoTocado = false;
+
+function ovPartoCrias(){
+  var n = +ovVal('ov-pt-nasc') || 1;
+  var selV = document.getElementById('ov-pt-vivos');
+  var v = Math.min(+selV.value || 0, n);
+  selV.innerHTML = ovOptions([0,1,2,3,4].filter(function(i){ return i <= n; }).map(function(i){ return [String(i), String(i)]; }), null, String(v));
+  var box = document.getElementById('ov-pt-crias');
+  var ant = [];
+  box.querySelectorAll('.ov-cria').forEach(function(r){ ant.push({ b: r.querySelector('input').value, s: r.querySelector('select').value }); });
+  if(!v){ box.innerHTML = '<div style="font-size:12px;color:var(--tx3)">Nenhum cordeiro vivo.</div>'; return; }
+  var h = '';
+  for(var i=0;i<v;i++){
+    var p = ant[i] || { b:'', s:'' };
+    h += '<div class="grid g2 ov-cria" style="margin-bottom:8px">'
+      + '<div class="fg"><label>Cordeiro ' + (i+1) + ' — brinco</label><input type="text" placeholder="Pode ficar vazio" value="' + ovEsc(p.b) + '"></div>'
+      + '<div class="fg"><label>Sexo *</label><select>' + ovOptions([['F','Fêmea (borrega)'],['M','Macho (borrego)']], 'Escolha...', p.s) + '</select></div></div>';
+  }
+  box.innerHTML = h;
+}
+function ovPartoMarcarTocado(){ ovPartoTocado = true; }
+
+function ovLimparParto(){
+  ovPartoTocado = false;
+  ovSet('ov-pt-data', ovHoje()); ovSet('ov-pt-obs', '');
+  ovSet('ov-pt-nasc', '1'); ovSet('ov-pt-vivos', '1');
+  ovSet('ov-pt-ovelha', '');
+  document.getElementById('ov-pt-crias').innerHTML = '';
+  ovPartoCrias();
+  ovPartoDetectar();
+}
+
+function ovSalvarParto(){
+  var ovelha = ovVal('ov-pt-ovelha'), data = ovVal('ov-pt-data');
+  if(!ovelha){ toast('Escolha a ovelha.', 'err'); return; }
+  if(!ovParse(data)){ toast('Data do parto inválida.', 'err'); return; }
+  if(ovOrdData(data) > Date.now() + 86400000){ toast('A data do parto está no futuro.', 'err'); return; }
+  var nasc = +ovVal('ov-pt-nasc'), vivos = +ovVal('ov-pt-vivos');
+  var crias = [];
+  var erro = '';
+  document.querySelectorAll('#ov-pt-crias .ov-cria').forEach(function(r){
+    var b = r.querySelector('input').value.trim(), s = r.querySelector('select').value;
+    if(!s) erro = 'Informe o sexo de cada cordeiro.';
+    if(b && OV.animais.some(function(a){ return (a.brinco || '').toLowerCase() === b.toLowerCase(); })) erro = 'O brinco ' + b + ' já existe no rebanho.';
+    if(b && crias.some(function(c){ return c.b.toLowerCase() === b.toLowerCase(); })) erro = 'Brinco repetido entre os cordeiros.';
+    crias.push({ b:b, s:s });
+  });
+  if(erro){ toast(erro, 'err'); return; }
+  var repetido = OV.partos.some(function(p){ return p.ovelha === ovelha && Math.abs(ovOrdData(p.data) - ovOrdData(data)) < 60 * 86400000; });
+  if(repetido && !confirm('Já existe um parto desta ovelha a menos de 60 dias desta data. Registrar mesmo assim?')) return;
+
+  var mae = ovAnimal(ovelha);
+  var pai = ovVal('ov-pt-pai');
+  var parto = { id: ovId(), ovelha: ovelha, data: data, estacao: ovVal('ov-pt-estacao'), pai: pai,
+                nascidos: nasc, vivos: vivos, crias: [], obs: ovVal('ov-pt-obs') };
+  var ano = ovParse(data).getFullYear();
+  crias.forEach(function(c){
+    var a = { id: ovId(), criadoEm: ovHoje(), brinco: c.b, anoNasc: ano, sexo: c.s,
+              cat: c.s === 'F' ? 'borrega' : 'borrego', raca: (mae && mae.raca) || '',
+              pai: pai, paiExt: '', mae: ovelha, parto: parto.id, status: 'ativo', dataStatus: '', obs: '' };
+    OV.animais.push(a);
+    parto.crias.push(a.id);
+  });
+  OV.partos.push(parto);
+  // Borrega que pariu passa a matriz
+  if(mae && mae.cat === 'borrega') mae.cat = 'matriz';
+
+  ovAlterou();
+  toast('Parto registrado' + (crias.length ? ' — ' + crias.length + ' cordeiro(s) entraram no rebanho.' : '.'), 'ok');
+  ovLimparParto();
+  ovRenderParicao();
+}
+
+function ovExcluirParto(id){
+  var p = OV.partos.filter(function(x){ return x.id === id; })[0]; if(!p) return;
+  var crias = (p.crias || []).map(ovAnimal).filter(Boolean);
+  var usadas = crias.filter(ovAnimalEmUso);
+  var msg = 'Excluir o parto de ' + ovRotulo(ovAnimal(p.ovelha)) + ' em ' + p.data + '?';
+  if(crias.length) msg += '\n\nOs ' + crias.length + ' cordeiro(s) cadastrados neste parto também serão excluídos' + (usadas.length ? ', exceto os que já têm outros registros (ficam no rebanho).' : '.');
+  if(!confirm(msg)) return;
+  var remover = crias.filter(function(c){ return usadas.indexOf(c) < 0; }).map(function(c){ return c.id; });
+  OV.animais = OV.animais.filter(function(a){ return remover.indexOf(a.id) < 0; });
+  OV.animais.forEach(function(a){ if(a.parto === id) a.parto = ''; });
+  OV.partos = OV.partos.filter(function(x){ return x.id !== id; });
+  ovAlterou();
+  ovRenderParicao();
+}
+
+function ovRenderParicao(){
+  var femeas = OV.animais.filter(function(a){ return a.sexo === 'F' && a.status === 'ativo' && (a.cat === 'matriz' || a.cat === 'borrega'); }).sort(ovOrdBrinco);
+  var selO = document.getElementById('ov-pt-ovelha');
+  var atual = selO.value;
+  selO.innerHTML = ovOptions(femeas.map(function(a){ return [a.id, ovRotulo(a) + ' — ' + OV_CAT_NOME[a.cat]]; }), femeas.length ? 'Escolha...' : 'Nenhuma ovelha ativa', atual);
+  var selE = document.getElementById('ov-pt-estacao');
+  var eAtual = selE.value;
+  selE.innerHTML = ovOptions(ovEstacoesOrdenadas().map(function(e){ return [e.id, e.nome]; }), '— nenhuma —', eAtual);
+  if(!ovVal('ov-pt-data')) ovSet('ov-pt-data', ovHoje());
+  if(!document.querySelector('#ov-pt-crias .ov-cria') && !document.getElementById('ov-pt-crias').textContent) ovPartoCrias();
+  ovPartoDetectar(true);
+  if(!document.getElementById('ov-pt-nasc')._ovLigado){
+    ['ov-pt-nasc','ov-pt-vivos'].forEach(function(id){ document.getElementById(id).addEventListener('change', ovPartoMarcarTocado); });
+    document.getElementById('ov-pt-nasc')._ovLigado = true;
+  }
+
+  var lista = OV.partos.slice().sort(function(a, b){ return ovOrdData(b.data) - ovOrdData(a.data); });
+  document.getElementById('ov-pt-total').textContent = lista.length + ' partos';
+  var tb = document.getElementById('ov-pt-tbody');
+  if(!lista.length){ tb.innerHTML = '<tr><td colspan="9"><div class="empty"><div class="empty-ic">&#127804;</div>Nenhum parto registrado.</div></td></tr>'; return; }
+  tb.innerHTML = lista.map(function(p){
+    var est = ovEstacao(p.estacao);
+    var crias = (p.crias || []).map(ovAnimal).filter(Boolean);
+    return '<tr><td>' + p.data + '</td>'
+      + '<td><strong>' + ovRotuloLink(ovAnimal(p.ovelha)) + '</strong></td>'
+      + '<td>' + (p.pai ? ovRotuloLink(ovAnimal(p.pai)) : '—') + '</td>'
+      + '<td style="font-size:12px">' + (est ? ovEsc(est.nome) : '—') + '</td>'
+      + '<td class="tc">' + p.nascidos + '</td>'
+      + '<td class="tc">' + p.vivos + '</td>'
+      + '<td>' + (crias.length ? crias.map(function(c){ return ovRotuloLink(c) + (c.sexo === 'F' ? '♀' : '♂'); }).join(', ') : '—') + '</td>'
+      + '<td style="font-size:12px">' + ovEsc(p.obs || '') + '</td>'
+      + '<td class="tc"><button class="btn btn-danger btn-sm" onclick="ovExcluirParto(\'' + p.id + '\')">&#10005;</button></td></tr>';
+  }).join('');
+}
+
+// ═══ INDICADORES ═══════════════════════════════════════════════════════════
+function ovCalcLote(e, ovelhas){
+  var r = { expostas: ovelhas.length, diag:0, prenhes:0, paridas:0, nascidos:0, vivos:0 };
+  ovelhas.forEach(function(oid){
+    var d = ovDiag(e.id, oid);
+    if(d && d.resultado){ r.diag++; if(d.resultado === 'prenhe') r.prenhes++; }
+    var ps = OV.partos.filter(function(p){ return p.ovelha === oid && p.estacao === e.id; });
+    if(ps.length) r.paridas++;
+    ps.forEach(function(p){ r.nascidos += p.nascidos; r.vivos += p.vivos; });
+  });
+  return r;
+}
+
+function ovRenderIndicadores(){
+  ovPreencherSelEstacao('ov-ind-sel');
+  var box = document.getElementById('ov-ind-conteudo');
+  var e = ovEstacao(ovEstacaoSel);
+  var h = '';
+  if(!e){
+    h = '<div class="tcard"><div class="empty"><div class="empty-ic">&#127919;</div>Cadastre uma estação de monta para ver os indicadores.</div></div>';
+  } else {
+    var todas = []; e.lotes.forEach(function(l){ todas = todas.concat(l.ovelhas || []); });
+    // Partos da estação de ovelhas que não estavam em lote também contam no total
+    var foraLote = OV.partos.filter(function(p){ return p.estacao === e.id && todas.indexOf(p.ovelha) < 0; });
+    var t = ovCalcLote(e, todas);
+    var tf = { nascidos:0, vivos:0 }; foraLote.forEach(function(p){ tf.nascidos += p.nascidos; tf.vivos += p.vivos; });
+
+    var kpis = [
+      ['kpi-grn', 'Ovelhas expostas', t.expostas, e.lotes.length + ' lote(s)'],
+      ['kpi-blu', 'Taxa de prenhez', ovPct(t.prenhes, t.diag), t.diag ? t.prenhes + ' de ' + t.diag + ' diagnosticadas' : 'sem diagnóstico'],
+      ['kpi-pur', 'Taxa de parição', ovPct(t.paridas, t.expostas), t.paridas + ' paridas'],
+      ['kpi-amb', 'Prolificidade', t.paridas ? ovNum(t.nascidos / t.paridas, 2) : '—', 'cordeiros nascidos por ovelha parida'],
+      ['kpi-brn', 'Cordeiros vivos', t.vivos, t.expostas ? ovNum(t.vivos / t.expostas, 2) + ' por ovelha exposta' : ''],
+      ['kpi-red', 'Mortalidade ao nascer', ovPct(t.nascidos - t.vivos, t.nascidos), (t.nascidos - t.vivos) + ' natimortos']
+    ];
+    h += '<div class="dash-grid ov-kpis">' + kpis.map(function(k){
+      return '<div class="kpi ' + k[0] + '"><div class="kpi-lbl">' + k[1] + '</div><div class="kpi-val">' + k[2] + '</div><div class="kpi-sub">' + k[3] + '</div></div>';
+    }).join('') + '</div>';
+
+    h += '<div class="tcard"><div class="tbar"><span style="font-size:13px;font-weight:600">Resultado por carneiro — ' + ovEsc(e.nome) + '</span></div>'
+      + '<div class="tscroll"><table><thead><tr><th>Carneiro</th><th class="tc">Expostas</th><th class="tc">Prenhez</th><th class="tc">Paridas</th><th class="tc">Taxa parição</th><th class="tc">Nascidos</th><th class="tc">Vivos</th><th class="tc">Prolificidade</th></tr></thead><tbody>';
+    if(!e.lotes.length) h += '<tr><td colspan="8"><div class="empty">Esta estação ainda não tem lotes.</div></td></tr>';
+    e.lotes.forEach(function(l){
+      var r = ovCalcLote(e, l.ovelhas || []);
+      h += '<tr><td><strong>' + ovRotuloLink(ovAnimal(l.carneiro)) + '</strong></td>'
+        + '<td class="tc">' + r.expostas + '</td>'
+        + '<td class="tc">' + ovPct(r.prenhes, r.diag) + '</td>'
+        + '<td class="tc">' + r.paridas + '</td>'
+        + '<td class="tc">' + ovPct(r.paridas, r.expostas) + '</td>'
+        + '<td class="tc">' + r.nascidos + '</td>'
+        + '<td class="tc">' + r.vivos + '</td>'
+        + '<td class="tc">' + (r.paridas ? ovNum(r.nascidos / r.paridas, 2) : '—') + '</td></tr>';
+    });
+    if(foraLote.length){
+      h += '<tr><td style="color:var(--tx2)">Fora dos lotes</td><td class="tc">—</td><td class="tc">—</td><td class="tc">' + foraLote.length + '</td><td class="tc">—</td>'
+        + '<td class="tc">' + tf.nascidos + '</td><td class="tc">' + tf.vivos + '</td><td class="tc">' + ovNum(tf.nascidos / foraLote.length, 2) + '</td></tr>';
+    }
+    h += '</tbody></table></div></div>';
+  }
+
+  // Progênie por carneiro (todas as estações)
+  var carneiros = OV.animais.filter(function(a){ return a.sexo === 'M' && a.cat !== 'capao'; }).sort(ovOrdBrinco);
+  var linhas = carneiros.map(function(c){
+    var filhos = OV.animais.filter(function(a){ return a.pai === c.id; });
+    var partos = OV.partos.filter(function(p){ return p.pai === c.id; });
+    var nasc = 0, viv = 0; partos.forEach(function(p){ nasc += p.nascidos; viv += p.vivos; });
+    return { c:c, partos:partos.length, nasc:nasc, viv:viv, f:filhos.filter(function(a){ return a.sexo === 'F'; }).length, m:filhos.filter(function(a){ return a.sexo === 'M'; }).length };
+  }).filter(function(x){ return x.partos || x.f || x.m || (x.c.cat === 'carneiro' && x.c.status === 'ativo'); });
+  h += '<div class="tcard"><div class="tbar"><span style="font-size:13px;font-weight:600">Progênie por carneiro — todas as estações</span></div>'
+    + '<div class="tscroll"><table><thead><tr><th>Carneiro</th><th>Situação</th><th class="tc">Partos</th><th class="tc">Nascidos</th><th class="tc">Vivos</th><th class="tc">Filhas</th><th class="tc">Filhos</th></tr></thead><tbody>'
+    + (linhas.length ? linhas.map(function(x){
+        return '<tr><td><strong>' + ovRotuloLink(x.c) + '</strong></td><td>' + ovStatusBdg(x.c.status) + '</td>'
+          + '<td class="tc">' + x.partos + '</td><td class="tc">' + x.nasc + '</td><td class="tc">' + x.viv + '</td>'
+          + '<td class="tc">' + x.f + '</td><td class="tc">' + x.m + '</td></tr>';
+      }).join('') : '<tr><td colspan="7"><div class="empty">Nenhum carneiro cadastrado.</div></td></tr>')
+    + '</tbody></table></div></div>';
+
+  box.innerHTML = h;
+}
+
+// ═══ EXPORTAR PLANILHA ═════════════════════════════════════════════════════
+function ovExportarXlsx(){
+  if(typeof XLSX === 'undefined'){ toast('Biblioteca de planilhas não carregada.', 'err'); return; }
+  function r(id){ return ovRotulo(ovAnimal(id)); }
+  var wb = XLSX.utils.book_new();
+  var animais = OV.animais.slice().sort(ovOrdBrinco).map(function(a){
+    return { 'Brinco': a.brinco || '', 'Ano nasc.': a.anoNasc || '', 'Sexo': a.sexo, 'Categoria': OV_CAT_NOME[a.cat] || a.cat,
+             'Raça': a.raca || '', 'Pai': a.pai ? r(a.pai) : (a.paiExt || ''), 'Mãe': a.mae ? r(a.mae) : '',
+             'Situação': OV_STATUS_NOME[a.status] || a.status, 'Data saída': a.dataStatus || '', 'Obs.': a.obs || '' };
+  });
+  var lotes = [];
+  OV.estacoes.forEach(function(e){
+    (e.lotes || []).forEach(function(l){
+      (l.ovelhas || []).forEach(function(oid){
+        var d = ovDiag(e.id, oid);
+        lotes.push({ 'Estação': e.nome, 'Início': e.inicio, 'Fim': e.fim, 'Carneiro': r(l.carneiro), 'Ovelha': r(oid),
+                     'Diagnóstico': d ? d.resultado : '', 'Nº fetos': d && d.fetos ? d.fetos : '', 'Data diag.': d ? d.data : '' });
+      });
+    });
+  });
+  var partos = OV.partos.slice().sort(function(a, b){ return ovOrdData(a.data) - ovOrdData(b.data); }).map(function(p){
+    var est = ovEstacao(p.estacao);
+    return { 'Data': p.data, 'Ovelha': r(p.ovelha), 'Pai': p.pai ? r(p.pai) : '', 'Estação': est ? est.nome : '',
+             'Nascidos': p.nascidos, 'Vivos': p.vivos, 'Cordeiros': (p.crias || []).map(r).join(', '), 'Obs.': p.obs || '' };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(animais.length ? animais : [{ 'Brinco':'' }]), 'Animais');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lotes.length ? lotes : [{ 'Estação':'' }]), 'Monta');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(partos.length ? partos : [{ 'Data':'' }]), 'Partos');
+  var d = new Date();
+  var nome = 'OVINOS_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.xlsx';
+  XLSX.writeFile(wb, nome);
+  toast('Planilha ' + nome + ' gerada.', 'ok');
+}
+
+// ═══ ARRANQUE ══════════════════════════════════════════════════════════════
+ovCarregarLocal();
+window.addEventListener('load', function(){
+  ovAplicarModulo();
+  ovStatus();
+  // Depois do arranque da nuvem dos bovinos (nvArrancar roda em 300 ms)
+  setTimeout(function(){ if(ovAtivo()) ovSincronizar(); }, 2500);
+  if(ovTimerPoll) clearInterval(ovTimerPoll);
+  ovTimerPoll = setInterval(function(){ if(ovAtivo()) ovSincronizar(); }, 60000);
+  window.addEventListener('online',  function(){ ovTentativas = 0; if(ovAtivo()) ovSincronizar(); });
+  window.addEventListener('offline', function(){ if(ovAtivo() && ovNuvemLigada()) ovStatus('offline'); });
+});
+</script>
 </body>
 </html>
