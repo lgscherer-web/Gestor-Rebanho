@@ -5,7 +5,7 @@
 
 // IMPORTANTE: aumente este número a cada nova versão do app, senão os aparelhos que já
 // instalaram continuam abrindo o HTML antigo guardado em cache.
-var CACHE_NAME = 'rebanho-v61';
+var CACHE_NAME = 'rebanho-v62';
 
 var FILES_TO_CACHE = [
   './index.html',
@@ -58,18 +58,26 @@ self.addEventListener('fetch', function(evt){
             || (evt.request.destination === 'document')
             || /\.html(\?|$)/i.test(evt.request.url);
 
+  // Com sinal fraco (comum no campo), esperar a rede indefinidamente travava a abertura.
+  // Agora: se em 3 s a versão nova não chegou, abre a cópia guardada; a versão nova,
+  // quando chegar, fica guardada e vale na próxima abertura.
   if(ehHTML){
-    evt.respondWith(
-      fetch(evt.request).then(function(response){
+    evt.respondWith(new Promise(function(resolve){
+      var pronto = false;
+      function entrega(r){ if(!pronto && r){ pronto = true; resolve(r); } }
+      var rede = fetch(evt.request).then(function(response){
         if(response && response.status === 200){
           var copy = response.clone();
           caches.open(CACHE_NAME).then(function(cache){ cache.put(evt.request, copy); });
         }
         return response;
-      }).catch(function(){
-        return caches.match(evt.request);
-      })
-    );
+      });
+      var limite = setTimeout(function(){ caches.match(evt.request).then(entrega); }, 3000);
+      rede.then(function(r){ clearTimeout(limite); entrega(r); }).catch(function(){
+        clearTimeout(limite);
+        caches.match(evt.request).then(function(c){ entrega(c || Response.error()); });
+      });
+    }));
     return;
   }
 
