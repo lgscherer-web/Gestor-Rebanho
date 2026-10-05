@@ -825,6 +825,48 @@ tr:hover td{background:#fafaf7}
 .sb-grp-corpo{padding-left:8px;margin-top:2px}
 .sb-grp-corpo.sb-nivel2{padding-left:10px}
 .sb-grp-corpo.oculto{display:none}
+/* ── TELA INICIAL: pendências da semana ───────────── */
+.ti-pend{margin:4px 0 14px;text-align:left;border:1px solid var(--bord);border-radius:var(--r);background:var(--surf);overflow:hidden}
+.ti-pend-cab{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;background:var(--surf2);border-bottom:1px solid var(--bord);font-size:12px;font-weight:700;color:var(--tx)}
+.ti-pend-cab small{font-weight:400;color:var(--tx3);font-size:10.5px}
+.ti-pend-sec{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:8px 12px 3px;color:var(--tx3)}
+.ti-pend-it{display:flex;gap:9px;align-items:flex-start;padding:7px 12px;border-top:1px solid var(--surf2);cursor:pointer;font-size:12px;line-height:1.45;color:var(--tx2)}
+.ti-pend-it:hover{background:var(--surf2)}
+.ti-pend-it strong{color:var(--tx)}
+.ti-pend-q{flex-shrink:0;min-width:64px;text-align:center;font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:10px;background:var(--ambbg);color:var(--amb)}
+.ti-pend-q.atr{background:var(--redbg);color:var(--red)}
+.ti-pend-q.hj{background:var(--amb);color:#fff}
+.ti-pend-vazio{padding:14px 12px;font-size:12px;color:var(--grnt);text-align:center}
+/* ── CONFIGURAÇÕES e tela inicial enxuta ──────────── */
+.load-card{max-width:560px}
+.load-col-id{border-right:none!important;padding-right:0!important;border-bottom:none!important;margin-bottom:0!important;padding-bottom:0!important}
+#tab-config .sb-file-name{color:var(--tx2);padding:0 0 10px;font-size:12px}
+#tab-config .sb-file-name strong{color:var(--tx)}
+#tab-config #sb-backup-nota{color:var(--tx2)!important;font-size:12px!important;padding:0 0 10px!important}
+#tab-config #sb-share-hint{padding:0 0 10px!important;font-size:11.5px!important}
+#tab-config .cfg-st{font-size:12px;color:var(--tx2)}
+#tab-config .cfg-carregar{text-align:left}
+#tab-config .cfg-ajuda{font-size:12px;color:var(--tx2);line-height:1.5;margin:0 0 12px}
+#tab-config .cfg-sec{padding:0;overflow:hidden}
+#tab-config .cfg-cab{display:flex;align-items:center;gap:10px;width:100%;padding:15px 22px;border:none;background:none;cursor:pointer;text-align:left;font-family:inherit}
+#tab-config .cfg-cab:hover{background:var(--surf2)}
+#tab-config .cfg-tit{font-size:12px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+#tab-config .cfg-resumo{flex:1;text-align:right;font-size:11.5px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tab-config .cfg-seta{font-size:11px;color:var(--tx3);width:12px;text-align:center}
+#tab-config .cfg-corpo{padding:14px 22px 20px;border-top:1px solid var(--bord)}
+#tab-config .cfg-sec.fechado .cfg-corpo{display:none}
+#tab-config #sb-save-btn,#tab-config #sb-share-btn,#tab-config #sb-overwrite-btn{max-width:320px}
+#tab-config .dropzone{padding:22px 16px}
+#tab-config .cfg-carregar .btn{max-width:320px}
+@media(max-width:650px){#tab-config .cfg-cab{padding:14px 14px}#tab-config .cfg-corpo{padding:12px 14px 16px}#tab-config .cfg-resumo{display:none}}
+/* ── IATF/MONTA: seleção de vários animais ─────────── */
+.iatf-ani-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px;max-height:260px;overflow-y:auto;padding:2px}
+.fg .iatf-ani{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--bord);border-radius:var(--rsm);background:var(--surf);font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:500;color:var(--tx)}
+.fg .iatf-ani:has(input:checked){background:var(--grnbg);border-color:#a5d6a7}
+.iatf-ani-b{font-weight:600}
+.iatf-ani-p{flex-basis:100%;font-size:10.5px;color:var(--red);font-weight:600;line-height:1.3}
+.iatf-ani-p:empty{display:none}
+.fg .iatf-ani.vetado{background:var(--redbg);border-color:#ef9a9a;cursor:not-allowed;opacity:.85}
 </style>
 </head>
 <body>
@@ -943,44 +985,24 @@ tr:hover td{background:#fafaf7}
         <button class="nb" onclick="goTab('financeiro')" id="nb-financeiro"><span class="ic">&#128176;</span>Controle Financeiro</button>
         <button class="nb" onclick="goTab('fin-dashboard')" id="nb-fin-dashboard"><span class="ic">&#128202;</span>Dashboard Financeiro</button>
       </div>
-      <button class="nb" onclick="ovAbrirModulos()" id="nb-ov-modulos" style="margin-top:6px;opacity:.75"><span class="ic">&#9881;</span>Módulos</button>
+      <div style="height:1px;background:rgba(255,255,255,.1);margin:12px 4px 6px"></div>
+      <button class="nb" onclick="ovAbrirModulos()" id="nb-ov-modulos"><span class="ic">&#129513;</span>Módulos</button>
+      <button class="nb" onclick="goTab('relatorios')" id="nb-relatorios"><span class="ic">&#128438;</span>Relatórios / PDF</button>
+      <button class="nb" onclick="goTab('config')" id="nb-config"><span class="ic">&#9881;</span>Configurações</button>
     </div>
     <div class="sb-bottom">
-      <button class="btn btn-ghost btn-sm" onclick="goTab('relatorios')" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px">&#128438; Relatórios / PDF</button>
       <div id="nv-painel" style="display:none;background:rgba(255,255,255,.06);border-radius:var(--rsm);padding:8px 10px;margin-bottom:8px">
         <div id="nv-status" style="font-size:11px;font-weight:600;line-height:1.5">&#9729; Conectando...</div>
         <div id="nv-quem" style="font-size:10px;color:#b0bec5;margin-top:2px;overflow:hidden;text-overflow:ellipsis"></div>
         <button class="btn btn-primary btn-sm" id="nv-btn-abrir-login" style="width:100%;justify-content:center;margin-top:8px;display:none" onclick="nvAbrirLogin()">Entrar na nuvem</button>
         <button class="btn btn-save btn-sm" id="nv-btn-carga" style="width:100%;justify-content:center;margin-top:8px;display:none" onclick="nvPrimeiraCarga()">&#8679; Enviar para a nuvem</button>
         <div id="nv-botoes" style="display:none;margin-top:8px">
-          <button class="btn btn-save btn-sm" style="width:100%;justify-content:center;margin-bottom:5px" onclick="nvSalvarAgora()">&#9729; Salvar na nuvem</button>
-          <div style="display:flex;gap:5px">
-            <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;font-size:10px" onclick="nvAbrirVersoes()">Versões</button>
-            <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;font-size:10px" onclick="nvSair()">Sair</button>
-          </div>
+          <button class="btn btn-save btn-sm" style="width:100%;justify-content:center" onclick="nvSalvarAgora()">&#9729; Salvar versão</button>
         </div>
       </div>
-      <div class="sb-file-name" id="sb-file-info"><strong>Nenhum arquivo</strong>Clique em Carregar para começar</div>
       <div id="sb-dirty" style="display:none;font-size:11px;color:#ffb74d;padding:0 8px 4px;line-height:1.4">&#9679; Alterações não salvas — auto-save em 1,5s</div>
       <div id="sb-autosave" style="font-size:10px;padding:0 8px 8px;color:#81c784;line-height:1.5"></div>
 
-      <!-- ── Seção Backup ──────────────────────────────────────────────────
-           Com a nuvem ligada, o .xlsx deixa de ser o meio de guardar os dados
-           e vira apenas backup. Fica recolhida para não competir com o painel
-           da nuvem; quando não há nuvem, abre sozinha (é o único jeito de salvar). -->
-      <div id="sb-backup-cab" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 8px;border-radius:var(--rsm);background:rgba(255,255,255,.04);margin-bottom:6px" onclick="toggleBackup()">
-        <span style="font-size:11px;font-weight:600;color:#cfd8dc">&#128190; Backup em arquivo</span>
-        <span id="sb-backup-seta" style="font-size:10px;color:#90a4ae">&#9660;</span>
-      </div>
-      <div id="sb-backup-corpo">
-        <div id="sb-backup-nota" style="display:none;font-size:10px;color:#90a4ae;padding:0 8px 6px;line-height:1.5">Seus dados já estão salvos na nuvem. Isto aqui é só uma cópia extra, para guardar fora do sistema.</div>
-        <button class="btn btn-save btn-sm" id="sb-share-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="compartilharArquivo()" title="Abre o menu de compartilhamento do celular para enviar o arquivo direto ao Google Drive">&#9729; Salvar no Drive</button>
-        <button class="btn btn-save btn-sm" id="sb-overwrite-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="sobrescreverArquivo()" title="Sobrescreve o mesmo arquivo, sem criar uma versão nova">&#9851; Sobrescrever arquivo</button>
-        <button class="btn btn-save btn-sm" id="sb-save-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="salvarComoNovaVersao()" title="Salva uma copia nova com data/hora no nome">&#128190; Salvar nova versão</button>
-        <div id="sb-share-hint" style="display:none;font-size:10px;color:var(--tx2);padding:0 8px 8px;line-height:1.5">No celular: toque em <strong>Salvar no Drive</strong> &rarr; escolha <em>Google Drive</em> ou <em>Salvar em Arquivos</em> e substitua o arquivo anterior.</div>
-        <button class="btn btn-ghost btn-sm" id="sb-carregar-btn" style="width:100%;justify-content:center" onclick="admExecutar(function(){abrirArquivo('fi2');})">&#128193; Carregar .xlsx</button>
-      </div>
-      <input type="file" id="fi2" accept=".xlsx" style="display:none" onchange="loadXLSX(this)">
     </div>
   </div>
 
@@ -992,12 +1014,18 @@ tr:hover td{background:#fafaf7}
           <div class="load-col-id">
             <img id="load-screen-logo" alt="Logo da Propriedade" style="height:70px;width:auto;margin-bottom:10px;display:none">
             <div id="load-screen-emoji" style="font-size:44px;margin-bottom:10px">&#128004;</div>
+            <div id="ti-pendencias" class="ti-pend" style="display:none"></div>
+            <div id="ti-sem-dados" style="display:none;margin:4px 0 14px;padding:12px;border:1px dashed var(--bord);border-radius:var(--r);font-size:12.5px;color:var(--tx2);line-height:1.6">
+              Nenhum dado aberto neste aparelho.<br>
+              <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="nvAbrirLogin()">Entrar na nuvem</button>
+              <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="goTab('config')">&#9881; Configurações</button>
+            </div>
             <div style="font-size:12px;font-weight:700;color:var(--tx2);letter-spacing:.3px">Software de Gestão de Propriedade Rural</div>
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.45.0</span><br>
-              Data da versão: <span id="app-versao-data">28/09/2026</span><br>
+              Versão: <span id="app-versao">2.46.0</span><br>
+              Data da versão: <span id="app-versao-data">02/10/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -1006,71 +1034,7 @@ tr:hover td{background:#fafaf7}
             </div>
             <div style="font-size:9px;color:var(--tx3);margin-top:10px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
           </div>
-          <div class="load-col-file">
-            <h2>Gerenciamento de Rebanho</h2>
-            <p>Carregue o arquivo <strong>.xlsx</strong> para editar dados existentes, ou comece do zero.</p>
 
-            <div id="ti-trava" style="display:none;border:1px solid var(--bord);background:var(--bg2);border-radius:var(--rsm);padding:11px 13px;margin-bottom:12px;text-align:left;font-size:11.5px;line-height:1.6;color:var(--tx)"></div>
-
-            <div id="ti-aviso-dados" style="display:none;background:var(--ambbg);border:1px solid var(--amb);border-radius:var(--rsm);padding:12px 14px;margin-bottom:14px;text-align:left;font-size:12px;line-height:1.6;color:var(--tx)"></div>
-
-            <!-- ── BANNER DE RECUPERAÇÃO DE SESSÃO ── -->
-            <div id="recovery-banner" style="display:none;flex-direction:column;gap:10px;background:#fff8e1;border:1.5px solid #f9a825;border-radius:var(--r);padding:16px;margin-bottom:16px;text-align:left">
-              <div style="display:flex;align-items:flex-start;gap:10px">
-                <span style="font-size:22px;flex-shrink:0">&#9889;</span>
-                <div style="flex:1">
-                  <div style="font-size:13px;font-weight:700;color:#5d4037;margin-bottom:4px">Sessão não salva encontrada</div>
-                  <div style="font-size:12px;color:#6d4c41;line-height:1.5">
-                    Arquivo: <strong id="recovery-file"></strong><br>
-                    <span id="recovery-animais"></span><span id="recovery-prot"></span>
-                    &nbsp;·&nbsp;Salvo <span id="recovery-age"></span>
-                    &nbsp;·&nbsp;<span id="recovery-kb"></span>
-                  </div>
-                </div>
-              </div>
-              <div style="display:flex;gap:8px">
-                <button class="btn btn-save" style="flex:1;justify-content:center;height:34px;font-size:12px" onclick="admExecutar(doRecovery)">
-                  &#9889; Recuperar sessão
-                </button>
-                <button class="btn btn-ghost" style="flex:0 0 auto;height:34px;font-size:12px" onclick="dismissRecovery()">
-                  Descartar
-                </button>
-              </div>
-            </div>
-
-            <!-- Vínculo automático (Chrome/Edge): reconecta ao arquivo com 1 clique, sem navegar pelas pastas -->
-            <div id="reconnect-box" style="display:none;background:var(--blubg);border:1px solid #90caf9;border-radius:var(--rsm);padding:14px 16px;margin-bottom:14px;text-align:left">
-              <div style="font-size:11px;font-weight:700;color:var(--blut);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">&#128279; Arquivo vinculado</div>
-              <div id="reconnect-name" style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px;word-break:break-all"></div>
-              <div style="display:flex;gap:8px">
-                <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="admExecutar(reconectarArquivo)">
-                  &#128279; Reconectar automaticamente
-                </button>
-                <button class="btn btn-ghost btn-sm" onclick="esquecerArquivoVinculado()" title="Remover vínculo e escolher outro arquivo manualmente">
-                  Esquecer
-                </button>
-              </div>
-            </div>
-
-            <!-- Ultimo arquivo (aparece se localStorage tiver o nome) -->
-            <div id="last-file-box" style="display:none;background:var(--grnbg);border:1px solid #a5d6a7;border-radius:var(--rsm);padding:14px 16px;margin-bottom:14px;text-align:left">
-              <div style="font-size:11px;font-weight:700;color:var(--grnt);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">&#128197; Último arquivo utilizado</div>
-              <div id="last-file-name" style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px;word-break:break-all"></div>
-              <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="admExecutar(function(){abrirArquivo('fi1');})">
-                Carregar este arquivo
-              </button>
-            </div>
-
-            <div class="dropzone" id="dropzone" onclick="admExecutar(function(){abrirArquivo('fi1');})">
-              <div class="dropzone-ic">&#128193;</div>
-              <p><strong>Clique aqui</strong> ou arraste o arquivo .xlsx</p>
-              <p style="font-size:11px;color:var(--tx3);margin-top:6px">Somente arquivos .xlsx</p>
-            </div>
-            <input type="file" id="fi1" accept=".xlsx" style="display:none" onchange="loadXLSX(this)">
-            <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:6px" onclick="admExecutar(function(){abrirArquivo('fi-backup');})">&#128190; Restaurar backup (.json)</button>
-            <input type="file" id="fi-backup" accept=".json,application/json" style="display:none" onchange="restaurarBackupArquivo(this)">
-            <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="admExecutar(startFresh)">Começar do zero (sem arquivo)</button>
-          </div>
         </div>
       </div>
     </div>
@@ -2508,6 +2472,112 @@ tr:hover td{background:#fafaf7}
         </div>
       </div><!-- /tab-ov-sanidade -->
 
+
+      <!-- CONFIGURAÇÕES -->
+      <div id="tab-config" style="display:none">
+        <div class="ov-sh"><div class="sh-title">&#9881; Configurações <small>Conta, versões, backup e carregamento de dados</small></div></div>
+        <div class="fcard cfg-sec" id="cfg-sec-conta">
+          <button type="button" class="cfg-cab" onclick="cfgAlternar('conta')"><span class="cfg-tit">&#9729; Conta e sincronização</span><span class="cfg-resumo" id="cfg-res-conta"></span><span class="cfg-seta">&#9662;</span></button>
+          <div class="cfg-corpo" id="cfg-corpo-conta">
+            <div id="cfg-conta"></div>
+          </div>
+        </div>
+        <div class="fcard cfg-sec" id="cfg-sec-versoes">
+          <button type="button" class="cfg-cab" onclick="cfgAlternar('versoes')"><span class="cfg-tit">&#128337; Versões salvas na nuvem</span><span class="cfg-resumo" id="cfg-res-versoes"></span><span class="cfg-seta">&#9662;</span></button>
+          <div class="cfg-corpo" id="cfg-corpo-versoes">
+          <div id="nv-modal-versoes" style="display:flex;flex-direction:column">
+            <div class="cfg-ajuda">As 100 gravações mais recentes de cada parte. Restaurar carrega o conteúdo daquela versão — nada é apagado da nuvem.</div>
+            <div id="nv-espaco" style="display:none;padding:0 0 10px;font-size:11px;color:var(--tx2);line-height:1.5"></div>
+            <div id="nv-versoes-abas" class="mnav" style="margin-bottom:0"></div>
+            <div id="nv-versoes-lista" class="tscroll" style="overflow:auto;max-height:420px"></div>
+          </div>
+          </div>
+        </div>
+        <div class="fcard cfg-sec" id="cfg-sec-backup">
+          <button type="button" class="cfg-cab" onclick="cfgAlternar('backup')"><span class="cfg-tit">&#128190; Backup em arquivo</span><span class="cfg-resumo" id="cfg-res-backup"></span><span class="cfg-seta">&#9662;</span></button>
+          <div class="cfg-corpo" id="cfg-corpo-backup">
+      <div class="sb-file-name" id="sb-file-info"><strong>Nenhum arquivo</strong>Clique em Carregar para começar</div>
+      <div id="sb-backup-corpo">
+        <div id="sb-backup-nota" style="display:none;font-size:10px;color:#90a4ae;padding:0 8px 6px;line-height:1.5">Seus dados já estão salvos na nuvem. Isto aqui é só uma cópia extra, para guardar fora do sistema.</div>
+        <button class="btn btn-save btn-sm" id="sb-share-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="compartilharArquivo()" title="Abre o menu de compartilhamento do celular para enviar o arquivo direto ao Google Drive">&#9729; Salvar no Drive</button>
+        <button class="btn btn-save btn-sm" id="sb-overwrite-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="sobrescreverArquivo()" title="Sobrescreve o mesmo arquivo, sem criar uma versão nova">&#9851; Sobrescrever arquivo</button>
+        <button class="btn btn-save btn-sm" id="sb-save-btn" style="width:100%;justify-content:center;margin-bottom:6px;display:none" onclick="salvarComoNovaVersao()" title="Baixa uma planilha .xlsx com todos os dados, com data/hora no nome">&#128190; Baixar backup (.xlsx)</button>
+        <div id="sb-share-hint" style="display:none;font-size:10px;color:var(--tx2);padding:0 8px 8px;line-height:1.5">No celular: toque em <strong>Salvar no Drive</strong> &rarr; escolha <em>Google Drive</em> ou <em>Salvar em Arquivos</em> e substitua o arquivo anterior.</div>
+      </div>
+      <input type="file" id="fi2" accept=".xlsx" style="display:none" onchange="loadXLSX(this)">
+          </div>
+        </div>
+        <div class="fcard cfg-sec" id="cfg-sec-carregar">
+          <button type="button" class="cfg-cab" onclick="cfgAlternar('carregar')"><span class="cfg-tit">&#128193; Carregar dados</span><span class="cfg-resumo" id="cfg-res-carregar"></span><span class="cfg-seta">&#9662;</span></button>
+          <div class="cfg-corpo" id="cfg-corpo-carregar">
+          <div class="cfg-carregar">
+            
+            <p class="cfg-ajuda">Substitui os dados deste aparelho por uma planilha <strong>.xlsx</strong> ou um backup <strong>.json</strong>. Com a nuvem ligada, isso normalmente não é necessário.</p>
+
+            <div id="ti-trava" style="display:none;border:1px solid var(--bord);background:var(--bg2);border-radius:var(--rsm);padding:11px 13px;margin-bottom:12px;text-align:left;font-size:11.5px;line-height:1.6;color:var(--tx)"></div>
+
+            <div id="ti-aviso-dados" style="display:none;background:var(--ambbg);border:1px solid var(--amb);border-radius:var(--rsm);padding:12px 14px;margin-bottom:14px;text-align:left;font-size:12px;line-height:1.6;color:var(--tx)"></div>
+
+            <!-- ── BANNER DE RECUPERAÇÃO DE SESSÃO ── -->
+            <div id="recovery-banner" style="display:none;flex-direction:column;gap:10px;background:#fff8e1;border:1.5px solid #f9a825;border-radius:var(--r);padding:16px;margin-bottom:16px;text-align:left">
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <span style="font-size:22px;flex-shrink:0">&#9889;</span>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:700;color:#5d4037;margin-bottom:4px">Sessão não salva encontrada</div>
+                  <div style="font-size:12px;color:#6d4c41;line-height:1.5">
+                    Arquivo: <strong id="recovery-file"></strong><br>
+                    <span id="recovery-animais"></span><span id="recovery-prot"></span>
+                    &nbsp;·&nbsp;Salvo <span id="recovery-age"></span>
+                    &nbsp;·&nbsp;<span id="recovery-kb"></span>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-save" style="flex:1;justify-content:center;height:34px;font-size:12px" onclick="admExecutar(doRecovery)">
+                  &#9889; Recuperar sessão
+                </button>
+                <button class="btn btn-ghost" style="flex:0 0 auto;height:34px;font-size:12px" onclick="dismissRecovery()">
+                  Descartar
+                </button>
+              </div>
+            </div>
+
+            <!-- Vínculo automático (Chrome/Edge): reconecta ao arquivo com 1 clique, sem navegar pelas pastas -->
+            <div id="reconnect-box" style="display:none;background:var(--blubg);border:1px solid #90caf9;border-radius:var(--rsm);padding:14px 16px;margin-bottom:14px;text-align:left">
+              <div style="font-size:11px;font-weight:700;color:var(--blut);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">&#128279; Arquivo vinculado</div>
+              <div id="reconnect-name" style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px;word-break:break-all"></div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="admExecutar(reconectarArquivo)">
+                  &#128279; Reconectar automaticamente
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="esquecerArquivoVinculado()" title="Remover vínculo e escolher outro arquivo manualmente">
+                  Esquecer
+                </button>
+              </div>
+            </div>
+
+            <!-- Ultimo arquivo (aparece se localStorage tiver o nome) -->
+            <div id="last-file-box" style="display:none;background:var(--grnbg);border:1px solid #a5d6a7;border-radius:var(--rsm);padding:14px 16px;margin-bottom:14px;text-align:left">
+              <div style="font-size:11px;font-weight:700;color:var(--grnt);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">&#128197; Último arquivo utilizado</div>
+              <div id="last-file-name" style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px;word-break:break-all"></div>
+              <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="admExecutar(function(){abrirArquivo('fi1');})">
+                Carregar este arquivo
+              </button>
+            </div>
+
+            <div class="dropzone" id="dropzone" onclick="admExecutar(function(){abrirArquivo('fi1');})">
+              <div class="dropzone-ic">&#128193;</div>
+              <p><strong>Clique aqui</strong> ou arraste o arquivo .xlsx</p>
+              <p style="font-size:11px;color:var(--tx3);margin-top:6px">Somente arquivos .xlsx</p>
+            </div>
+            <input type="file" id="fi1" accept=".xlsx" style="display:none" onchange="loadXLSX(this)">
+            <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:6px" onclick="admExecutar(function(){abrirArquivo('fi-backup');})">&#128190; Restaurar backup (.json)</button>
+            <input type="file" id="fi-backup" accept=".json,application/json" style="display:none" onchange="restaurarBackupArquivo(this)">
+            <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="admExecutar(startFresh)">Começar do zero (sem arquivo)</button>
+          </div>
+          </div>
+        </div>
+      </div><!-- /tab-config -->
     </div><!-- /screen-data -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -3333,7 +3403,7 @@ function atualizarAvisoTelaInicial(){
     + 'Carregar um arquivo agora <strong>substitui</strong> tudo o que está na tela.'
     + (naNuvem
         ? ' Como você está conectado, a substituição também sobe para a nuvem e chega ao outro aparelho. '
-          + 'Para voltar a um ponto anterior sem sair da nuvem, prefira o botão <strong>Versões</strong> na barra lateral.'
+          + 'Para voltar a um ponto anterior sem sair da nuvem, prefira a seção <strong>Versões salvas na nuvem</strong>, logo acima.'
         : '')
     + '<br><span style="color:var(--tx2)">Para apenas voltar ao sistema, escolha qualquer item do menu.</span>';
 }
@@ -3443,6 +3513,7 @@ function renderTab(tab){
   else if(tab==='dashboard')    renderDash();
   else if(tab==='relatorios')   renderRelatorios();
   else if(tab==='indicadores')  renderIndicadores();
+  else if(tab==='config' && typeof cfgRender==='function') cfgRender();
   else if(/^ov-/.test(tab) && typeof ovRenderTab==='function') ovRenderTab(tab);
   // estoque e ficha só renderizam sob demanda (no goTab)
 }
@@ -11040,24 +11111,19 @@ function renderIatfReg(){
       }).sort(function(x,y){ return (x||'').localeCompare(y||'', undefined, {numeric:true}); });
       var feitas = DB_iatf_reg.filter(function(r){ return r.protId===p.id; })
         .sort(function(x,y){ return (x.brinco||'').localeCompare(y.brinco||'', undefined, {numeric:true}); });
-      var dataPadrao = isNatural ? fmtD(p.dataFim||p.dataInicio) : fmtD(p.d10);
+      var dataPadrao = isNatural ? fmtD(p.dataInicio||p.dataFim) : fmtD(p.d10);
       var touroOpts = isNatural
         ? DB_repr.filter(function(r){ return r.tipo==='touro'; })
         : DB_repr.filter(function(r){ return reprNome(r)!==p.repr; });
       return '<div class="fcard '+protCardCls('iatf', p.id)+'" style="margin-bottom:14px">'
         +'<div class="fcard-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
           +'<span>'+(isNatural?'&#128004;':'&#128297;')+' '+p.nome+(isNatural?' <span style="font-size:9px;font-weight:700;color:var(--blut);background:var(--blubg);padding:1px 6px;border-radius:8px;margin-left:6px">MONTA NATURAL</span>':'')+'</span>'
-          +'<span style="font-size:11px;font-weight:400;color:var(--tx2)">'+(isNatural?('Fim: '+fmtD(p.dataFim)):('D10: '+fmtD(p.d10)))+' &nbsp;|&nbsp; '+feitas.length+'/'+p.brincos.length+(isNatural?' Monta(s)':' IATF(s)')+'</span>'
+          +'<span style="font-size:11px;font-weight:400;color:var(--tx2)">'+(isNatural?('Período: '+fmtD(p.dataInicio)+' a '+fmtD(p.dataFim)):('D10: '+fmtD(p.d10)))+' &nbsp;|&nbsp; '+feitas.length+'/'+p.brincos.length+(isNatural?' Monta(s)':' IATF(s)')+'</span>'
         +protBtnHtml('iatf', p.id)
         +'</div>'
         +'<div class="prot-body">'
+        +iatfHtmlSelecaoAnimais(p.id, pendentes)
         +'<div class="grid g3" style="margin-bottom:10px">'
-          +'<div class="fg"><label>Animal *</label>'
-            +'<select id="iatfreg-brinco-'+p.id+'" onchange="iatfAtualizarConsanguinidade('+p.id+')">'
-              +'<option value="">— selecione —</option>'
-              +pendentes.map(function(b){ return '<option value="'+b+'">'+b+'</option>'; }).join('')
-            +'</select>'
-          +'</div>'
           +'<div class="fg"><label>Data'+(isNatural?' da Monta':' IATF')+'</label>'
             +'<input type="text" id="iatfreg-data-'+p.id+'" value="'+dataPadrao+'" maxlength="10" oninput="maskDate(this)" placeholder="DD/MM/AAAA">'
           +'</div>'
@@ -11078,7 +11144,7 @@ function renderIatfReg(){
         +'<div id="iatfreg-consang-'+p.id+'" style="display:none;background:var(--redbg);border:1px solid var(--red);'
           +'border-radius:var(--rsm);padding:10px 12px;margin-bottom:10px"></div>'
         +'<div style="display:flex;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--bord)">'
-          +'<button class="btn btn-primary btn-sm" onclick="iatfRegSalvar('+p.id+')">&#10003; Registrar '+(isNatural?'Monta':'IATF')+'</button>'
+          +'<button class="btn btn-primary btn-sm" id="iatfreg-btn-'+p.id+'" data-rot="'+(isNatural?'Monta':'IATF')+'" onclick="iatfRegSalvar('+p.id+')">&#10003; Registrar '+(isNatural?'Monta':'IATF')+'</button>'
         +'</div>'
         +(feitas.length?'<div class="tscroll" style="margin-top:10px"><table><thead><tr>'
           +(isNatural
@@ -15893,23 +15959,6 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
   </div>
 </div>
 
-<!-- ═══ NUVEM: versões salvas ═══ -->
-<div id="nv-modal-versoes" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(20,25,20,.9);align-items:center;justify-content:center;padding:16px">
-  <div style="background:var(--bg);border-radius:var(--r);max-width:620px;width:100%;max-height:82vh;display:flex;flex-direction:column">
-    <div class="tbar" style="border-radius:var(--r) var(--r) 0 0">
-      <span style="font-size:14px;font-weight:700">&#128337; Versões salvas na nuvem</span>
-      <button class="btn btn-ghost btn-sm" onclick="nvFecharVersoes()">Fechar</button>
-    </div>
-    <div style="padding:10px 16px;font-size:11px;color:var(--tx2);border-bottom:1px solid var(--bord)">
-      As 100 gravações mais recentes. Restaurar carrega o conteúdo daquela versão na tela — nada é apagado da nuvem.
-    </div>
-    <div id="nv-espaco" style="display:none;padding:8px 16px;font-size:11px;color:var(--tx2);border-bottom:1px solid var(--bord);line-height:1.5"></div>
-    <div id="nv-versoes-abas" class="mnav" style="padding:0 12px;margin-bottom:0"></div>
-    <div id="nv-versoes-lista" class="tscroll" style="overflow:auto;flex:1"></div>
-  </div>
-</div>
-
-
 <!-- ═══ Trava de administrador: substituição da base ═══ -->
 <div id="adm-modal" style="display:none;position:fixed;inset:0;z-index:9200;background:rgba(20,25,20,.9);align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--bg);border-radius:var(--r);max-width:410px;width:100%;padding:24px">
@@ -17840,6 +17889,416 @@ window.addEventListener('load', function(){
   window.addEventListener('online', function(){ prTentativas = 0; prSincronizar(); });
   window.addEventListener('offline', function(){ if(nvLigado()) prStatus('offline'); });
 });
+</script>
+<script>
+// ═══ TELA INICIAL: pendências dos próximos 7 dias ═══════════════════════════
+// Reúne só o que é urgente das três partes:
+//   Bovinos     — agenda sanitária e reprodutiva (IATF, DG etc.) de hoje a +7 dias
+//   Ovinos      — agenda sanitária (atrasados e até +7 dias) e marcos das estações
+//                 de monta (colocar/retirar carneiros, início das parições)
+//   Propriedade — contas fixas em atraso, vencendo hoje ou até +7 dias
+// Clicar num item leva à tela correspondente.
+var TI_DIAS = 7;
+
+function tiHoje(){ var d = new Date(); d.setHours(0,0,0,0); return d; }
+function tiDias(d){ return Math.round((d - tiHoje()) / 86400000); }
+function tiQuando(dd){
+  if(dd < 0) return ['atr', (-dd) + (dd === -1 ? ' dia' : ' dias') + ' atrás'];
+  if(dd === 0) return ['hj', 'hoje'];
+  if(dd === 1) return ['', 'amanhã'];
+  return ['', 'em ' + dd + ' dias'];
+}
+function tiDataBR(d){ return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); }
+
+function tiPendencias(){
+  var sec = { bov:[], ovi:[], pro:[] };
+  var hoje = tiHoje();
+
+  // ── Bovinos ──
+  try{
+    if(typeof agendaManejos === 'function' && typeof DB !== 'undefined' && DB.id && DB.id.length){
+      agendaManejos().forEach(function(m){
+        var dd = tiDias(m.data);
+        if(dd < 0 || dd > TI_DIAS) return;
+        sec.bov.push({ dd:dd, data:m.data,
+          txt: agendaOrigemBadge(m.origem) + ' <strong>' + m.desc + '</strong>' + (m.n ? ' &middot; ' + m.n + ' animais' : ''),
+          ir: m.origem === 'reprodutivo' ? "goRepTab('agenda')" : "goTab('sanidade')" });
+      });
+    }
+  }catch(e){}
+
+  // ── Ovinos ──
+  try{
+    if(typeof ovAtivo === 'function' && ovAtivo()){
+      OV.sanitario.previsoes.forEach(function(p){
+        var d = ovParse(p.data); if(!d) return;
+        var dd = tiDias(d);
+        if(dd > TI_DIAS) return;
+        sec.ovi.push({ dd:dd, data:d,
+          txt: agendaOrigemBadge('sanitario') + ' <strong>' + ovEsc(p.produto) + '</strong> &middot; ' + ovEsc(ovsDescAlvo(p.cats, p.individuais))
+             + ' (' + (function(n){ return n + (n === 1 ? ' animal' : ' animais'); })(ovsAlvo(p.cats, p.individuais).length) + ')',
+          ir: "goTab('ov-sanidade')" });
+      });
+      OV.estacoes.forEach(function(e){
+        var marcos = [
+          [ovParse(e.inicio), 'Início da monta — colocar carneiros'],
+          [ovParse(e.fim), 'Fim da monta — retirar carneiros'],
+          [ovParse(ovSomaDias(e.inicio, OV_GESTACAO_MIN)), 'Início previsto das parições']
+        ];
+        marcos.forEach(function(m){
+          if(!m[0]) return;
+          var dd = tiDias(m[0]);
+          if(dd < 0 || dd > TI_DIAS) return;
+          sec.ovi.push({ dd:dd, data:m[0],
+            txt: agendaOrigemBadge('reprodutivo') + ' <strong>' + m[1] + '</strong> &middot; ' + ovEsc(e.nome),
+            ir: "goTab('ov-monta')" });
+        });
+      });
+    }
+  }catch(e){}
+
+  // ── Propriedade: contas fixas (mês corrente e, perto da virada, o próximo) ──
+  try{
+    if(typeof cfSituacaoDoMes === 'function' && typeof DB_contasfixas !== 'undefined' && DB_contasfixas.length){
+      var meses = [[hoje.getFullYear(), hoje.getMonth()]];
+      var lim = new Date(hoje); lim.setDate(lim.getDate() + TI_DIAS);
+      if(lim.getMonth() !== hoje.getMonth()) meses.push([lim.getFullYear(), lim.getMonth()]);
+      meses.forEach(function(am, i){
+        cfSituacaoDoMes(am[0], am[1]).forEach(function(s){
+          if(s.status === 'pago') return;
+          var venc = new Date(am[0], am[1], s.dia);
+          var dd = tiDias(venc);
+          if(dd > TI_DIAS) return;
+          if(dd < 0 && i > 0) return;
+          var val = parseValorBR(s.conta.valorEstimado);
+          sec.pro.push({ dd:dd, data:venc,
+            txt: '<strong>' + s.conta.descricao + '</strong> &middot; vence dia ' + s.dia
+               + (val && !isNaN(val) ? ' &middot; ~' + fmtValorBR(val) : ''),
+            ir: "goTab('financeiro')" });
+        });
+      });
+    }
+  }catch(e){}
+
+  Object.keys(sec).forEach(function(k){ sec[k].sort(function(a, b){ return a.data - b.data; }); });
+  return sec;
+}
+
+function renderPendenciasInicio(){
+  var box = document.getElementById('ti-pendencias');
+  if(!box) return;
+  var temBov = typeof DB !== 'undefined' && DB.id && DB.id.length;
+  var temOv  = typeof ovAtivo === 'function' && ovAtivo() && (OV.animais.length || OV.estacoes.length || OV.sanitario.previsoes.length);
+  var temPro = typeof DB_contasfixas !== 'undefined' && DB_contasfixas.length;
+  // Antes de carregar os dados não há o que dizer — "nada pendente" seria enganoso.
+  if(!temBov && !temOv && !temPro){ box.style.display = 'none'; return; }
+
+  var sec = tiPendencias();
+  var nomes = { bov:'&#128004; Bovinos', ovi:'&#128017; Ovinos', pro:'&#127969; Propriedade' };
+  var total = sec.bov.length + sec.ovi.length + sec.pro.length;
+  var atras = [].concat(sec.bov, sec.ovi, sec.pro).filter(function(x){ return x.dd < 0; }).length;
+  var h = '<div class="ti-pend-cab"><span>&#9888;&#65039; Pendências da semana</span><small>'
+    + (total ? total + (total === 1 ? ' item' : ' itens') + (atras ? ' &middot; <span style="color:var(--red);font-weight:700">' + atras + ' em atraso</span>' : '') : 'próximos ' + TI_DIAS + ' dias')
+    + '</small></div>';
+  if(!total){
+    h += '<div class="ti-pend-vazio">&#10003; Nada programado para os próximos ' + TI_DIAS + ' dias.</div>';
+  } else {
+    ['bov','ovi','pro'].forEach(function(k){
+      if(!sec[k].length) return;
+      h += '<div class="ti-pend-sec">' + nomes[k] + '</div>';
+      h += sec[k].map(function(x){
+        var q = tiQuando(x.dd);
+        return '<div class="ti-pend-it" onclick="' + x.ir + '" title="Abrir">'
+          + '<span class="ti-pend-q ' + q[0] + '">' + q[1] + '<br><span style="font-weight:400;opacity:.8">' + tiDataBR(x.data) + '</span></span>'
+          + '<span>' + x.txt + '</span></div>';
+      }).join('');
+    });
+  }
+  box.innerHTML = h;
+  box.style.display = 'block';
+}
+
+(function(){
+  var original = mostrarTelaInicial;
+  mostrarTelaInicial = function(){ original.apply(this, arguments); renderPendenciasInicio(); };
+  // Dados que chegam com a tela inicial já aberta (nuvem, planilha, cópia do aparelho).
+  var aplicar = nvAplicar;
+  nvAplicar = function(){ var r = aplicar.apply(this, arguments); setTimeout(renderPendenciasInicio, 0); return r; };
+  window.addEventListener('load', function(){ setTimeout(renderPendenciasInicio, 600); });
+})();
+</script>
+<script>
+// ═══ CONFIGURAÇÕES ══════════════════════════════════════════════════════════
+// Concentra o que deixou de ser do dia a dia com a nuvem: conta, versões,
+// backup em arquivo e carregamento de planilha/backup. A tela inicial fica só
+// com o logo e as pendências.
+(function(){
+  var abrirLista = nvAbrirVersoes;           // lista de versões (com abas e espaço)
+  nvAbrirVersoes = function(){
+    var f = cfgFechadas(); if(f.versoes){ f.versoes = false; try{ localStorage.setItem(CFG_CHAVE, JSON.stringify(f)); }catch(e){} }
+    if(currentTab !== 'config') goTab('config'); else { cfgAplicarSecoes(); cfgCarregarVersoes(); }
+  };
+  nvFecharVersoes = function(){ setTimeout(function(){ if(currentTab === 'config'){ cfgResumos(); if(!cfgFechadas().versoes) cfgCarregarVersoes(); } }, 900); };
+  window._cfgAbrirLista = abrirLista;
+
+  // Na tela de Configurações o backup fica sempre à mostra (sem recolher).
+  var estadoOriginal = aplicarEstadoBackup;
+  aplicarEstadoBackup = function(){
+    estadoOriginal.apply(this, arguments);
+    var corpo = document.getElementById('sb-backup-corpo');
+    if(corpo) corpo.style.display = 'block';
+    var nota = document.getElementById('sb-backup-nota');
+    if(nota) nota.style.display = nvLigado() ? 'block' : 'none';
+  };
+})();
+
+// Seções recolhíveis; o aparelho lembra a escolha. Versões começa recolhida.
+var CFG_CHAVE = 'cfg_secoes_fechadas_v1';
+function cfgFechadas(){ try{ var v = JSON.parse(localStorage.getItem(CFG_CHAVE) || 'null'); return v || { versoes:true }; }catch(e){ return { versoes:true }; } }
+function cfgAplicarSecoes(){
+  var f = cfgFechadas();
+  ['conta','versoes','backup','carregar'].forEach(function(k){
+    var el = document.getElementById('cfg-sec-' + k); if(!el) return;
+    el.classList.toggle('fechado', !!f[k]);
+    var seta = el.querySelector('.cfg-seta'); if(seta) seta.innerHTML = f[k] ? '&#9656;' : '&#9662;';
+  });
+}
+function cfgAlternar(k){
+  var f = cfgFechadas(); f[k] = !f[k];
+  try{ localStorage.setItem(CFG_CHAVE, JSON.stringify(f)); }catch(e){}
+  cfgAplicarSecoes();
+  if(k === 'versoes' && !f[k]) cfgCarregarVersoes();
+}
+function cfgCarregarVersoes(){
+  var card = document.getElementById('nv-modal-versoes');
+  if(nvLigado()){
+    if(card) card.style.display = 'flex';
+    window._cfgAbrirLista();
+  } else if(card){
+    card.style.display = 'flex';
+    document.getElementById('nv-versoes-abas').innerHTML = '';
+    var esp = document.getElementById('nv-espaco'); if(esp) esp.style.display = 'none';
+    document.getElementById('nv-versoes-lista').innerHTML = '<div class="empty">Entre na nuvem para ver e restaurar versões.</div>';
+  }
+}
+function cfgResumos(){
+  var ligado = nvLigado();
+  var r = {
+    conta: ligado ? ((nvSessao && nvSessao.email) || '') : (nvModoLocal ? 'sem nuvem' : 'não conectado'),
+    versoes: ligado ? ['Bovinos v' + (nvVersaoBase || 0), (typeof ovLocal !== 'undefined' && ovAtivo() && ovLocal.versaoBase ? 'Ovinos v' + ovLocal.versaoBase : null),
+                       (typeof prLocal !== 'undefined' && prMigrado() ? 'Propriedade v' + (prLocal.versaoBase || 0) : null)].filter(Boolean).join(' · ') : '',
+    backup: (typeof fileName !== 'undefined' && DB && DB.id && DB.id.length) ? DB.id.length + ' animais abertos' : '',
+    carregar: 'planilha .xlsx ou backup .json'
+  };
+  Object.keys(r).forEach(function(k){ var el = document.getElementById('cfg-res-' + k); if(el) el.textContent = r[k]; });
+}
+
+function cfgRender(){
+  var ligado = nvLigado();
+  var conta = document.getElementById('cfg-conta');
+  if(conta){
+    var linhas = [
+      ['&#128004; Bovinos', (document.getElementById('nv-status') || {}).innerHTML || '—'],
+      ['&#128017; Ovinos', (document.getElementById('ov-nv-status') || {}).innerHTML || '—'],
+      ['&#127969; Propriedade', (document.getElementById('pr-nv-status') || {}).innerHTML || '—']
+    ];
+    conta.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">'
+      + '<div style="font-size:13px">' + (ligado ? 'Conectado como <strong>' + ovEsc((nvSessao && nvSessao.email) || '') + '</strong>'
+            : (nvModoLocal ? 'Trabalhando <strong>sem a nuvem</strong> (só neste aparelho)' : '<strong>Não conectado</strong> à nuvem')) + '</div>'
+      + (ligado ? '<button class="btn btn-ghost btn-sm" onclick="nvSair()">Sair</button>'
+                : '<button class="btn btn-primary btn-sm" onclick="nvAbrirLogin()">Entrar na nuvem</button>')
+      + '</div>'
+      + '<table><tbody>' + linhas.map(function(l){
+          return '<tr><td style="width:150px;font-weight:600">' + l[0] + '</td><td class="cfg-st">' + l[1] + '</td></tr>';
+        }).join('') + '</tbody></table>';
+  }
+  cfgAplicarSecoes();
+  cfgResumos();
+  if(!cfgFechadas().versoes) cfgCarregarVersoes();
+  if(typeof aplicarEstadoBackup === 'function') aplicarEstadoBackup();
+  if(typeof atualizarAvisoTelaInicial === 'function') atualizarAvisoTelaInicial();
+  if(typeof admAtualizarIndicador === 'function') admAtualizarIndicador();
+  if(typeof checkAutoSaveRecovery === 'function') checkAutoSaveRecovery();
+}
+
+// Tela inicial sem dados abertos: indica o caminho.
+(function(){
+  var original = renderPendenciasInicio;
+  renderPendenciasInicio = function(){
+    original.apply(this, arguments);
+    var aviso = document.getElementById('ti-sem-dados');
+    if(!aviso) return;
+    var temDados = (typeof DB !== 'undefined' && DB.id && DB.id.length) || (typeof OV !== 'undefined' && OV.animais.length);
+    aviso.style.display = temDados ? 'none' : 'block';
+  };
+})();
+</script>
+<script>
+// ═══ IATF/MONTA: registro de vários animais de uma vez ══════════════════════
+// Os animais pendentes do protocolo aparecem como uma lista de marcação, com
+// "Selecionar todos". O controle de parentesco continua valendo, agora para o
+// grupo inteiro:
+//   • escolhido o touro, os animais aparentados com ele ficam desmarcados e
+//     bloqueados, com o parentesco escrito ao lado do brinco;
+//   • sem touro escolhido, o quadro vermelho lista, para os marcados, os touros
+//     que não podem ser usados em cada um;
+//   • na lista de touros, cada opção mostra com quantos marcados é aparentada
+//     (com um só animal marcado, a opção fica desabilitada, como antes).
+function iatfHtmlSelecaoAnimais(pid, pendentes){
+  if(!pendentes.length){
+    return '<div style="font-size:12px;color:var(--grnt);margin-bottom:10px">&#10003; Todos os animais deste protocolo já têm registro.</div>';
+  }
+  return '<div class="fg" style="margin-bottom:12px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px">'
+    +   '<label style="margin:0">Animais * <span id="iatfreg-cnt-' + pid + '" style="text-transform:none;letter-spacing:0;font-weight:600;color:var(--grnt)"></span></label>'
+    +   '<span style="display:flex;gap:6px">'
+    +     '<button type="button" class="btn btn-ghost btn-sm" onclick="iatfMarcarTodos(' + pid + ',true)">&#9745; Selecionar todos</button>'
+    +     '<button type="button" class="btn btn-ghost btn-sm" onclick="iatfMarcarTodos(' + pid + ',false)">Limpar</button>'
+    +   '</span></div>'
+    + '<div class="iatf-ani-grid" id="iatfreg-lista-' + pid + '">'
+    + pendentes.map(function(b){
+        return '<label class="iatf-ani" data-b="' + b + '"><input type="checkbox" value="' + b + '" onchange="iatfAtualizarConsanguinidade(' + pid + ')">'
+          + '<span class="iatf-ani-b">' + b + '</span><span class="iatf-ani-p"></span></label>';
+      }).join('')
+    + '</div></div>';
+}
+
+function iatfCaixas(pid){
+  var box = document.getElementById('iatfreg-lista-' + pid);
+  return box ? Array.prototype.slice.call(box.querySelectorAll('input[type=checkbox]')) : [];
+}
+function iatfSelecionados(pid){
+  return iatfCaixas(pid).filter(function(c){ return c.checked && !c.disabled; }).map(function(c){ return c.value; });
+}
+function iatfMarcarTodos(pid, on){
+  iatfCaixas(pid).forEach(function(c){ if(!c.disabled) c.checked = on; });
+  iatfAtualizarConsanguinidade(pid);
+}
+
+function iatfAtualizarConsanguinidade(pid){
+  var selT = document.getElementById('iatfreg-touro-' + pid);
+  var box  = document.getElementById('iatfreg-consang-' + pid);
+  if(!selT || !box) return [];
+  var touro = selT.value ? (selT.options[selT.selectedIndex].getAttribute('data-nome') || selT.value) : '';
+
+  // 1. Animais aparentados com o touro escolhido: desmarcados e bloqueados.
+  var excluidos = [];
+  iatfCaixas(pid).forEach(function(c){
+    var p = touro ? parentescoComReprodutor(c.value, touro) : '';
+    var lab = c.closest('label'), tag = lab.querySelector('.iatf-ani-p');
+    if(p){
+      if(c.checked) excluidos.push({ b:c.value, p:p });
+      c.checked = false; c.disabled = true;
+      lab.classList.add('vetado'); tag.textContent = '⛔ ' + touro + ' é ' + p;
+    } else {
+      c.disabled = false; lab.classList.remove('vetado'); tag.textContent = '';
+    }
+  });
+  var sel = iatfSelecionados(pid);
+
+  // 2. Opções de touro: quantos dos marcados são aparentados.
+  Array.prototype.forEach.call(selT.options, function(opt){
+    if(!opt.value) return;
+    var base = opt.getAttribute('data-nome') || opt.value;
+    opt.setAttribute('data-nome', base);
+    var n = 0, umP = '';
+    sel.forEach(function(b){ var p = parentescoComReprodutor(b, base); if(p){ n++; umP = p; } });
+    if(sel.length === 1){
+      opt.disabled = !!umP;
+      opt.textContent = umP ? (base + '  ⛔ ' + umP + ' do animal') : base;
+    } else {
+      opt.disabled = false;
+      opt.textContent = n ? (base + '  ⛔ parente de ' + n + ' dos marcados') : base;
+    }
+  });
+
+  // 3. Contador e botão.
+  var total = iatfCaixas(pid).length;
+  var cnt = document.getElementById('iatfreg-cnt-' + pid);
+  if(cnt) cnt.textContent = sel.length ? '— ' + sel.length + ' de ' + total + ' marcado(s)' : '';
+  var btn = document.getElementById('iatfreg-btn-' + pid);
+  if(btn) btn.innerHTML = '&#10003; Registrar ' + btn.getAttribute('data-rot') + (sel.length > 1 ? ' (' + sel.length + ' animais)' : '');
+
+  // 4. Quadro vermelho de consanguinidade.
+  var html = '';
+  if(touro){
+    var bloqueados = iatfCaixas(pid).filter(function(c){ return c.disabled; });
+    if(bloqueados.length){
+      html = '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px">&#9888; Não usar ' + touro + ' em ' + bloqueados.length + ' animal(is) — consanguinidade</div>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:6px">' + bloqueados.map(function(c){
+            return iatfChip(c.value, parentescoComReprodutor(c.value, touro));
+          }).join('') + '</div>'
+        + '<div style="font-size:11px;color:var(--tx2);margin-top:6px">Esses animais ficam fora deste registro. Registre-os depois com outro touro.</div>';
+    }
+  } else {
+    var comVeto = sel.map(function(b){ return { b:b, v:reprodutoresConsanguineos(b) }; }).filter(function(x){ return x.v.length; });
+    if(comVeto.length){
+      html = '<div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px">&#9888; Consanguinidade entre os marcados — touros que não podem ser usados</div>'
+        + comVeto.map(function(x){
+            return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:5px">'
+              + '<strong style="font-size:12px;min-width:44px">' + x.b + '</strong>'
+              + x.v.map(function(v){ return iatfChip(v.nome, v.parentesco); }).join('') + '</div>';
+          }).join('');
+    }
+  }
+  box.innerHTML = html;
+  box.style.display = html ? 'block' : 'none';
+  return excluidos;
+}
+function iatfChip(nome, parentesco){
+  return '<span style="font-size:12px;font-weight:600;background:var(--redbg);color:var(--red);border:1px solid var(--red);padding:3px 10px;border-radius:12px">'
+    + nome + ' <span style="font-weight:400;opacity:.85">(' + parentesco + ')</span></span>';
+}
+
+function iatfConferirTouro(pid){
+  var excl = iatfAtualizarConsanguinidade(pid);
+  if(excl.length){
+    var selT = document.getElementById('iatfreg-touro-' + pid);
+    toast(excl.length + ' animal(is) desmarcado(s) por parentesco com ' + selT.value + ': '
+      + excl.map(function(x){ return x.b + ' (' + x.p + ')'; }).join(', ') + '.', 'err');
+  }
+}
+
+function iatfRegSalvar(pid){
+  var prot = DB_protocolos.find(function(p){ return p.id === pid; });
+  var isNatural = !!(prot && prot.tipo === 'natural');
+  var sel    = iatfSelecionados(pid);
+  var data   = document.getElementById('iatfreg-data-' + pid).value.trim();
+  var touro  = document.getElementById('iatfreg-touro-' + pid).value.trim();
+  var insEl  = document.getElementById('iatfreg-ins-' + pid);
+  var semenEl= document.getElementById('iatfreg-semen-' + pid);
+  var ins    = insEl ? insEl.value.trim() : '';
+  var semen  = semenEl ? semenEl.value.trim() : '';
+  var obs    = document.getElementById('iatfreg-obs-' + pid).value.trim();
+  if(!sel.length){ toast('Marque ao menos um animal', 'err'); return; }
+  if(isNatural && !touro){ toast('Selecione o touro utilizado', 'err'); return; }
+  if(data && !validDate(data)){ toast('Data inválida. Use DD/MM/AAAA', 'err'); return; }
+  if(!data) data = todayStr();
+
+  // Barreira final contra consanguinidade — vale mesmo que algo escape da tela.
+  var bloqueados = sel.filter(function(b){ return parentescoComReprodutor(b, touro); });
+  var ok = sel.filter(function(b){ return bloqueados.indexOf(b) < 0; });
+  if(!ok.length){ toast('Registro bloqueado: ' + touro + ' é parente de todos os animais marcados.', 'err'); return; }
+  if(ok.length > 1 && !confirm('Registrar ' + (isNatural ? 'monta' : 'IATF') + ' para ' + ok.length + ' animais?\n\n'
+      + 'Data: ' + data + (touro ? '\nTouro: ' + touro : '')
+      + (bloqueados.length ? '\n\n' + bloqueados.length + ' animal(is) fica(m) de fora por parentesco: ' + bloqueados.join(', ') : ''))) return;
+
+  ok.forEach(function(brinco){
+    DB_iatf_reg.push({ protId:pid, brinco:brinco, data:data, touro:touro, inseminador:ins, semen:semen, obs:obs });
+    var dg = DB.dg.find(function(d){ return d.brinco === brinco; });
+    if(dg){
+      dg.condAtual = 'Protocolado';
+      fcLogEstado(brinco, 'Condição atualizada para Protocolado — ' + (isNatural ? 'Monta Natural' : 'IATF') + (prot ? ' (' + prot.nome + ')' : ''), data);
+    }
+  });
+  if(ins){ iatfUltimoInseminador = ins; try{ localStorage.setItem('iatfUltimoInseminador_rebanho', ins); }catch(e){} }
+  if(semen){ iatfUltimoSemen = semen; try{ localStorage.setItem('iatfUltimoSemen_rebanho', semen); }catch(e){} }
+  markDirty();
+  toast((isNatural ? 'Monta registrada' : 'IATF registrada') + ' para ' + (ok.length === 1 ? 'o animal ' + ok[0] : ok.length + ' animais')
+    + (bloqueados.length ? ' — ' + bloqueados.length + ' ficou(aram) de fora por parentesco' : '') + '.', 'ok');
+  renderIatfReg();
+}
 </script>
 </body>
 </html>
