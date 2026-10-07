@@ -1024,8 +1024,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.47.0</span><br>
-              Data da versão: <span id="app-versao-data">05/10/2026</span><br>
+              Versão: <span id="app-versao">2.50.0</span><br>
+              Data da versão: <span id="app-versao-data">07/10/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -2011,9 +2011,24 @@ tr:hover td{background:#fafaf7}
             <span class="tcnt" id="baixa-cnt">0 registros</span>
           </div>
           <div id="baixa-filtros" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-bottom:1px solid var(--bord)"></div>
+          <!-- Legenda do código de arquivo. Sem ela, "arquivo A17" na coluna Brinco não
+               diz nada a quem abre a tela pela primeira vez — e o código aparece também
+               na genealogia dos filhos e netos, longe daqui. -->
+          <div style="font-size:11px;color:var(--tx2);line-height:1.6;padding:9px 16px;border-bottom:1px solid var(--bord)">
+            <strong>Código de arquivo.</strong> Ao registrar a saída, o animal troca de brinco e
+            leva o histórico consigo &mdash; filhos e netos passam a citá-lo pelo código novo, e o
+            número antigo fica livre para outro animal. A letra é o tipo de saída
+            (<strong>M</strong>orte, <strong>A</strong>bate, <strong>V</strong>enda,
+            <strong>T</strong>ransferência; <strong>X</strong> = arquivo sem saída registrada) e o
+            número é a ordem da saída, única para todos os tipos. Ou seja: <em>A17</em> foi a 17ª
+            saída do rebanho, por abate.
+          </div>
           <div class="tscroll">
             <table>
-              <thead><tr><th>Brinco</th><th>Data</th><th>Tipo</th><th>Comprador</th><th>Valor</th><th>Motivo/Obs</th><th class="tc">Ação</th></tr></thead>
+              <!-- "Código", não "Brinco": a coluna mostra o código de arquivo, que é o
+                   identificador do animal depois da saída. O brinco que ele usava em vida
+                   foi liberado e pode pertencer a outro animal hoje. -->
+              <thead><tr><th>Código</th><th>Data</th><th>Tipo</th><th>Comprador</th><th>Valor</th><th>Motivo/Obs</th><th class="tc">Ação</th></tr></thead>
               <tbody id="baixa-tbody"></tbody>
             </table>
           </div>
@@ -2320,6 +2335,8 @@ tr:hover td{background:#fafaf7}
             <div class="fg"><label>Mãe (ovelha)</label><select id="ov-mae"></select></div>
             <div class="fg"><label>Situação</label><select id="ov-status" onchange="ovToggleDataStatus()"><option value="ativo">Ativo</option><option value="vendido">Vendido</option><option value="morto">Morto</option><option value="descarte">Descarte</option></select></div>
             <div class="fg" id="ov-fg-dtstatus" style="display:none"><label>Data da saída</label><input type="text" id="ov-dtstatus" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskDate(this)"></div>
+            <div class="fg ov-fg-venda" style="display:none"><label>Valor da venda (R$)</label><input type="text" id="ov-venda-valor" placeholder="Ex: 450,00" inputmode="decimal"></div>
+            <div class="fg ov-fg-venda" style="display:none"><label>Comprador</label><input type="text" id="ov-venda-comprador" placeholder="Opcional"></div>
           </div>
           <div class="fg" style="margin-bottom:12px"><label>Observações</label><textarea id="ov-obs" rows="2" placeholder="Origem, características, ocorrências..."></textarea></div>
           <datalist id="ov-racas"><option>Hampshire</option><option>Texel</option><option>Suffolk</option><option>Ile de France</option><option>Corriedale</option><option>Dorper</option><option>Crioula</option><option>Cruza</option></datalist>
@@ -3480,6 +3497,10 @@ function renderAll(){
   reconciliarCondicaoProtocolado();
   reconciliarGeneroTerneiro();
   reconciliarIntercorrenciasReproducao();
+  // Reemite os códigos de arquivo antigos (V-n atribuído a morte, abate ou
+  // transferência) com a letra do tipo de saída. Converte só o que está errado e,
+  // depois da primeira passada, não faz mais nada.
+  reconciliarCodigosArquivo();
   // Depois das demais: depende de estadoAmamentacao, que lê os registros de parto já
   // reconciliados acima.
   migrarDataAmamentacao();
@@ -5094,7 +5115,7 @@ function renderDash(){
 
   // ── KPIs de peso: média e total ──
   // Só animais ATIVOS entram. As pesagens de quem saiu do rebanho continuam na base
-  // sob o brinco de arquivo (V1, V2…) — somá-las inflaria o peso total com bicho que
+  // sob o código de arquivo (M1, A2, V3…) — somá-las inflaria o peso total com bicho que
   // não está mais no campo, que é justamente o número que se quer confiável aqui.
   var latestPeso = {};
   var sorted = DB.pes.slice().sort(function(a,b){ return (toDate(a.data)||new Date(0))-(toDate(b.data)||new Date(0)); });
@@ -6881,9 +6902,10 @@ function salvarBaixa(){
     }
   }
 
-  // Arquiva o animal sob um brinco virtual (V1, V2...) levando junto todo o histórico e
-  // reapontando os descendentes. O número original fica livre, sem resíduo nenhum.
-  var _virtual = arquivarAnimal(b, 'saída do rebanho ('+tipo+')');
+  // Arquiva o animal sob um código de arquivo (M/A/V/T + nº) levando junto todo o
+  // histórico e reapontando a genealogia dos descendentes. O número original fica
+  // livre, sem resíduo nenhum.
+  var _virtual = arquivarAnimal(b, 'saída do rebanho ('+tipo+')', tipo);
   var _regBaixa = DB_baixas[DB_baixas.length-1];
   if(_regBaixa){ _regBaixa.brincoOriginal = b; _regBaixa.brinco = _virtual; }
 
@@ -6942,8 +6964,8 @@ function salvarBaixaLote(){
       valor: tipo==='Venda' ? valorPorAnimal : '',
       _baixaTag: tag
     });
-    // Arquiva sob brinco virtual, preservando histórico e genealogia (ver arquivarAnimal).
-    var _v = arquivarAnimal(b, 'saída em lote ('+tipo+')');
+    // Arquiva sob código de arquivo, preservando histórico e genealogia (ver arquivarAnimal).
+    var _v = arquivarAnimal(b, 'saída em lote ('+tipo+')', tipo);
     var _rb = DB_baixas[DB_baixas.length-1];
     if(_rb){ _rb.brincoOriginal = b; _rb.brinco = _v; }
   });
@@ -7028,8 +7050,13 @@ function renderBaixas(){
     var origIdx = DB_baixas.indexOf(r);
     var tipoCor = r.tipo==='Venda' ? 'color:var(--grnt)' : (r.tipo==='Morte'||r.tipo==='Abate') ? 'color:var(--red)' : 'color:var(--tx2)';
     return '<tr>'
-      +'<td><strong>'+(r.brincoOriginal||r.brinco)+'</strong>'
-        +(r.brincoOriginal?'<br><span style="font-size:10px;color:var(--tx3)">arquivo '+r.brinco+'</span>':'')+'</td>'
+      // O animal é identificado pelo CÓDIGO DE ARQUIVO, e só por ele. O número antigo
+      // não é mais nome dele: foi liberado e pode já estar num bezerro nascido ontem.
+      // Mostrá-lo aqui em destaque fazia a tela contradizer o cadastro — a 146 desta
+      // linha e a 146 do rebanho seriam dois animais diferentes com o mesmo rótulo.
+      // O número de origem fica guardado no registro e aparece na ficha do arquivado,
+      // onde há contexto para lê-lo como história e não como identificação.
+      +'<td><strong>'+r.brinco+'</strong></td>'
       +'<td>'+fmtD(r.data)+'</td>'
       +'<td style="'+tipoCor+';font-weight:600">'+r.tipo+'</td>'
       +'<td>'+(r.comprador||'-')+'</td>'
@@ -8494,27 +8521,47 @@ function fcConfirmarTrocaBrinco(antigo){
 // Propaga a troca de um brinco por todas as tabelas do sistema, incluindo referências cruzadas
 // (mãe/pai/avô de outros animais, terneiro de um parto registrado, protocolos, reprodutores,
 // intercorrências) — nenhum dado é perdido, tudo passa a ficar associado ao novo número.
-function renomearBrinco(antigo, novo, motivo){
+// `silencioso` suprime a anotação na ficha. Serve para as trocas intermediárias da
+// reemissão de códigos de arquivo, que passam por um nome temporário: registrar
+// "brinco alterado para __ARQTMP0__" encheria a ficha de ruído sem informar nada.
+function renomearBrinco(antigo, novo, motivo, silencioso){
   function troca(arr){ arr.forEach(function(r){ if(r.brinco===antigo) r.brinco=novo; }); }
   troca(DB.id); troca(DB.dg); troca(DB.pes); troca(DB.san); troca(DB_mi);
   troca(DB.rep); troca(DB_iatf_reg); troca(DB_dg_reg);
-  // Referências cruzadas: o animal pode ser mãe/pai/avô de outros registros
+  // Referências cruzadas: o animal pode ser mãe/pai/avô de outros registros.
+  //
+  // avoPat entrou nesta lista depois: o campo foi criado numa versão posterior ao
+  // arquivamento, e ficou de fora. Quem saía do rebanho continuava sendo citado pelo
+  // número ANTIGO como avô paterno dos netos — número que, reusado, passava a apontar
+  // para um animal totalmente diferente. É a genealogia que mais sofre com isso,
+  // porque avô paterno costuma estar a duas gerações de distância e ninguém confere.
   DB.dg.forEach(function(d){
     if(d.mae===antigo) d.mae=novo;
     if(d.pai===antigo) d.pai=novo;
     if(d.avo===antigo) d.avo=novo;
+    if(d.avoPat===antigo) d.avoPat=novo;
   });
   DB_dg_reg.forEach(function(r){ if(r.terneiroBrinco===antigo) r.terneiroBrinco=novo; });
   DB_protocolos.forEach(function(p){
     if(p.brincos && p.brincos.length) p.brincos = p.brincos.map(function(x){ return x===antigo?novo:x; });
   });
-  DB_repr.forEach(function(r){ if(r.tipo==='touro' && r.brinco===antigo) r.brinco=novo; });
+  // O cadastro de reprodutores guarda a própria genealogia do touro. Um touro vendido
+  // que era pai ou avô de outro reprodutor também precisa ser reapontado — senão a
+  // linhagem dentro do próprio cadastro de touros aponta para um número livre.
+  DB_repr.forEach(function(r){
+    if(r.tipo==='touro' && r.brinco===antigo) r.brinco=novo;
+    if(r.mae===antigo) r.mae=novo;
+    if(r.pai===antigo) r.pai=novo;
+    if(r.avo===antigo) r.avo=novo;
+  });
   if(fcInter[antigo]){
     if(!fcInter[novo]) fcInter[novo]=[];
     fcInter[novo] = fcInter[novo].concat(fcInter[antigo]);
     delete fcInter[antigo];
   }
-  fcLogEstado(novo, 'Brinco alterado de '+antigo+' para '+novo+(motivo?' — '+motivo:''), todayBR());
+  if(!silencioso){
+    fcLogEstado(novo, 'Brinco alterado de '+antigo+' para '+novo+(motivo?' — '+motivo:''), todayBR());
+  }
   markDirty();
 }
 
@@ -9587,7 +9634,7 @@ function fcBuscar(){
     // (purgarDadosAnimal) — o número está livre para um novo cadastro.
     var baixaHist = DB_baixas.filter(function(r){return r.brinco===v;})
       .sort(function(a,b){ var da=toDate(a.data),db=toDate(b.data); if(!da&&!db)return 0; if(!da)return 1; if(!db)return -1; return db-da; })[0];
-    // Animal arquivado (brinco virtual): o histórico foi preservado, então a ficha
+    // Animal arquivado (código de arquivo): o histórico foi preservado, então a ficha
     // continua consultável — é isso que dá rastreabilidade a quem veio antes.
     if(brincoEhVirtual(v) && DB.dg.find(function(d){ return d.brinco===v; })){
       fcRender(v);
@@ -9600,8 +9647,20 @@ function fcBuscar(){
         +'. Ficha mantida apenas para consulta e rastreabilidade genealógica.</div>');
       return;
     }
+    // Ponte de volta. Quem procura "146" procura pelo número que conhece, e esse número
+    // deixou de ser o nome do animal no momento da baixa — a busca daria "não encontrado"
+    // e o produtor concluiria que o histórico se perdeu. Aqui a baixa é procurada também
+    // pelo brinco de ORIGEM, e a resposta entrega o código de arquivo para consultar.
+    var baixaOrigem = DB_baixas.filter(function(r){ return r.brincoOriginal === v; })
+      .sort(function(a,b){ var da=toDate(a.data),db=toDate(b.data); if(!da&&!db)return 0; if(!da)return 1; if(!db)return -1; return db-da; })[0];
+
     document.getElementById('fc-result').innerHTML = baixaHist
       ? '<div class="fc-nf">Brinco <strong>'+v+'</strong> teve saída registrada em '+fmtD(baixaHist.data)+' ('+baixaHist.tipo+'). Consulte o histórico na aba <strong>Saída do Rebanho</strong>. Este número já está disponível para um novo cadastro.</div>'
+      : baixaOrigem
+      ? '<div class="fc-nf">O brinco <strong>'+v+'</strong> está livre: o animal que o usava saiu do rebanho'
+        + (baixaOrigem.data ? ' em '+fmtD(baixaOrigem.data) : '')
+        + ' ('+(baixaOrigem.tipo||'saída')+') e hoje é o <strong>'+baixaOrigem.brinco+'</strong>.'
+        + '<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="fcPick(\''+baixaOrigem.brinco+'\')">Abrir ficha de '+baixaOrigem.brinco+'</button></div></div>'
       : '<div class="fc-nf">Brinco <strong>'+v+'</strong> não encontrado. Verifique o cadastro em Identificação.</div>';
     return;
   }
@@ -12714,40 +12773,114 @@ function admAtualizarIndicador(){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// BRINCO VIRTUAL — arquivamento de animais que saíram do rebanho
+// BRINCO DE ARQUIVO — animais que saíram do rebanho
 // ═══════════════════════════════════════════════════════════════════════════
 // O brinco é reaproveitado assim que um animal deixa a propriedade. Antes, o
 // histórico do animal antigo era simplesmente APAGADO para liberar o número —
 // e, quando sobrava alguma referência, o animal novo herdava o passado do
 // anterior (pesagens, manejos, diagnósticos, intercorrências).
 //
-// Agora, ao dar baixa, o animal é RENOMEADO para um brinco virtual (V1, V2, V3…)
-// e leva consigo todo o seu histórico. As referências genealógicas nos
-// descendentes são atualizadas junto, então a rastreabilidade continua intacta:
-// um terneiro cuja mãe era a 132 passa a apontar para V7, e V7 guarda o registro
-// de quem era a 132. O número 132 fica realmente livre, sem nenhum resíduo.
+// Hoje a baixa funciona como uma TROCA DE BRINCO: o animal é renomeado para um
+// código de arquivo e leva consigo todo o seu histórico. As referências
+// genealógicas nos descendentes — mãe, pai, avô materno, avô paterno — são
+// reapontadas junto, então a rastreabilidade continua intacta: um terneiro cuja
+// mãe era a 132 passa a apontar para V7, e V7 guarda o registro de quem era a
+// 132. O número 132 fica realmente livre, sem nenhum resíduo.
+//
+// ── O código ───────────────────────────────────────────────────────────────
+// Letra do TIPO de saída + número sequencial:
+//
+//     M = Morte     A = Abate     V = Venda     T = Transferência
+//     X = arquivo sem saída (histórico separado de um brinco reusado)
+//
+// A numeração é ÚNICA, compartilhada entre os tipos, na ordem das datas de
+// saída: a primeira saída é 1, a segunda é 2, independente do tipo. Lendo
+// "A17" você sabe duas coisas de imediato — foi abate, e foi a 17ª saída.
+//
+// O código é DEFINITIVO. Uma baixa lançada retroativamente recebe o próximo
+// número livre, mesmo que a data a coloque no meio da sequência. É de
+// propósito: um código anotado no caderno ou citado num relatório tem de
+// significar sempre o mesmo animal, e renumerar em massa quebraria isso.
 // ═══════════════════════════════════════════════════════════════════════════
 
-function brincoEhVirtual(b){
-  return typeof b === 'string' && /^V\d+$/.test(b);
+// Letras válidas de prefixo. 'V' é o primeiro da lista por ser também o formato
+// dos códigos antigos (V1, V2…), que continuam sendo lidos sem conversão.
+var ARQ_PREFIXOS = 'MAVTX';
+
+// Tipo de saída → letra. O tipo vem dos <select> de Saída do Rebanho; 'Arquivo'
+// é o registro sintético criado ao separar o histórico de um brinco reusado,
+// que não corresponde a uma saída real e por isso recebe X.
+function arqPrefixoDoTipo(tipo){
+  var t = (tipo || '').toLowerCase();
+  if(t.indexOf('morte') === 0)   return 'M';
+  if(t.indexOf('abate') === 0)   return 'A';
+  if(t.indexOf('venda') === 0)   return 'V';
+  if(t.indexOf('transf') === 0)  return 'T';
+  return 'X';
 }
 
-// Próximo número virtual disponível. Varre tudo que existe (cadastro, baixas e
-// genealogia) para nunca reutilizar um V que já esteja em uso.
-function proximoBrincoVirtual(){
+// Só a FORMA do código — letra válida seguida de número. Serve para reservar números:
+// para essa pergunta não importa de quem é o código, importa que o número está tomado.
+function arqTemFormaDeCodigo(b){
+  return typeof b === 'string' && new RegExp('^[' + ARQ_PREFIXOS + ']\\d+$').test(b);
+}
+
+// Este animal saiu do rebanho? É pergunta de SIGNIFICADO, e por isso mais estrita que a
+// forma: um animal VIVO chamado "M3" não é um código de arquivo, é só um brinco com
+// letra — o cadastro aceita letras. Sem esta trava o rebanho ganharia um animal tratado
+// como arquivado: fora do efetivo, fora dos lotes, com a ficha marcada "saiu do rebanho".
+function brincoEhVirtual(b){
+  if(!arqTemFormaDeCodigo(b)) return false;
+  if(typeof DB !== 'undefined' && DB.id && DB.id.some(function(r){ return r.brinco === b; })) return false;
+  return true;
+}
+
+// Número sequencial embutido num código de arquivo; 0 quando não tem essa forma.
+// Usa a forma, não brincoEhVirtual: um número ocupado por animal vivo também está
+// ocupado, e reemiti-lo é exatamente o que não pode acontecer.
+function arqSeqDe(b){
+  if(!arqTemFormaDeCodigo(b)) return 0;
+  var n = parseInt(b.substring(1), 10);
+  return isNaN(n) ? 0 : n;
+}
+
+// Varre TUDO que existe (cadastro, baixas, genealogia, reprodução) e devolve o
+// maior número já usado em qualquer prefixo. A sequência é compartilhada, então
+// basta um máximo global: nunca se reemite um número, nem trocando de letra.
+function maiorSeqArquivo(){
   var maior = 0;
-  function ver(b){
-    if(!brincoEhVirtual(b)) return;
-    var n = parseInt(b.substring(1), 10);
-    if(!isNaN(n) && n > maior) maior = n;
-  }
+  function ver(b){ var n = arqSeqDe(b); if(n > maior) maior = n; }
   DB.id.forEach(function(r){ ver(r.brinco); });
-  DB.dg.forEach(function(r){ ver(r.brinco); ver(r.mae); });
+  DB.dg.forEach(function(r){ ver(r.brinco); ver(r.mae); ver(r.pai); ver(r.avo); ver(r.avoPat); });
   DB_baixas.forEach(function(r){ ver(r.brinco); });
   DB_dg_reg.forEach(function(r){ ver(r.brinco); ver(r.terneiroBrinco); });
   DB_iatf_reg.forEach(function(r){ ver(r.brinco); });
+  DB_repr.forEach(function(r){ ver(r.brinco); ver(r.mae); ver(r.pai); ver(r.avo); });
   Object.keys(fcInter).forEach(ver);
-  return 'V' + (maior + 1);
+  return maior;
+}
+
+// Um código de arquivo não pode colidir com brinco de animal vivo. O rebanho usa
+// só números, mas o cadastro aceita letras — e um animal chamado "M3" tornaria o
+// código M3 ambíguo. Nesse caso o número é pulado.
+function arqCodigoLivre(cod){
+  if(DB.id.some(function(r){ return r.brinco === cod; })) return false;
+  if(DB_baixas.some(function(r){ return r.brinco === cod; })) return false;
+  return true;
+}
+
+// Próximo código de arquivo para um tipo de saída.
+function proximoCodigoArquivo(tipo){
+  var pref = arqPrefixoDoTipo(tipo);
+  var n = maiorSeqArquivo() + 1;
+  while(!arqCodigoLivre(pref + n)) n++;
+  return pref + n;
+}
+
+// Compatibilidade: chamadas antigas sem tipo caem em venda, que é a saída mais
+// comum. Os caminhos do app todos informam o tipo.
+function proximoBrincoVirtual(tipo){
+  return proximoCodigoArquivo(tipo || 'Venda');
 }
 
 // Qual era o número real deste animal antes da saída.
@@ -12756,30 +12889,128 @@ function brincoOriginalDe(virtual){
   return b ? b.brincoOriginal : '';
 }
 
-// Rótulo para telas de genealogia: "V7 (ex-132)".
+// Rótulo nas telas de genealogia. Devolve só o código de arquivo.
+//
+// Mostrava "V7 (ex-132)". Saiu porque o número antigo está LIVRE: assim que a 132 nova
+// nasce, "mãe: V7 (ex-132)" convida à leitura errada de que a mãe é a 132 do rebanho —
+// que é outro animal. O ex-número é história do arquivado, não identificação, e tem um
+// lugar certo: a ficha dele, que diz "usava o brinco 132, hoje livre para outro animal".
 function brincoHistLbl(b){
-  if(!brincoEhVirtual(b)) return b;
-  var orig = brincoOriginalDe(b);
-  return orig ? (b + ' (ex-' + orig + ')') : b;
+  return b;
+}
+
+// Legenda das letras, para as telas que mostram códigos de arquivo.
+function arqTipoDoCodigo(cod){
+  if(!brincoEhVirtual(cod)) return '';
+  return { M:'Morte', A:'Abate', V:'Venda', T:'Transferência', X:'Arquivo' }[cod.charAt(0)] || '';
 }
 
 // ── Arquivamento ───────────────────────────────────────────────────────────
 // Substitui purgarDadosAnimal(). Em vez de apagar, renomeia e tira do cadastro
-// ativo. Devolve o brinco virtual atribuído.
-function arquivarAnimal(brinco, motivo){
-  var virtual = proximoBrincoVirtual();
+// ativo. Devolve o código de arquivo atribuído.
+function arquivarAnimal(brinco, motivo, tipo){
+  var virtual = proximoCodigoArquivo(tipo);
 
   // renomearBrinco já cuida de TODAS as referências: cadastro, pesagens, manejos,
   // sanidade, reprodução, intercorrências, protocolos e — o que mais importa aqui —
-  // o campo "mãe" dos descendentes e o "terneiro" nos registros de parto.
+  // a genealogia dos descendentes (mãe, pai, avô materno, avô paterno) e o
+  // "terneiro" nos registros de parto.
   renomearBrinco(brinco, virtual, motivo || 'saída do rebanho');
 
   // Sai do cadastro ativo (DB.id). Todo o resto do histórico permanece,
-  // agora sob o número virtual.
+  // agora sob o código de arquivo.
   DB.id = DB.id.filter(function(r){ return r.brinco!==virtual; });
 
   fcLogEstado(virtual, 'Animal arquivado como '+virtual+' (brinco '+brinco+' liberado para reuso)', todayBR());
   return virtual;
+}
+
+// ── Conversão única dos códigos antigos ────────────────────────────────────
+// As baixas arquivadas antes desta versão receberam V-n independente do tipo:
+// uma morte virou V3, um abate virou V5. A letra passou a significar algo, então
+// esses códigos precisam ser reemitidos.
+//
+// A conversão renumera TODO o conjunto arquivado pela data da saída, não só as
+// letras erradas. Convertendo apenas as erradas, as que já estavam certas ficariam
+// com números fora de lugar e a sequência deixaria de dizer a ordem de saída — que
+// é o único motivo de haver número. Como é uma passada única sobre códigos que
+// nasceram sem significado de letra, renumerar aqui não conflita com a regra do
+// código definitivo: ela vale do primeiro arquivamento desta versão em diante.
+//
+// Como saber que a base já foi convertida, sem gravar marcador na planilha: numa
+// base convertida, TODA letra bate com o tipo de saída. Basta uma letra errada para
+// identificar uma base que nunca passou por aqui. Depois da conversão a rotina não
+// faz mais nada, por isso é segura a cada carregamento.
+//
+// Ordem: data da saída; as sem data vão para o fim, na ordem em que estão.
+//
+// A troca é feita em DUAS ETAPAS, com códigos temporários no meio. Sem isso, um V3
+// que deve virar M3 e um V5 que deve virar V3 se atropelam: renomear o primeiro
+// criaria dois animais chamados V3 por um instante, e a segunda troca arrastaria
+// os dois.
+function reconciliarCodigosArquivo(){
+  var arquivadas = [];
+  DB_baixas.forEach(function(b, idx){
+    if(!b.brincoOriginal) return;           // baixa antiga, ainda sem arquivar
+    if(!brincoEhVirtual(b.brinco)) return;  // não tem código de arquivo
+    arquivadas.push({ idx:idx, baixa:b, antigo:b.brinco });
+  });
+  if(!arquivadas.length) return 0;
+
+  var temLetraErrada = arquivadas.some(function(a){
+    return a.antigo.charAt(0) !== arqPrefixoDoTipo(a.baixa.tipo);
+  });
+  if(!temLetraErrada) return 0;             // base já convertida
+
+  arquivadas.sort(function(x, y){
+    var dx = toDate(x.baixa.data), dy = toDate(y.baixa.data);
+    if(dx && dy) return dx - dy;
+    if(dx) return -1;
+    if(dy) return 1;
+    return x.idx - y.idx;
+  });
+
+  // Código final: letra do tipo + posição na ordem cronológica.
+  arquivadas.forEach(function(a, i){
+    a.novo = arqPrefixoDoTipo(a.baixa.tipo) + (i + 1);
+  });
+
+  // Trava de segurança. O cadastro aceita brincos com letra, então um animal VIVO
+  // chamado "V3" tornaria o código V3 ambíguo: renomear para ele arrastaria os dois
+  // animais de uma vez. A numeração aqui é posicional e não pode pular números, então
+  // o certo é não converter nada e deixar o aviso — dado corrompido em silêncio é
+  // muito pior que código com a letra velha.
+  var conflito = arquivadas.filter(function(a){
+    return a.antigo !== a.novo && DB.id.some(function(r){ return r.brinco === a.novo; });
+  });
+  if(conflito.length){
+    if(typeof console !== 'undefined' && console.warn){
+      console.warn('Reemissão de códigos de arquivo cancelada: o código '
+        + conflito[0].novo + ' pertence a um animal do rebanho. Renomeie esse animal.');
+    }
+    return 0;
+  }
+
+  var mudam = arquivadas.filter(function(a){ return a.antigo !== a.novo; });
+  if(!mudam.length) return 0;
+
+  // Etapa 1: tira todos da frente, para nenhum código final estar ocupado.
+  mudam.forEach(function(a, i){
+    a.temp = '__ARQTMP' + i + '__';
+    renomearBrinco(a.antigo, a.temp, 'reemissão de código de arquivo', true);
+    a.baixa.brinco = a.temp;
+  });
+
+  // Etapa 2: emite o código definitivo, agora com a letra do tipo de saída.
+  mudam.forEach(function(a){
+    renomearBrinco(a.temp, a.novo, 'código de arquivo ' + a.antigo + ' → ' + a.novo, true);
+    a.baixa.brinco = a.novo;
+    fcLogEstado(a.novo, 'Código de arquivo reemitido: ' + a.antigo + ' → ' + a.novo
+      + ' (' + (a.baixa.tipo || 'saída') + ')', todayBR());
+  });
+
+  markDirty();
+  return mudam.length;
 }
 
 // Painel da aba Saída do Rebanho: lista os brincos que ainda carregam registros
@@ -12797,7 +13028,7 @@ function renderPainelReuso(){
       +'<p style="font-size:12px;color:var(--tx2);line-height:1.6;margin:0 0 10px">'
       +'Estes brincos foram reaproveitados antes do arquivamento automático existir, e ainda carregam '
       +'registros anteriores ao nascimento do animal atual — ou seja, do animal que usava o número antes. '
-      +'Separar move esses registros para um brinco de arquivo (V1, V2…), sem apagar nada.</p>'
+      +'Separar move esses registros para um c&oacute;digo de arquivo (X1, X2… &mdash; arquivo sem sa&iacute;da registrada), sem apagar nada.</p>'
       +'<table><thead><tr><th>Brinco</th><th>Nascimento</th><th>Registros alheios</th>'
       +'<th>Categoria do animal anterior</th><th class="tc">Ação</th></tr></thead><tbody>'
       + lista.map(function(a){
@@ -12984,7 +13215,9 @@ function moverInscricoesProtocolo(brinco, virtual){
 function separarHistoricoAlheio(brinco, catAnterior){
   var dgRec = DB.dg.find(function(d){ return d.brinco===brinco; });
   if(!dgRec || !dgRec.nasc) return null;
-  var virtual = proximoBrincoVirtual();
+  // Não houve saída registrada: ninguém sabe se o animal anterior morreu, foi vendido
+  // ou abatido. Prefixo X, que é justamente "arquivo de origem desconhecida".
+  var virtual = proximoCodigoArquivo('Arquivo');
   var movidos = 0;
 
   function mover(arr, campoData, pertence, marcarCat){
@@ -13076,7 +13309,9 @@ function arquivarBaixaLegada(idxBaixa, catAnterior){
   if(!baixa || brincoEhVirtual(baixa.brinco)) return null;
   var brinco  = baixa.brinco;
   var reusado = animalAtivo(brinco);
-  var virtual = proximoBrincoVirtual();
+  // A baixa antiga já registra o tipo de saída: o código sai com a letra certa de
+  // primeira, sem passar pela reemissão.
+  var virtual = proximoCodigoArquivo(baixa.tipo);
   var movidos = 0;
 
   if(!reusado){
@@ -13148,7 +13383,7 @@ function renderPainelBaixasLegadas(){
       +'Estas saídas foram registradas antes do arquivamento automático e ainda usam o número '
       +'original do brinco. Enquanto ficarem assim, o número segue ocupado por um animal que já saiu, '
       +'e reusá-lo mistura os dois históricos. Arquivar dá a cada uma um número de arquivo '
-      +'(V1, V2…), como já acontece com V8 e V9. <strong>Nada é apagado.</strong></p>'
+      +'com a letra do tipo de sa&iacute;da (M=morte, A=abate, V=venda, T=transfer&ecirc;ncia) e o pr&oacute;ximo n&uacute;mero da sequ&ecirc;ncia. <strong>Nada é apagado.</strong></p>'
       +'<table><thead><tr><th>Brinco</th><th>Saída</th><th>Situação</th>'
       +'<th>Categoria do animal</th><th>Registros</th><th class="tc">Ação</th></tr></thead><tbody>'
       + lista.map(function(a){
@@ -14558,7 +14793,7 @@ function _fcAtualizarTelas(brinco){
 // desmamado, mas ocupa espaço na planilha e pode confundir uma conferência
 // futura. Nasce de cadastro interrompido no meio.
 //
-// Os brincos virtuais (V1, V2…) são a exceção deliberada: eles existem
+// Os códigos de arquivo (M1, A2, V3…) são a exceção deliberada: eles existem
 // EXATAMENTE assim de propósito — animal arquivado sai de DB.id e fica só na
 // genealogia, para que os descendentes continuem rastreáveis. Nunca são
 // fantasmas.
@@ -14574,7 +14809,7 @@ function ehRegistroFantasma(b){
 function brincoOrfaoSeguro(b){
   if(!b) return { ok:false, motivo:'brinco vazio' };
   if(typeof brincoEhVirtual === 'function' && brincoEhVirtual(b)){
-    return { ok:false, motivo:'é um brinco virtual de animal arquivado — precisa continuar existindo para a genealogia' };
+    return { ok:false, motivo:'é um código de arquivo de animal que saiu do rebanho — precisa continuar existindo para a genealogia' };
   }
   if(DB.id.find(function(r){ return r.brinco === b; })){
     return { ok:false, motivo:'o animal está cadastrado' };
@@ -15987,6 +16222,7 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
     </div>
   </div>
 </div>
+
 <script>
 // ═══ MENU LATERAL: grupos que abrem e fecham ═══════════════════════════════
 // O aparelho lembra quais grupos ficaram fechados.
@@ -16341,6 +16577,41 @@ function ovToggleDataStatus(){
   var baixa = ovVal('ov-status') !== 'ativo';
   document.getElementById('ov-fg-dtstatus').style.display = baixa ? '' : 'none';
   if(baixa && !ovVal('ov-dtstatus')) ovSet('ov-dtstatus', ovHoje());
+  var venda = ovVal('ov-status') === 'vendido';
+  document.querySelectorAll('.ov-fg-venda').forEach(function(el){ el.style.display = venda ? '' : 'none'; });
+}
+
+// ── Venda de ovino → receita no Controle Financeiro ────────────────────────
+// A receita fica ligada ao animal por _ovVenda (id do animal), como as vendas de
+// bovinos ficam ligadas à Saída de Rebanho por _baixaTag.
+function ovReceitaDaVenda(id){
+  var lista = (typeof DB_receitas !== 'undefined' ? DB_receitas : []);
+  var r = lista.find(function(x){ return x._ovVenda === id; });
+  if(r) return r;
+  // Depois de uma ida e volta pela planilha o vínculo interno se perde; reconhece pela descrição.
+  var a = ovAnimal(id);
+  if(!a || a.status !== 'vendido' || !a.brinco) return null;
+  var pref = 'Venda de ovino - brinco ' + a.brinco;
+  r = lista.find(function(x){ return !x._ovVenda && (x.descricao || '').indexOf(pref) === 0
+        && (x.descricao.length === pref.length || x.descricao.charAt(pref.length) === ' '); });
+  if(r) r._ovVenda = id;
+  return r || null;
+}
+function ovSincronizarReceita(a, valorTxt, comprador){
+  var rec = ovReceitaDaVenda(a.id);
+  var valor = parseValorBR(valorTxt);
+  if(a.status === 'vendido' && !isNaN(valor) && valor > 0){
+    var desc = 'Venda de ovino - brinco ' + ovRotulo(a) + (comprador ? ' (' + comprador + ')' : '');
+    if(rec){ rec.data = a.dataStatus || ovHoje(); rec.valor = valor; rec.descricao = desc; rec.comprador = comprador; }
+    else DB_receitas.push({ data: a.dataStatus || ovHoje(), categoria:'Producao', descricao:desc, valor:valor,
+                            comprador:comprador, _ovVenda:a.id, _ts: nowTS() });
+    return rec ? 'atualizada' : 'criada';
+  }
+  if(rec){
+    DB_receitas.splice(DB_receitas.indexOf(rec), 1);
+    return 'removida';
+  }
+  return '';
 }
 function ovPreencherPais(idEditando, paiSel, maeSel){
   var machos = OV.animais.filter(function(a){ return a.sexo === 'M' && a.id !== idEditando; }).sort(ovOrdBrinco);
@@ -16355,7 +16626,7 @@ function ovPreencherPais(idEditando, paiSel, maeSel){
 }
 
 function ovLimparForm(){
-  ['ov-brinco','ov-ano','ov-raca','ov-pai-ext','ov-dtstatus','ov-obs','ov-edit-id'].forEach(function(id){ ovSet(id, ''); });
+  ['ov-brinco','ov-ano','ov-raca','ov-pai-ext','ov-dtstatus','ov-obs','ov-edit-id','ov-venda-valor','ov-venda-comprador'].forEach(function(id){ ovSet(id, ''); });
   ovSet('ov-sexo', 'F'); ovSet('ov-status', 'ativo');
   ovAtualizarCategorias('matriz');
   ovPreencherPais('', '', '');
@@ -16379,6 +16650,11 @@ function ovSalvarAnimal(){
   if(ano && (!/^\d{4}$/.test(ano) || +ano < 1990 || +ano > new Date().getFullYear() + 1)){ toast('Ano de nascimento inválido.', 'err'); return; }
   if(!cat){ toast('Escolha a categoria.', 'err'); return; }
   var dtStatus = status === 'ativo' ? '' : ovVal('ov-dtstatus');
+  var vendaValor = status === 'vendido' ? ovVal('ov-venda-valor') : '';
+  var vendaComprador = status === 'vendido' ? ovVal('ov-venda-comprador') : '';
+  if(vendaValor && (isNaN(parseValorBR(vendaValor)) || parseValorBR(vendaValor) <= 0)){ toast('Valor da venda inválido. Ex: 450,00', 'err'); return; }
+  if(id && ovReceitaDaVenda(id) && !(status === 'vendido' && vendaValor)
+     && !confirm('Este animal tem uma receita de venda lançada no Controle Financeiro.\n\nSalvar assim remove essa receita. Continuar?')) return;
   if(dtStatus && !ovParse(dtStatus)){ toast('Data da saída inválida (use DD/MM/AAAA).', 'err'); return; }
 
   if(id){
@@ -16402,8 +16678,11 @@ function ovSalvarAnimal(){
   rec.obs = ovVal('ov-obs');
   if(!id) OV.animais.push(rec);
 
+  var receita = ovSincronizarReceita(rec, vendaValor, vendaComprador);
   ovAlterou();
-  toast(id ? 'Animal atualizado.' : 'Animal cadastrado.', 'ok');
+  if(receita) markDirty();
+  toast((id ? 'Animal atualizado.' : 'Animal cadastrado.')
+    + (receita === 'criada' ? ' Receita da venda lançada no Controle Financeiro.' : receita === 'atualizada' ? ' Receita da venda atualizada.' : receita === 'removida' ? ' Receita da venda removida do financeiro.' : ''), 'ok');
   ovLimparForm();
   ovRenderRebanho();
 }
@@ -16426,11 +16705,13 @@ function ovEditarAnimal(id){
   ovSet('ov-pai-ext', a.paiExt);
   ovSet('ov-status', a.status || 'ativo');
   ovSet('ov-dtstatus', a.dataStatus);
+  var rv = ovReceitaDaVenda(a.id);
+  ovSet('ov-venda-valor', rv ? Number(parseValorBR(rv.valor)).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 }) : '');
+  ovSet('ov-venda-comprador', rv ? (rv.comprador || '') : '');
   ovToggleDataStatus();
   ovSet('ov-obs', a.obs);
   document.getElementById('ov-form-titulo').textContent = 'Editando ' + ovRotulo(a);
-  var main = document.getElementById('main'); if(main) main.scrollTop = 0;
-  window.scrollTo(0, 0);
+  rolarTopo();   // mesma volta ao topo das outras telas; ver rolarTopo()
 }
 
 function ovExcluirAnimal(id){
@@ -16442,6 +16723,8 @@ function ovExcluirAnimal(id){
   if(!confirm('Excluir o animal ' + ovRotulo(a) + '?\n\nUse a exclusão só para cadastros feitos por engano. Para vendas e mortes, mude a Situação.')) return;
   OV.animais = OV.animais.filter(function(x){ return x.id !== id; });
   OV.diagnosticos = OV.diagnosticos.filter(function(d){ return d.ovelha !== id; });
+  var rv = ovReceitaDaVenda(id);
+  if(rv){ DB_receitas.splice(DB_receitas.indexOf(rv), 1); markDirty(); }
   ovAlterou();
   ovRenderRebanho();
 }
@@ -16488,7 +16771,8 @@ function ovRenderRebanho(){
       + '<td>' + ovEsc(a.raca || '—') + '</td>'
       + '<td>' + ovPaiTxt(a) + '</td>'
       + '<td>' + (a.mae ? ovRotuloLink(ovAnimal(a.mae)) : '—') + '</td>'
-      + '<td>' + ovStatusBdg(a.status) + (a.dataStatus ? ' <span style="font-size:10px;color:var(--tx3)">' + a.dataStatus + '</span>' : '') + '</td>'
+      + '<td>' + ovStatusBdg(a.status) + (a.dataStatus ? ' <span style="font-size:10px;color:var(--tx3)">' + a.dataStatus + '</span>' : '')
+      +   (ovReceitaDaVenda(a.id) ? '<div style="font-size:10.5px;color:var(--grnt)">' + fmtValorBR(ovReceitaDaVenda(a.id).valor) + '</div>' : '') + '</td>'
       + '<td class="tc" style="white-space:nowrap">'
       +   '<button class="btn btn-ghost btn-sm" onclick="ovEditarAnimal(\'' + a.id + '\')">Editar</button> '
       +   '<button class="btn btn-danger btn-sm" onclick="ovExcluirAnimal(\'' + a.id + '\')" title="Excluir cadastro">&#10005;</button>'
@@ -16586,8 +16870,7 @@ function ovEditarEstacao(id){
   ovSet('ov-est-edit-id', e.id); ovSet('ov-est-nome', e.nome); ovSet('ov-est-ini', e.inicio);
   ovSet('ov-est-fim', e.fim); ovSet('ov-est-obs', e.obs);
   document.getElementById('ov-est-form-titulo').textContent = 'Editando ' + e.nome;
-  var main = document.getElementById('main'); if(main) main.scrollTop = 0;
-  window.scrollTo(0, 0);
+  rolarTopo();   // mesma volta ao topo das outras telas; ver rolarTopo()
 }
 function ovExcluirEstacao(id){
   var e = ovEstacao(id); if(!e) return;
@@ -18234,6 +18517,29 @@ function iatfRegSalvar(pid){
     + (bloqueados.length ? ' — ' + bloqueados.length + ' ficou(aram) de fora por parentesco' : '') + '.', 'ok');
   renderIatfReg();
 }
+</script>
+<script>
+// ═══ BOVINOS — AGENDA SANITÁRIA: correções de sincronização ══════════════════
+// (Os manejos continuam sendo lançados individualmente no Cadastro de Manejos.)
+(function(){
+  // Correção: a agenda vinha da cópia guardada no aparelho mesmo depois de baixar
+  // da nuvem (podia trazer de volta uma versão antiga) e editar a agenda não
+  // disparava o envio para a nuvem.
+  var aplicar = nvAplicar;
+  nvAplicar = function(s){
+    var r = aplicar.apply(this, arguments);
+    if(s && Array.isArray(s.calEventos)){ try{ _calStorageLido = true; calSalvarStorage(); }catch(e){} }
+    return r;
+  };
+  // Abrir a Agenda Sanitária relia a cópia do aparelho toda vez, por cima do que estava
+  // na memória (vindo da nuvem ou de outro aparelho). Agora ela só é lida uma vez.
+  var carregarOriginal = calCarregarStorage;
+  calCarregarStorage = function(){ if(_calStorageLido) return; carregarOriginal.apply(this, arguments); };
+  ['salvarCalEvento','excluirCalEvento'].forEach(function(nome){
+    var f = window[nome];
+    window[nome] = function(){ var r = f.apply(this, arguments); markDirty(); return r; };
+  });
+})();
 </script>
 </body>
 </html>
