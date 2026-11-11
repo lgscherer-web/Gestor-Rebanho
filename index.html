@@ -1024,8 +1024,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.50.0</span><br>
-              Data da versão: <span id="app-versao-data">07/10/2026</span><br>
+              Versão: <span id="app-versao">2.52.0</span><br>
+              Data da versão: <span id="app-versao-data">10/11/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -2174,26 +2174,43 @@ tr:hover td{background:#fafaf7}
           <div id="findash-ano-tabs" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px"></div>
         </div>
 
+        <!-- Números do ano antes de qualquer gráfico: a tela abria direto num
+             gráfico, e para saber "quanto entrou" era preciso ler barras. -->
+        <div class="dash-grid" id="findash-kpis" style="margin-bottom:16px"></div>
+
         <div class="tcard" style="margin-bottom:18px">
-          <div class="tbar"><span style="font-size:13px;font-weight:600">Fluxo de caixa mensal</span></div>
+          <div class="tbar"><span style="font-size:13px;font-weight:600">Fluxo de caixa mensal</span>
+            <span style="font-size:11px;color:var(--tx3)">todo dinheiro que entrou e saiu, inclusive aporte e investimento</span></div>
           <div style="padding:14px 16px;height:320px">
             <canvas id="finChartFluxo"></canvas>
           </div>
         </div>
 
-        <div class="grid g2" style="align-items:start">
-          <div class="tcard" style="margin-bottom:18px">
-            <div class="tbar"><span style="font-size:13px;font-weight:600">Despesas por categoria (ano selecionado)</span></div>
-            <div style="padding:14px 16px;height:320px">
-              <canvas id="finChartCategorias"></canvas>
-            </div>
+        <div class="tcard" style="margin-bottom:18px">
+          <div class="tbar"><span style="font-size:13px;font-weight:600">Despesas por categoria</span>
+            <span id="findash-cat-cnt" style="font-size:11px;color:var(--tx3)"></span></div>
+          <div style="font-size:11px;color:var(--tx2);padding:9px 16px;border-bottom:1px solid var(--bord)">
+            Ordenado da maior para a menor, com a variação sobre o ano anterior. A cor da
+            tarja diz a natureza: <span style="color:var(--amb);font-weight:600">custeio</span>,
+            <span style="color:var(--blut);font-weight:600">investimento</span>,
+            <span style="color:var(--purt);font-weight:600">capital</span>.
           </div>
+          <div id="findash-cat-barras" style="padding:12px 16px"></div>
+        </div>
 
-          <div class="tcard" style="margin-bottom:18px">
-            <div class="tbar"><span style="font-size:13px;font-weight:600">Evolução anual (2018 em diante)</span></div>
-            <div style="padding:14px 16px;height:320px">
-              <canvas id="finChartAnual"></canvas>
-            </div>
+        <div class="tcard" style="margin-bottom:18px">
+          <div class="tbar"><span style="font-size:13px;font-weight:600">Resultado operacional, ano a ano</span>
+            <span style="font-size:11px;color:var(--tx3)">só venda de produção contra custeio</span></div>
+          <div style="padding:14px 16px;height:320px">
+            <canvas id="finChartAnual"></canvas>
+          </div>
+        </div>
+
+        <div class="tcard" style="margin-bottom:18px">
+          <div class="tbar"><span style="font-size:13px;font-weight:600">Formação de capital, ano a ano</span>
+            <span style="font-size:11px;color:var(--tx3)">aportes e investimento — não entram no resultado</span></div>
+          <div style="padding:14px 16px;height:300px">
+            <canvas id="finChartCapital"></canvas>
           </div>
         </div>
 
@@ -2210,6 +2227,29 @@ tr:hover td{background:#fafaf7}
             <div style="padding:14px 16px;height:320px">
               <canvas id="finChartSocioCarmem"></canvas>
             </div>
+          </div>
+        </div>
+
+        <div class="grid g2" style="align-items:start">
+          <div id="findash-socio-lucas-resumo"></div>
+          <div id="findash-socio-carmem-resumo"></div>
+        </div>
+
+        <!-- Classificação das categorias. Fica recolhida: é ajuste que se faz uma vez,
+             mas precisa estar à mão, porque é ela que define o que conta como custo. -->
+        <div class="tcard" style="margin-bottom:18px">
+          <div class="tbar" style="cursor:pointer" onclick="finToggleNatureza()">
+            <span style="font-size:13px;font-weight:600">&#9881; Natureza das categorias</span>
+            <span id="findash-nat-toggle" style="font-size:11px;color:var(--tx3)">mostrar</span>
+          </div>
+          <div id="findash-nat-corpo" style="display:none">
+            <div style="font-size:11px;color:var(--tx2);padding:9px 16px;border-bottom:1px solid var(--bord);line-height:1.6">
+              <strong>Custeio</strong> é o que se gasta para produzir no ano e entra no resultado.
+              <strong>Investimento</strong> vira patrimônio e serve por vários anos — não é custo do ano.
+              <strong>Capital</strong> é movimento financeiro: amortizar financiamento, devolver aporte.
+              Mudar aqui muda todos os gráficos e todos os anos.
+            </div>
+            <div id="findash-nat-tabela" style="padding:12px 16px"></div>
           </div>
         </div>
       </div><!-- /tab-fin-dashboard -->
@@ -2628,8 +2668,89 @@ var finTipoFiltro = '';
 // As abas de mês só existem para os meses que já receberam lançamento no ano escolhido.
 var finMesFiltro = '';
 var finTipoAtual = 'despesa'; // tipo selecionado no formulario unificado: 'despesa' ou 'receita'
+// ── Categorias de despesa ──────────────────────────────────────────────────
+// Listas-base. Vão para a tela em ordem alfabética (finCategoriasFor), junto das
+// categorias que o próprio usuário criou pela opção "Outra (especificar)".
 var FIN_CATS_GERAL = ['Salário Eberson','FGTS Eberson','13º Salário+Férias+FGTS','Luz','Segurança','Contador','Ração','Telefone','Internet','ITR','Trator','Piscina','Mão de Obra','Cachorros/Gatos','Manutenção','Seg. do Trabalho','Retorno Lucas','Retorno Carmem','Diversos'];
-var FIN_CATS_PRODUCAO = ['Semente','Adubo + Uréia','Calcário','Herbicida','Sal','Sanitário Gado','Sanitário Ovinos','Veterinário','Suplemento/Feno Gado','Suplemento/Feno Ovinos','Mão de Obra','Diesel','Trator','Infraestrutura','Documentação','Ferramentas','Manutenção','Enfardadeira','Sistema PV','Inseminação','Compra de Gado','Frangos/Suínos','Comissões','Financiamentos','Arrendamento','Contribuição Mensal','Despesas Casa','Emídio','Diversos'];
+var FIN_CATS_PRODUCAO = ['Semente','Adubo + Uréia','Calcário','Herbicida','Sanitário Gado','Sanitário Ovinos','Veterinário','Suplemento/Feno Gado','Suplemento/Feno Ovinos','Mão de Obra','Diesel','Trator','Infraestrutura','Documentação','Ferramentas','Manutenção','Enfardadeira','Sistema PV','Inseminação','Compra de Gado','Frangos/Suínos','Comissões','Financiamentos','Contribuição Mensal','Diversos'];
+
+// Categorias que saíram da lista a pedido. Elas continuam existindo nos lançamentos
+// antigos — "Sal" tem 7 e "Arrendamento" tem 1 na base atual —, e isso é de propósito:
+// aposentar a categoria não reescreve o passado. O que esta lista faz é impedir que a
+// adoção automática lá embaixo as traga de volta ao ver esses mesmos lançamentos.
+var FIN_CATS_APOSENTADAS = ['Sal','Arrendamento','Despesas Casa','Emídio'];
+
+// Categorias criadas pelo usuário em "Outra (especificar)". Antes, o nome digitado ia
+// para o lançamento e desaparecia: na vez seguinte era preciso digitar tudo de novo,
+// e bastava um acento diferente para virar duas categorias. Agora fica guardado.
+// O prefixo DB_ não é enfeite — é o que faz esta lista entrar sozinha no backup em
+// nuvem (ver nvColetar) sem precisar ser citada em lista nenhuma.
+var DB_fin_cats = [];   // [{grupo:'Geral'|'Producao', nome:'...'}]
+
+// ── Natureza da despesa ────────────────────────────────────────────────────
+// Até aqui, toda saída de dinheiro era "despesa". Isso fazia o resultado não medir
+// nada: o ano em que se compra um trator fica igual ao ano em que a vaca não
+// emprenhou, e os dois aparecem como prejuízo operacional do mesmo tamanho.
+//
+//   custeio      — o que se gasta para o gado produzir no ano: diesel, vacina,
+//                  semente anual, salário, energia. Entra no resultado.
+//   investimento — o que vira patrimônio e serve por vários anos: galpão, sistema
+//                  fotovoltaico, matriz comprada, correção de solo. NÃO é custo do
+//                  ano; é formação de capital.
+//   capital      — movimento financeiro, não operação: amortização de financiamento
+//                  e devolução de aporte aos sócios. Não é custo nem patrimônio.
+//
+// O padrão abaixo é um ponto de partida pela prática contábil rural, e pode ser
+// trocado categoria por categoria na própria tela (DB_fin_natureza).
+var FIN_NATUREZAS = ['custeio','investimento','capital'];
+function finNaturezaLabel(n){
+  return {custeio:'Custeio', investimento:'Investimento', capital:'Capital/Financeiro'}[n] || 'Custeio';
+}
+
+// Chaveado só pelo nome da categoria: "Manutenção" e "Trator" existem nos dois grupos
+// e têm a mesma natureza nos dois. O que não está aqui é custeio.
+var FIN_NATUREZA_PADRAO = {
+  // Viram patrimônio e servem por vários anos.
+  'Sistema PV':'investimento',       // gerador fotovoltaico
+  'Infraestrutura':'investimento',   // benfeitorias, cercas, galpão
+  'Enfardadeira':'investimento',
+  'Compra de Gado':'investimento',   // matriz adquirida entra no plantel
+  'Calcário':'investimento',         // correção de solo dura várias safras
+  'Ferramentas':'investimento',
+  'Piscina':'investimento',
+  // Movimento financeiro: sai caixa, mas não é custo da atividade.
+  'Financiamentos':'capital',
+  'Retorno Lucas':'capital',
+  'Retorno Carmem':'capital'
+};
+
+// Ajustes do usuário, por grupo+categoria. Vence sobre o padrão.
+var DB_fin_natureza = [];   // [{grupo, categoria, natureza}]
+
+function finNatChave(grupo, categoria){
+  return (grupo==='Producao'?'Producao':'Geral') + '|' + String(categoria||'');
+}
+function finNaturezaDe(grupo, categoria){
+  var k = finNatChave(grupo, categoria);
+  var ov = DB_fin_natureza.find(function(x){ return finNatChave(x.grupo, x.categoria) === k; });
+  if(ov && FIN_NATUREZAS.indexOf(ov.natureza) !== -1) return ov.natureza;
+  return FIN_NATUREZA_PADRAO[categoria] || 'custeio';
+}
+function finSetNatureza(grupo, categoria, natureza){
+  if(FIN_NATUREZAS.indexOf(natureza) === -1) return;
+  grupo = (grupo==='Producao'?'Producao':'Geral');
+  var k = finNatChave(grupo, categoria);
+  var ov = DB_fin_natureza.find(function(x){ return finNatChave(x.grupo, x.categoria) === k; });
+  if(ov) ov.natureza = natureza;
+  else DB_fin_natureza.push({ grupo:grupo, categoria:categoria, natureza:natureza });
+  markDirty();
+}
+// Natureza de um lançamento. Despesa olha a categoria; receita é sempre entrada e
+// não passa por aqui.
+function finNaturezaLanc(r){
+  return finNaturezaDe(r && r.grupo, r && r.categoria);
+}
+
 var DB_receitas = []; // [{data, categoria:'Producao'|'Investimento Lucas'|'Investimento Carmem'|'Credito Bancario', descricao, valor}]
 var recCatFiltro = '';
 var REC_CATS = ['Producao','Investimento Lucas','Investimento Carmem','Credito Bancario'];
@@ -3083,6 +3204,25 @@ function parseWB(wb){
       DB_receitas.push({data:xlsxDateToStr(r[0]),categoria:cat,descricao:cl(r[2]),valor:cl(r[3]),_baixaTag:cl(r[4])||undefined,_ts:cl(r[5])||undefined});
     }
   }
+  // Categorias de despesa criadas pelo usuário (aba nova — planilhas antigas não a têm,
+  // e nesse caso reconciliarCategoriasFinanceiro adota o que estiver nos lançamentos).
+  DB_fin_cats=[];
+  DB_fin_natureza=[];
+  var shFcat = findSh(wb,['Categorias Despesa','ategorias Despesa','CategoriasDespesa']);
+  if(shFcat){
+    var rows=XLSX.utils.sheet_to_json(shFcat,{header:1,defval:'',raw:true});
+    for(var i=3;i<rows.length;i++){
+      var r=rows[i]; var nome=cl(r[1]); if(!nome) continue;
+      var gfc = cl(r[0])==='Producao'?'Producao':'Geral';
+      var nat = cl(r[2]).toLowerCase();
+      // Coluna "Criada" só existe a partir da versão que trouxe a natureza. Nas
+      // planilhas gravadas antes dela, toda linha era categoria criada pelo usuário —
+      // é o que o "!r[3]" preserva.
+      if(cl(r[3])==='Sim' || !cl(r[3])) DB_fin_cats.push({ grupo:gfc, nome:nome });
+      if(FIN_NATUREZAS.indexOf(nat)!==-1) DB_fin_natureza.push({ grupo:gfc, categoria:nome, natureza:nat });
+    }
+  }
+
   // Contas fixas mensais (aba nova — arquivos antigos simplesmente não a têm)
   DB_contasfixas=[];
   var shCf = findSh(wb,['Contas Fixas','ontas Fixas','ContasFixas']);
@@ -3501,6 +3641,9 @@ function renderAll(){
   // transferência) com a letra do tipo de saída. Converte só o que está errado e,
   // depois da primeira passada, não faz mais nada.
   reconciliarCodigosArquivo();
+  // Recupera as categorias de despesa que foram digitadas em "Outra" antes de existir
+  // onde guardá-las e sumiram do seletor.
+  reconciliarCategoriasFinanceiro();
   // Depois das demais: depende de estadoAmamentacao, que lê os registros de parto já
   // reconciliados acima.
   migrarDataAmamentacao();
@@ -4192,6 +4335,37 @@ function _buildWorkbook(){
              r.diaVenc||'', r.valorEstimado||'', r.ativa===false?'Nao':'Sim', r.cfId||''];
     }));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cfD),'Contas Fixas');
+
+  // Categorias de despesa: as criadas pelo usuário em "Outra (especificar)" e os ajustes
+  // de natureza (custeio/investimento/capital). As listas-base e a natureza padrão ficam
+  // no código; aqui só o que é escolha sua, para acompanhar a planilha no celular.
+  //
+  // Uma linha pode existir por qualquer um dos dois motivos, e as colunas dizem qual:
+  // "Criada" marca a categoria que você inventou, "Natureza" marca a que você
+  // reclassificou. Uma linha pode ter os dois.
+  var fcatChaves = [];
+  var fcatLinhas = [];
+  function fcatAdd(grupo, nome){
+    grupo = grupo==='Producao'?'Producao':'Geral';
+    var k = grupo+'|'+nome;
+    if(fcatChaves.indexOf(k)!==-1) return;
+    fcatChaves.push(k);
+    var criada = DB_fin_cats.some(function(c){
+      return (c.grupo==='Producao'?'Producao':'Geral')===grupo && c.nome===nome;
+    });
+    var ov = DB_fin_natureza.find(function(x){
+      return (x.grupo==='Producao'?'Producao':'Geral')===grupo && x.categoria===nome;
+    });
+    fcatLinhas.push([ grupo, nome, ov ? ov.natureza : '', criada ? 'Sim' : 'Nao' ]);
+  }
+  DB_fin_cats.forEach(function(c){ fcatAdd(c.grupo, c.nome); });
+  DB_fin_natureza.forEach(function(x){ fcatAdd(x.grupo, x.categoria); });
+
+  var fcatD=[['CATEGORIAS DE DESPESA'],
+             ['Categorias criadas por voce e ajustes de natureza. Natureza: custeio, investimento ou capital.'],
+             ['Grupo','Categoria','Natureza','Criada']]
+    .concat(fcatLinhas);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(fcatD),'Categorias Despesa');
 
   // IATF
   var iatfD=[['IATF'],['Protocolos de Inseminação Artificial em Tempo Fixo.'],['Protocolo','Data','Reprodutor','Tecnico','Data DG','Brincos (sep ;)','Taxa Prenhez','Observações']]
@@ -7341,15 +7515,73 @@ function renderContasFixasCad(){
   }).join('');
 }
 
-function finCategoriasFor(grupo){
-  return grupo==='Producao' ? FIN_CATS_PRODUCAO : FIN_CATS_GERAL;
+function finGrupoNormal(g){ return g==='Producao' ? 'Producao' : 'Geral'; }
+
+// Comparação de texto em português: sem isso "Ávore" vai parar depois de "Zebu" e
+// "ração" não encosta em "Ração". A lista é lida por gente, então ordena como gente lê.
+function finCmpCat(a, b){
+  return String(a).localeCompare(String(b), 'pt-BR', { sensitivity:'base' });
 }
-function finAtualizarCategorias(){
+
+// Lista oferecida no seletor: a base do grupo mais o que o usuário criou, em ordem
+// alfabética. Duplicatas por caixa ou acento são descartadas na comparação.
+function finCategoriasFor(grupo){
+  grupo = finGrupoNormal(grupo);
+  var base = (grupo==='Producao' ? FIN_CATS_PRODUCAO : FIN_CATS_GERAL).slice();
+  DB_fin_cats.forEach(function(c){
+    if(!c || !c.nome) return;
+    if(finGrupoNormal(c.grupo) !== grupo) return;
+    var jaTem = base.some(function(b){ return finCmpCat(b, c.nome) === 0; });
+    if(!jaTem) base.push(c.nome);
+  });
+  return base.sort(finCmpCat);
+}
+
+// Guarda uma categoria nova. Devolve true se foi mesmo acrescentada.
+function finRegistrarCategoria(grupo, nome){
+  nome = String(nome || '').trim();
+  if(!nome) return false;
+  grupo = finGrupoNormal(grupo);
+  // Já está na lista do grupo (base ou criada antes)? Nada a fazer. A comparação
+  // ignora caixa e acento para não criar "Análise de terra" ao lado de "analise de terra".
+  var atual = finCategoriasFor(grupo);
+  if(atual.some(function(c){ return finCmpCat(c, nome) === 0; })) return false;
+  DB_fin_cats.push({ grupo:grupo, nome:nome });
+  return true;
+}
+
+// Adota as categorias que já existem nos lançamentos mas nunca entraram em lista
+// nenhuma — as que foram digitadas em "Outra" antes desta versão e se perderam.
+// Roda a cada carregamento e só acrescenta: é o mesmo padrão das outras reconciliações.
+//
+// As aposentadas ficam de fora de propósito. Elas estão nos lançamentos antigos, e sem
+// esta exceção a adoção as recolocaria no seletor no primeiro carregamento — desfazendo
+// em silêncio a remoção que foi pedida.
+function reconciliarCategoriasFinanceiro(){
+  var n = 0;
+  DB_financeiro.forEach(function(r){
+    var nome = String(r && r.categoria || '').trim();
+    if(!nome) return;
+    if(FIN_CATS_APOSENTADAS.some(function(a){ return finCmpCat(a, nome) === 0; })) return;
+    if(finRegistrarCategoria(r.grupo, nome)) n++;
+  });
+  if(n) markDirty();
+  return n;
+}
+
+// `incluir` força uma categoria a aparecer no seletor mesmo fora da lista. É o caso de
+// editar um lançamento antigo de categoria aposentada: sem isso ele cairia em "Outra" e,
+// ao salvar, a categoria voltaria para a lista pela porta dos fundos.
+function finAtualizarCategorias(incluir){
   var grupo = document.getElementById('fin-grupo').value;
   var sel = document.getElementById('fin-categoria');
   if(!sel) return;
   var cur = sel.value;
   var cats = finCategoriasFor(grupo);
+  incluir = String(incluir || '').trim();
+  if(incluir && !cats.some(function(c){ return finCmpCat(c, incluir) === 0; })){
+    cats = cats.concat([incluir]).sort(finCmpCat);
+  }
   sel.innerHTML = cats.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('')
     + '<option value="__outra__">Outra (especificar)</option>';
   if(cats.indexOf(cur)!==-1) sel.value = cur;
@@ -7442,11 +7674,15 @@ function salvarLancamento(){
     var catOutra = document.getElementById('fin-categoria-outra').value.trim();
     var obs = document.getElementById('fin-obs').value.trim();
     var categoria = catSel;
+    var catNova = false;
     if(catSel==='__outra__'){
       if(!catOutra){ fieldErr('fin-categoria-outra', 'Informe a categoria'); erros++; }
       categoria = catOutra;
+      catNova = true;
     }
     if(erros) return;
+    // A categoria digitada entra na lista do grupo e fica disponível na próxima vez.
+    if(catNova) finRegistrarCategoria(grupo, categoria);
     var isEditD = lancEditTipo==='fin' && lancEditIdx!==null && DB_financeiro[lancEditIdx];
     var despRec = { data:data, grupo:grupo, categoria:categoria, valor:valor, obs:obs, _ts: nowTS() };
     // Vínculo com a conta fixa que originou o lançamento (botão "Lançar"). É o que
@@ -7488,15 +7724,17 @@ function editarLancamento(tipo, idx){
     document.getElementById('lanc-data').value = r.data||'';
     document.getElementById('lanc-valor').value = r.valor||'';
     document.getElementById('fin-grupo').value = r.grupo||'Geral';
-    finAtualizarCategorias();
-    var cats = finCategoriasFor(r.grupo||'Geral');
-    if(cats.indexOf(r.categoria)!==-1){
-      document.getElementById('fin-categoria').value = r.categoria;
-    } else {
+    // A categoria do próprio lançamento entra no seletor mesmo que já tenha saído da
+    // lista — é o caso dos 7 lançamentos de "Sal". Antes ele caía em "Outra" com o nome
+    // preenchido, e salvar reinscrevia a categoria aposentada. Agora é só mais uma opção
+    // desta edição, e some de novo quando o formulário é limpo.
+    finAtualizarCategorias(r.categoria);
+    document.getElementById('fin-categoria').value = r.categoria || '';
+    if(!document.getElementById('fin-categoria').value){
       document.getElementById('fin-categoria').value = '__outra__';
+      document.getElementById('fin-categoria-outra').value = r.categoria||'';
     }
     finToggleOutra();
-    if(cats.indexOf(r.categoria)===-1) document.getElementById('fin-categoria-outra').value = r.categoria||'';
     document.getElementById('fin-obs').value = r.obs||'';
   }
   clearAllFieldErrs(['lanc-data','lanc-valor','fin-categoria-outra','rec-descricao']);
@@ -7682,6 +7920,37 @@ function renderFinanceiro(){
 // ─── DASHBOARD FINANCEIRO ─────────────────────────────────────────────
 var MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
+// ── Estado vazio dos gráficos ──────────────────────────────────────────────
+// Antes, "não há dados" era escrito com canvas.parentElement.innerHTML = '...'.
+// Isso APAGA o <canvas> do documento. Como todo gráfico começa com
+// `if(!canvas) return;`, o painel morria de vez: bastava abrir um ano sem despesa
+// uma única vez para o gráfico de categorias nunca mais voltar, nem ao escolher um
+// ano cheio — só recarregando a página. O mesmo valia para o quadro de um sócio sem
+// lançamento. Era a causa do dashboard "não computar".
+//
+// Agora o canvas apenas se esconde, e o aviso vai para um irmão criado ao lado.
+// Nada é removido, então qualquer render seguinte encontra tudo no lugar.
+function finChartVazio(canvasId, icone, msg){
+  var canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  canvas.style.display = 'none';
+  var av = document.getElementById(canvasId+'-vazio');
+  if(!av){
+    av = document.createElement('div');
+    av.id = canvasId+'-vazio';
+    av.className = 'dash-empty';
+    canvas.parentElement.appendChild(av);
+  }
+  av.style.display = '';
+  av.innerHTML = '<div class="dash-empty-ic">'+icone+'</div>'+msg;
+}
+function finChartMostrar(canvasId){
+  var canvas = document.getElementById(canvasId);
+  if(canvas) canvas.style.display = '';
+  var av = document.getElementById(canvasId+'-vazio');
+  if(av) av.style.display = 'none';
+}
+
 function renderFinDashboard(){
   var tabsEl = document.getElementById('findash-ano-tabs');
   if(!tabsEl) return; // aba ainda nao existe no DOM nesta renderizacao
@@ -7692,11 +7961,166 @@ function renderFinDashboard(){
     return '<button class="san-lote-cat'+(finAnoFiltro===a?' sel':'')+'" onclick="finSetAno('+a+')">'+a+'</button>';
   }).join('');
 
-  finRenderChartFluxo();
-  finRenderChartCategorias();
-  finRenderChartAnual();
-  finRenderChartSocio('Lucas', 'finChartSocioLucas', '_finChartSocioLucas');
-  finRenderChartSocio('Carmem', 'finChartSocioCarmem', '_finChartSocioCarmem');
+  // Cada gráfico é isolado. Sem isto, um erro em qualquer um deles — Chart.js ainda
+  // carregando, um dado estranho numa célula — abortava a função inteira e os
+  // gráficos seguintes nem chegavam a ser desenhados, sem nada na tela explicando.
+  function desenhar(nome, fn){
+    try{ fn(); }
+    catch(e){
+      if(typeof console !== 'undefined' && console.error) console.error('Dashboard financeiro — '+nome+':', e);
+    }
+  }
+  desenhar('KPIs',              finRenderKpis);
+  desenhar('fluxo mensal',      finRenderChartFluxo);
+  desenhar('categorias',        finRenderBarrasCategorias);
+  desenhar('resultado anual',   finRenderChartAnual);
+  desenhar('formação de capital', finRenderChartCapital);
+  desenhar('sócio Lucas',  function(){ finRenderChartSocio('Lucas', 'finChartSocioLucas', '_finChartSocioLucas'); });
+  desenhar('sócio Carmem', function(){ finRenderChartSocio('Carmem', 'finChartSocioCarmem', '_finChartSocioCarmem'); });
+  desenhar('resumo dos sócios', finRenderResumoSocios);
+  desenhar('natureza',          finRenderTabelaNatureza);
+}
+
+// ── Agregação por ano ──────────────────────────────────────────────────────
+// Um lugar só para somar. Antes cada gráfico refazia o filtro por ano e por
+// categoria do seu jeito, e foi assim que "Receita total" acabou somando aporte de
+// sócio com venda de gado: quem desenhava o gráfico anual não sabia que
+// "Investimento Lucas" não é faturamento.
+//
+// A regra aqui é não misturar o que tem naturezas diferentes:
+//   vendaProducao  — o que a propriedade faturou. Só isto é receita.
+//   aporte         — capital dos sócios entrando. Financia, não fatura.
+//   credito        — empréstimo bancário. Idem, e ainda precisa voltar.
+//   custeio        — custo do ano. Só isto entra no resultado.
+//   investimento   — virou patrimônio.
+//   capitalSaida   — amortização e devolução de aporte.
+function finResumoAno(ano){
+  var r = { vendaProducao:0, aporte:0, aporteLucas:0, aporteCarmem:0, credito:0,
+            custeio:0, investimento:0, capitalSaida:0,
+            retornoLucas:0, retornoCarmem:0 };
+  DB_receitas.forEach(function(x){
+    var d = toDate(x.data); if(!d || d.getFullYear()!==ano) return;
+    var n = parseValorBR(x.valor); if(isNaN(n)) return;
+    if(x.categoria==='Producao') r.vendaProducao += n;
+    else if(x.categoria==='Investimento Lucas'){ r.aporte += n; r.aporteLucas += n; }
+    else if(x.categoria==='Investimento Carmem'){ r.aporte += n; r.aporteCarmem += n; }
+    else if(x.categoria==='Credito Bancario') r.credito += n;
+  });
+  DB_financeiro.forEach(function(x){
+    var d = toDate(x.data); if(!d || d.getFullYear()!==ano) return;
+    var n = parseValorBR(x.valor); if(isNaN(n)) return;
+    var nat = finNaturezaLanc(x);
+    if(nat==='investimento') r.investimento += n;
+    else if(nat==='capital') r.capitalSaida += n;
+    else r.custeio += n;
+    if(x.categoria==='Retorno Lucas')  r.retornoLucas  += n;
+    if(x.categoria==='Retorno Carmem') r.retornoCarmem += n;
+  });
+  r.resultado   = r.vendaProducao - r.custeio;          // o que a atividade deu
+  r.saidaTotal  = r.custeio + r.investimento + r.capitalSaida;
+  r.entradaTotal= r.vendaProducao + r.aporte + r.credito;
+  r.caixa       = r.entradaTotal - r.saidaTotal;        // variação de caixa do ano
+  return r;
+}
+
+// ── Faixa de KPIs ──────────────────────────────────────────────────────────
+function finRenderKpis(){
+  var box = document.getElementById('findash-kpis');
+  if(!box) return;
+  var a = finResumoAno(finAnoFiltro);
+  var corRes = a.resultado >= 0 ? 'var(--grnt)' : 'var(--red)';
+
+  function card(rotulo, valor, sub, cor){
+    return '<div class="dash-card" style="padding:14px 16px">'
+      + '<div style="font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">'+rotulo+'</div>'
+      + '<div style="font-size:22px;font-weight:700;color:'+(cor||'var(--tx)')+';line-height:1.3">'+valor+'</div>'
+      + (sub?'<div style="font-size:11px;color:var(--tx3);line-height:1.5">'+sub+'</div>':'')
+      + '</div>';
+  }
+  // "Margem" só faz sentido havendo faturamento; sem venda, a divisão daria -Infinity.
+  var margem = a.vendaProducao > 0
+    ? Math.round(a.resultado / a.vendaProducao * 100) + '% da receita'
+    : 'sem venda registrada no ano';
+
+  box.innerHTML =
+      card('Venda de produção', fmtValorBR(a.vendaProducao), 'o que a propriedade faturou', 'var(--grnt)')
+    + card('Custeio', fmtValorBR(a.custeio), 'custo para produzir no ano', 'var(--red)')
+    + card('Resultado operacional', fmtValorBR(a.resultado), margem, corRes)
+    + card('Investimento', fmtValorBR(a.investimento), 'virou patrimônio, não é custo', 'var(--blut)')
+    + card('Aporte dos sócios', fmtValorBR(a.aporte),
+        'Lucas '+fmtValorBR(a.aporteLucas)+' &middot; Carmem '+fmtValorBR(a.aporteCarmem), 'var(--purt)')
+    + card('Variação de caixa', fmtValorBR(a.caixa),
+        'tudo que entrou menos tudo que saiu', a.caixa>=0?'var(--grnt)':'var(--red)');
+}
+
+// ── Despesas por categoria: barras horizontais ─────────────────────────────
+// A rosca mostrava 8 fatias e jogava o resto em "Outras" — não dava para ler valor,
+// nem comparar com o ano passado, nem ver se aquilo era custo ou investimento.
+function finRenderBarrasCategorias(){
+  var box = document.getElementById('findash-cat-barras');
+  if(!box) return;
+
+  function somaPorCat(ano){
+    var m = {};
+    DB_financeiro.forEach(function(r){
+      var d = toDate(r.data); if(!d || d.getFullYear()!==ano) return;
+      var n = parseValorBR(r.valor); if(isNaN(n)) return;
+      var k = (r.grupo==='Producao'?'Producao':'Geral') + '|' + (r.categoria||'—');
+      m[k] = (m[k]||0) + n;
+    });
+    return m;
+  }
+  var atual = somaPorCat(finAnoFiltro);
+  var anterior = somaPorCat(finAnoFiltro - 1);
+
+  var chaves = Object.keys(atual).sort(function(x,y){ return atual[y]-atual[x]; });
+  var cntEl = document.getElementById('findash-cat-cnt');
+  if(!chaves.length){
+    if(cntEl) cntEl.textContent = '';
+    box.innerHTML = '<div class="dash-empty"><div class="dash-empty-ic">&#128176;</div>'
+      + 'Nenhuma despesa registrada em '+finAnoFiltro+'</div>';
+    return;
+  }
+  var total = chaves.reduce(function(s,k){ return s+atual[k]; }, 0);
+  var maior = atual[chaves[0]];
+  if(cntEl) cntEl.textContent = chaves.length+' categoria(s) · '+fmtValorBR(total)+' em '+finAnoFiltro;
+
+  var corNat = { custeio:'var(--amb)', investimento:'var(--blu)', capital:'var(--pur)' };
+
+  box.innerHTML = chaves.map(function(k){
+    var p = k.split('|'), grupo = p[0], cat = p.slice(1).join('|');
+    var val = atual[k], ant = anterior[k] || 0;
+    var nat = finNaturezaDe(grupo, cat);
+    var pct = total>0 ? (val/total*100) : 0;
+
+    // Variação: sem base no ano anterior, "+100%" não significaria nada — mostra
+    // "novo" em vez de inventar um percentual.
+    var varHtml;
+    if(!ant){
+      varHtml = '<span style="color:var(--tx3)">novo</span>';
+    } else {
+      var dv = (val-ant)/ant*100;
+      var cor = dv > 0 ? 'var(--red)' : (dv < 0 ? 'var(--grnt)' : 'var(--tx3)');
+      varHtml = '<span style="color:'+cor+'" title="'+finAnoFiltro+' contra '+(finAnoFiltro-1)+': '
+        + fmtValorBR(ant)+' &rarr; '+fmtValorBR(val)+'">'
+        + (dv>0?'&#9650; ':(dv<0?'&#9660; ':''))+Math.abs(Math.round(dv))+'%</span>';
+    }
+
+    return '<div style="margin-bottom:9px">'
+      + '<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:3px">'
+        + '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+          + '<strong>'+cat+'</strong>'
+          + '<span style="color:var(--tx3);font-size:10px"> · '+(grupo==='Producao'?'Produção':'Geral')
+          + ' · '+finNaturezaLabel(nat).toLowerCase()+'</span></span>'
+        + '<span style="white-space:nowrap">'+fmtValorBR(val)
+          + '<span style="color:var(--tx3)"> ('+pct.toFixed(1).replace('.',',')+'%)</span> '+varHtml+'</span>'
+      + '</div>'
+      // Barra proporcional à MAIOR categoria, não ao total: com 40 categorias todas
+      // as barras ficariam invisíveis se a referência fosse o total.
+      + '<div style="height:7px;background:var(--surf2);border-radius:4px;overflow:hidden">'
+        + '<div style="height:100%;width:'+(maior>0?(val/maior*100):0)+'%;background:'+corNat[nat]+'"></div>'
+      + '</div></div>';
+  }).join('');
 }
 
 // Gráfico 1: fluxo de caixa mensal (Receita x Despesa, + linha de saldo) do ano selecionado
@@ -7748,87 +8172,32 @@ function finRenderChartFluxo(){
   });
 }
 
-// Gráfico 2: despesas por categoria (pizza/rosca) do ano selecionado — agrupa categorias menores em "Outras"
-function finRenderChartCategorias(){
-  var canvas = document.getElementById('finChartCategorias');
-  if(!canvas) return;
-
-  var despesasDoAno = DB_financeiro.filter(function(r){ var d=toDate(r.data); return d && d.getFullYear()===finAnoFiltro; });
-  var porCat = {};
-  despesasDoAno.forEach(function(r){
-    var n=parseValorBR(r.valor); if(isNaN(n)) return;
-    porCat[r.categoria] = (porCat[r.categoria]||0) + n;
-  });
-  var cats = Object.keys(porCat).sort(function(a,b){return porCat[b]-porCat[a];});
-
-  if(!cats.length){
-    if(window._finChartCategorias) window._finChartCategorias.destroy();
-    canvas.parentElement.innerHTML = '<div class="dash-empty"><div class="dash-empty-ic">&#128176;</div>Nenhuma despesa registrada neste ano</div>';
-    return;
-  }
-
-  var TOP_N = 8;
-  var labels, valores;
-  if(cats.length > TOP_N){
-    var top = cats.slice(0, TOP_N);
-    var outrasSoma = cats.slice(TOP_N).reduce(function(s,c){return s+porCat[c];},0);
-    labels = top.concat(['Outras']);
-    valores = top.map(function(c){return porCat[c];}).concat([outrasSoma]);
-  } else {
-    labels = cats;
-    valores = cats.map(function(c){return porCat[c];});
-  }
-
-  var palette = ['#2e7d32','#1565c0','#e65100','#6a1b9a','#c62828','#00838f','#5d4037','#9e9d24','#ad1457'];
-  var cores = labels.map(function(l,i){ return i<palette.length ? palette[i] : palette[i % palette.length]; });
-
-  if(window._finChartCategorias) window._finChartCategorias.destroy();
-  window._finChartCategorias = new Chart(canvas,{
-    type:'doughnut',
-    data:{ labels:labels, datasets:[{ data:valores, backgroundColor:cores, borderWidth:1, borderColor:'#fff' }] },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{position:'right', labels:{boxWidth:12,font:{size:11}}},
-        tooltip:{callbacks:{label:function(ctx){
-          var total = ctx.dataset.data.reduce(function(s,v){return s+v;},0);
-          var pct = total>0 ? Math.round(ctx.parsed/total*100) : 0;
-          return ctx.label+': '+fmtValorBR(ctx.parsed)+' ('+pct+'%)';
-        }}}
-      }
-    }
-  });
-}
-
-// Gráfico 3: evolução anual (despesa, receita, lucro) — todos os anos disponiveis, ordem cronologica
+// Gráfico: resultado operacional ano a ano.
+//
+// Antes este gráfico tinha uma linha "Receita total" que somava venda de gado com
+// aporte de sócio e crédito bancário. Em 2021 ela marcava R$ 354 mil de "receita"
+// num ano em que a propriedade não vendeu nada — era o capital de vocês dois
+// entrando. Dinheiro que entra não é dinheiro ganho, e as duas coisas não podem
+// dividir eixo. Aporte e investimento saíram daqui para o gráfico de capital.
 function finRenderChartAnual(){
   var canvas = document.getElementById('finChartAnual');
   if(!canvas) return;
 
   var anos = finAnosUnicos().slice().sort(function(a,b){return a-b;});
-  var despesaPorAno = anos.map(function(ano){
-    return DB_financeiro.filter(function(r){var d=toDate(r.data); return d && d.getFullYear()===ano;})
-      .reduce(function(s,r){var n=parseValorBR(r.valor); return s+(isNaN(n)?0:n);},0);
-  });
-  var receitaPorAno = anos.map(function(ano){
-    return DB_receitas.filter(function(r){var d=toDate(r.data); return d && d.getFullYear()===ano;})
-      .reduce(function(s,r){var n=parseValorBR(r.valor); return s+(isNaN(n)?0:n);},0);
-  });
-  var receitaProducaoPorAno = anos.map(function(ano){
-    return DB_receitas.filter(function(r){var d=toDate(r.data); return d && d.getFullYear()===ano && r.categoria==='Producao';})
-      .reduce(function(s,r){var n=parseValorBR(r.valor); return s+(isNaN(n)?0:n);},0);
-  });
-  var lucroPorAno = despesaPorAno.map(function(d,i){ return receitaProducaoPorAno[i]-d; });
+  var resumos = anos.map(finResumoAno);
+  var venda     = resumos.map(function(r){ return r.vendaProducao; });
+  var custeio   = resumos.map(function(r){ return r.custeio; });
+  var resultado = resumos.map(function(r){ return r.resultado; });
 
   if(window._finChartAnual) window._finChartAnual.destroy();
   window._finChartAnual = new Chart(canvas,{
-    type:'line',
+    type:'bar',
     data:{
       labels: anos,
       datasets:[
-        { label:'Despesa', data:despesaPorAno, borderColor:'#c62828', backgroundColor:'#c6282822', tension:0.2, pointRadius:3 },
-        { label:'Receita total', data:receitaPorAno, borderColor:'#2e7d32', backgroundColor:'#2e7d3222', tension:0.2, pointRadius:3 },
-        { label:'Lucro (receita produção - despesa)', data:lucroPorAno, borderColor:'#1565c0', backgroundColor:'#1565c022', tension:0.2, pointRadius:3 }
+        { type:'bar',  label:'Venda de produção', data:venda,   backgroundColor:'#2e7d32cc', borderColor:'#2e7d32', borderWidth:1, borderRadius:4, order:3 },
+        { type:'bar',  label:'Custeio',           data:custeio, backgroundColor:'#e65100cc', borderColor:'#e65100', borderWidth:1, borderRadius:4, order:3 },
+        { type:'line', label:'Resultado operacional', data:resultado, borderColor:'#1565c0', backgroundColor:'#1565c0', tension:0.2, pointRadius:4, borderWidth:2, order:1 }
       ]
     },
     options:{
@@ -7845,6 +8214,51 @@ function finRenderChartAnual(){
   });
 }
 
+// Gráfico: formação de capital ano a ano. O que financia a propriedade (aporte dos
+// sócios, crédito) contra o que virou patrimônio (investimento). Fica separado do
+// resultado de propósito: comprar um trator não é prejuízo.
+function finRenderChartCapital(){
+  var canvas = document.getElementById('finChartCapital');
+  if(!canvas) return;
+
+  var anos = finAnosUnicos().slice().sort(function(a,b){return a-b;});
+  var resumos = anos.map(finResumoAno);
+  var aporte  = resumos.map(function(r){ return r.aporte; });
+  var credito = resumos.map(function(r){ return r.credito; });
+  var invest  = resumos.map(function(r){ return r.investimento; });
+
+  var temDados = aporte.concat(credito, invest).some(function(v){ return v > 0; });
+  if(!temDados){
+    if(window._finChartCapital){ window._finChartCapital.destroy(); window._finChartCapital = null; }
+    finChartVazio('finChartCapital', '&#127974;', 'Nenhum aporte, crédito ou investimento registrado');
+    return;
+  }
+  finChartMostrar('finChartCapital');
+
+  if(window._finChartCapital) window._finChartCapital.destroy();
+  window._finChartCapital = new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels: anos,
+      datasets:[
+        { label:'Aporte dos sócios', data:aporte,  backgroundColor:'#6a1b9acc', borderColor:'#6a1b9a', borderWidth:1, borderRadius:4, stack:'entrada' },
+        { label:'Crédito bancário',  data:credito, backgroundColor:'#00838fcc', borderColor:'#00838f', borderWidth:1, borderRadius:4, stack:'entrada' },
+        { label:'Investimento',      data:invest,  backgroundColor:'#1565c0cc', borderColor:'#1565c0', borderWidth:1, borderRadius:4, stack:'saida' }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom', labels:{font:{size:11}}},
+        tooltip:{callbacks:{label:function(ctx){ return ctx.dataset.label+': '+fmtValorBR(ctx.parsed.y); }}}
+      },
+      scales:{
+        y:{stacked:true, ticks:{callback:function(v){return v.toLocaleString('pt-BR');}},grid:{color:'rgba(128,128,128,0.15)'}},
+        x:{stacked:true, grid:{display:false}}
+      }
+    }
+  });
+}
 // Gráficos 4 e 5: balanço Investimento x Retorno por sócio (Lucas / Carmem), saldo acumulado ao longo dos anos
 function finRenderChartSocio(nomeSocio, canvasId, refName){
   var canvas = document.getElementById(canvasId);
@@ -7865,10 +8279,11 @@ function finRenderChartSocio(nomeSocio, canvasId, refName){
 
   var temDados = investPorAno.some(function(v){return v>0;}) || retornoPorAno.some(function(v){return v>0;});
   if(!temDados){
-    if(window[refName]) window[refName].destroy();
-    canvas.parentElement.innerHTML = '<div class="dash-empty"><div class="dash-empty-ic">&#129309;</div>Nenhum investimento ou retorno registrado para '+nomeSocio+'</div>';
+    if(window[refName]){ window[refName].destroy(); window[refName] = null; }
+    finChartVazio(canvasId, '&#129309;', 'Nenhum investimento ou retorno registrado para '+nomeSocio);
     return;
   }
+  finChartMostrar(canvasId);
 
   var saldoAcumuladoPorAno = [];
   var _accSocio = 0;
@@ -7897,6 +8312,109 @@ function finRenderChartSocio(nomeSocio, canvasId, refName){
       }
     }
   });
+}
+
+// ── Resumo dos sócios ──────────────────────────────────────────────────────
+// O gráfico mostra o movimento ano a ano; isto responde a pergunta que vem depois:
+// quanto cada um já colocou, quanto já tirou, e qual a participação no capital.
+function finRenderResumoSocios(){
+  var anos = finAnosUnicos();
+  var tot = { Lucas:{ap:0,ret:0}, Carmem:{ap:0,ret:0} };
+  anos.forEach(function(a){
+    var r = finResumoAno(a);
+    tot.Lucas.ap  += r.aporteLucas;   tot.Lucas.ret  += r.retornoLucas;
+    tot.Carmem.ap += r.aporteCarmem;  tot.Carmem.ret += r.retornoCarmem;
+  });
+  var capital = tot.Lucas.ap + tot.Carmem.ap;
+
+  ['Lucas','Carmem'].forEach(function(nome){
+    var box = document.getElementById('findash-socio-'+nome.toLowerCase()+'-resumo');
+    if(!box) return;
+    var s = tot[nome];
+    var liq = s.ap - s.ret;
+    // Participação no capital aportado. Com capital zero não há participação a
+    // calcular — dividir daria NaN e a tela mostraria "NaN%".
+    var part = capital > 0 ? (s.ap/capital*100) : 0;
+    function linha(rot, val, cor){
+      return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bord);font-size:12px">'
+        + '<span style="color:var(--tx2)">'+rot+'</span>'
+        + '<strong'+(cor?' style="color:'+cor+'"':'')+'>'+val+'</strong></div>';
+    }
+    box.innerHTML = '<div class="tcard" style="margin-bottom:18px">'
+      + '<div class="tbar"><span style="font-size:13px;font-weight:600">'+nome+' &mdash; acumulado</span>'
+        + '<span class="tcnt">'+part.toFixed(1).replace('.',',')+'% do capital</span></div>'
+      + '<div style="padding:10px 16px">'
+        + linha('Total aportado', fmtValorBR(s.ap), 'var(--purt)')
+        + linha('Total retornado', fmtValorBR(s.ret), 'var(--red)')
+        + linha('Saldo a recuperar', fmtValorBR(liq), liq>0?'var(--blut)':'var(--grnt)')
+      + '</div></div>';
+  });
+}
+
+// ── Classificação das categorias ───────────────────────────────────────────
+function finToggleNatureza(){
+  var c = document.getElementById('findash-nat-corpo');
+  var t = document.getElementById('findash-nat-toggle');
+  if(!c) return;
+  var abrir = c.style.display === 'none';
+  c.style.display = abrir ? '' : 'none';
+  if(t) t.textContent = abrir ? 'ocultar' : 'mostrar';
+}
+
+function finRenderTabelaNatureza(){
+  var box = document.getElementById('findash-nat-tabela');
+  if(!box) return;
+
+  // Lista as categorias que REALMENTE aparecem em lançamentos, não as listas-base.
+  // São essas que movimentam dinheiro e, portanto, as únicas cuja natureza muda algum
+  // número na tela. Inclui as aposentadas, que seguem nos lançamentos antigos.
+  var usadas = [];
+  DB_financeiro.forEach(function(r){
+    var grupo = r.grupo==='Producao'?'Producao':'Geral';
+    var cat = r.categoria || '';
+    if(!cat) return;
+    var k = grupo+'|'+cat;
+    var e = usadas.find(function(x){ return x.k===k; });
+    var n = parseValorBR(r.valor);
+    if(!e){ usadas.push({ k:k, grupo:grupo, cat:cat, total:isNaN(n)?0:n }); }
+    else if(!isNaN(n)) e.total += n;
+  });
+  if(!usadas.length){
+    box.innerHTML = '<div class="dash-empty">Nenhuma despesa lançada ainda.</div>';
+    return;
+  }
+  usadas.sort(function(a,b){ return b.total - a.total; });
+  // O onchange recebe o ÍNDICE, não o nome. Nome de categoria é texto livre: "Adubo +
+  // Uréia" e qualquer aspas ou acento quebrariam o atributo HTML ou viriam truncados.
+  _finNatLista = usadas;
+
+  box.innerHTML = '<div class="tscroll"><table><thead><tr>'
+    + '<th>Categoria</th><th>Grupo</th><th>Total lançado</th><th>Natureza</th></tr></thead><tbody>'
+    + usadas.map(function(u, i){
+        var nat = finNaturezaDe(u.grupo, u.cat);
+        var padrao = FIN_NATUREZA_PADRAO[u.cat] || 'custeio';
+        var opts = FIN_NATUREZAS.map(function(n){
+          return '<option value="'+n+'"'+(n===nat?' selected':'')+'>'+finNaturezaLabel(n)+'</option>';
+        }).join('');
+        return '<tr><td><strong>'+u.cat+'</strong>'
+          + (nat!==padrao ? '<div style="font-size:10px;color:var(--tx3)">ajustado por você</div>' : '')
+          + '</td>'
+          + '<td>'+(u.grupo==='Producao'?'Produção':'Geral')+'</td>'
+          + '<td>'+fmtValorBR(u.total)+'</td>'
+          + '<td><select style="font-size:12px;padding:3px 6px" '
+            + 'onchange="finMudarNatureza('+i+',this.value)">'
+            + opts + '</select></td></tr>';
+      }).join('')
+    + '</tbody></table></div>';
+}
+
+var _finNatLista = [];
+function finMudarNatureza(idx, natureza){
+  var u = _finNatLista[idx];
+  if(!u) return;
+  finSetNatureza(u.grupo, u.cat, natureza);
+  renderFinDashboard();   // muda KPIs, barras e os dois gráficos anuais de uma vez
+  renderFinanceiro();
 }
 
 // ─── IATF ───────────────────────────────────────────────────────────
