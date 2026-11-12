@@ -889,7 +889,9 @@ tr:hover td{background:#fafaf7}
 <div class="overlay" id="modal-confirm">
   <div class="modal">
     <h3 id="mc-title">Confirmar</h3>
-    <p id="mc-msg"></p>
+    <!-- pre-line: showConfirm escreve com textContent, e mensagens de várias linhas
+         (fusão de categorias, por exemplo) viravam um parágrafo corrido. -->
+    <p id="mc-msg" style="white-space:pre-line"></p>
     <div class="modal-act">
       <button class="btn btn-ghost" onclick="closeConfirm()">Cancelar</button>
       <button class="btn btn-danger" id="mc-ok-btn" onclick="doConfirm()">Confirmar</button>
@@ -1024,8 +1026,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.52.0</span><br>
-              Data da versão: <span id="app-versao-data">10/11/2026</span><br>
+              Versão: <span id="app-versao">2.53.0</span><br>
+              Data da versão: <span id="app-versao-data">12/11/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -2239,7 +2241,7 @@ tr:hover td{background:#fafaf7}
              mas precisa estar à mão, porque é ela que define o que conta como custo. -->
         <div class="tcard" style="margin-bottom:18px">
           <div class="tbar" style="cursor:pointer" onclick="finToggleNatureza()">
-            <span style="font-size:13px;font-weight:600">&#9881; Natureza das categorias</span>
+            <span style="font-size:13px;font-weight:600">&#9881; Categorias de despesa &mdash; natureza e nome</span>
             <span id="findash-nat-toggle" style="font-size:11px;color:var(--tx3)">mostrar</span>
           </div>
           <div id="findash-nat-corpo" style="display:none">
@@ -2248,6 +2250,8 @@ tr:hover td{background:#fafaf7}
               <strong>Investimento</strong> vira patrimônio e serve por vários anos — não é custo do ano.
               <strong>Capital</strong> é movimento financeiro: amortizar financiamento, devolver aporte.
               Mudar aqui muda todos os gráficos e todos os anos.
+              O lápis renomeia a categoria em <strong>todos os lançamentos</strong>; se o nome
+              novo já existir, as duas se fundem numa só e os valores se somam.
             </div>
             <div id="findash-nat-tabela" style="padding:12px 16px"></div>
           </div>
@@ -2726,6 +2730,12 @@ var FIN_NATUREZA_PADRAO = {
 
 // Ajustes do usuário, por grupo+categoria. Vence sobre o padrão.
 var DB_fin_natureza = [];   // [{grupo, categoria, natureza}]
+
+// Categorias da lista-base que saíram de cena por renomeação. As listas FIN_CATS_*
+// vivem no código e não podem ser editadas em tempo de execução: quando "Diversos"
+// vira "Outros", o jeito de o nome velho sumir do seletor é marcá-lo aqui.
+// Os lançamentos antigos já foram reescritos com o nome novo — isto é só a lista.
+var DB_fin_cats_ocultas = [];   // [{grupo, nome}]
 
 function finNatChave(grupo, categoria){
   return (grupo==='Producao'?'Producao':'Geral') + '|' + String(categoria||'');
@@ -3208,6 +3218,7 @@ function parseWB(wb){
   // e nesse caso reconciliarCategoriasFinanceiro adota o que estiver nos lançamentos).
   DB_fin_cats=[];
   DB_fin_natureza=[];
+  DB_fin_cats_ocultas=[];
   var shFcat = findSh(wb,['Categorias Despesa','ategorias Despesa','CategoriasDespesa']);
   if(shFcat){
     var rows=XLSX.utils.sheet_to_json(shFcat,{header:1,defval:'',raw:true});
@@ -3220,6 +3231,8 @@ function parseWB(wb){
       // é o que o "!r[3]" preserva.
       if(cl(r[3])==='Sim' || !cl(r[3])) DB_fin_cats.push({ grupo:gfc, nome:nome });
       if(FIN_NATUREZAS.indexOf(nat)!==-1) DB_fin_natureza.push({ grupo:gfc, categoria:nome, natureza:nat });
+      // Coluna "Oculta": nome de categoria-base aposentado por renomeação.
+      if(cl(r[4])==='Sim') DB_fin_cats_ocultas.push({ grupo:gfc, nome:nome });
     }
   }
 
@@ -4356,14 +4369,18 @@ function _buildWorkbook(){
     var ov = DB_fin_natureza.find(function(x){
       return (x.grupo==='Producao'?'Producao':'Geral')===grupo && x.categoria===nome;
     });
-    fcatLinhas.push([ grupo, nome, ov ? ov.natureza : '', criada ? 'Sim' : 'Nao' ]);
+    var oculta = DB_fin_cats_ocultas.some(function(o){
+      return (o.grupo==='Producao'?'Producao':'Geral')===grupo && o.nome===nome;
+    });
+    fcatLinhas.push([ grupo, nome, ov ? ov.natureza : '', criada ? 'Sim' : 'Nao', oculta ? 'Sim' : 'Nao' ]);
   }
   DB_fin_cats.forEach(function(c){ fcatAdd(c.grupo, c.nome); });
   DB_fin_natureza.forEach(function(x){ fcatAdd(x.grupo, x.categoria); });
+  DB_fin_cats_ocultas.forEach(function(o){ fcatAdd(o.grupo, o.nome); });
 
   var fcatD=[['CATEGORIAS DE DESPESA'],
-             ['Categorias criadas por voce e ajustes de natureza. Natureza: custeio, investimento ou capital.'],
-             ['Grupo','Categoria','Natureza','Criada']]
+             ['Categorias criadas por voce, ajustes de natureza e nomes aposentados por renomeacao.'],
+             ['Grupo','Categoria','Natureza','Criada','Oculta']]
     .concat(fcatLinhas);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(fcatD),'Categorias Despesa');
 
@@ -7528,6 +7545,12 @@ function finCmpCat(a, b){
 function finCategoriasFor(grupo){
   grupo = finGrupoNormal(grupo);
   var base = (grupo==='Producao' ? FIN_CATS_PRODUCAO : FIN_CATS_GERAL).slice();
+  // Fora as que o usuário renomeou: o nome antigo não existe mais em lançamento nenhum.
+  base = base.filter(function(b){
+    return !DB_fin_cats_ocultas.some(function(o){
+      return finGrupoNormal(o.grupo)===grupo && finCmpCat(o.nome, b)===0;
+    });
+  });
   DB_fin_cats.forEach(function(c){
     if(!c || !c.nome) return;
     if(finGrupoNormal(c.grupo) !== grupo) return;
@@ -7548,6 +7571,102 @@ function finRegistrarCategoria(grupo, nome){
   if(atual.some(function(c){ return finCmpCat(c, nome) === 0; })) return false;
   DB_fin_cats.push({ grupo:grupo, nome:nome });
   return true;
+}
+
+// ── Renomear categoria ─────────────────────────────────────────────────────
+// Mesma ideia de renomearBrinco: o nome é a chave, então trocá-lo exige reescrever
+// TODOS os lugares que o citam — senão o lançamento antigo vira órfão de uma
+// categoria que não existe mais, e some dos totais sem avisar.
+//
+// Quem cita uma categoria de despesa:
+//   DB_financeiro   — o lançamento em si
+//   DB_contasfixas  — a conta fixa aponta para a categoria em que a baixa é procurada
+//   DB_fin_cats     — a lista das criadas pelo usuário
+//   DB_fin_natureza — o ajuste de custeio/investimento/capital
+//   FIN_CATS_*      — listas-base, que vivem no código; daí DB_fin_cats_ocultas
+//
+// FUSÃO: se o nome novo já existe, as duas viram uma só. Não há nada a fazer além de
+// reescrever — a soma por categoria passa a encontrar os dois conjuntos sob a mesma
+// chave e eles se somam sozinhos. O que precisa de cuidado é a NATUREZA: as duas
+// podiam estar classificadas de formas diferentes, e aí vale a do destino, que já
+// existia. Quem chama avisa o usuário antes (ver finPedirRenomearCategoria).
+//
+// Devolve o que mudou, para a mensagem de confirmação poder ser específica.
+function finRenomearCategoria(grupo, de, para){
+  grupo = finGrupoNormal(grupo);
+  de   = String(de || '').trim();
+  para = String(para || '').trim();
+  if(!de || !para) return null;
+  if(finCmpCat(de, para) === 0 && de === para) return null;   // nada a fazer
+
+  var alvo = finCategoriasFor(grupo).find(function(c){ return finCmpCat(c, para) === 0; });
+  // Fusão é comparação de texto EXATO, não de finCmpCat: "Analise" e "Análise" são a
+  // mesma categoria para o app, mas são dois nomes distintos guardados nos lançamentos
+  // e duas linhas na tela. Juntá-las é fusão do ponto de vista de quem olha, e a
+  // confirmação precisa dizer isso.
+  var mesclou = !!alvo && alvo !== de;
+  // Fundindo, o nome vencedor é o que já estava na lista — assim "diesel" digitado
+  // em caixa baixa não renomeia a "Diesel" existente para minúscula.
+  if(alvo) para = alvo;
+
+  var n = 0;
+  DB_financeiro.forEach(function(r){
+    if(finGrupoNormal(r.grupo)!==grupo) return;
+    if(finCmpCat(r.categoria, de)!==0) return;
+    r.categoria = para; n++;
+  });
+  var nContas = 0;
+  DB_contasfixas.forEach(function(c){
+    if(finGrupoNormal(c.grupo)!==grupo) return;
+    if(finCmpCat(c.categoria, de)!==0) return;
+    c.categoria = para; nContas++;
+  });
+
+  // Natureza: só viaja se o destino ainda não tiver a sua. Fundindo, a do destino manda.
+  var natDe = DB_fin_natureza.find(function(x){
+    return finGrupoNormal(x.grupo)===grupo && finCmpCat(x.categoria, de)===0;
+  });
+  var natPara = DB_fin_natureza.find(function(x){
+    return finGrupoNormal(x.grupo)===grupo && finCmpCat(x.categoria, para)===0;
+  });
+  if(natDe && !natPara) natDe.categoria = para;
+  else if(natDe) DB_fin_natureza = DB_fin_natureza.filter(function(x){ return x !== natDe; });
+
+  // Sai da lista pela porta certa: criada pelo usuário é removida, da base é ocultada.
+  var idxCriada = DB_fin_cats.findIndex(function(c){
+    return finGrupoNormal(c.grupo)===grupo && finCmpCat(c.nome, de)===0;
+  });
+  if(idxCriada !== -1) DB_fin_cats.splice(idxCriada, 1);
+  var ehBase = (grupo==='Producao' ? FIN_CATS_PRODUCAO : FIN_CATS_GERAL)
+    .some(function(b){ return finCmpCat(b, de)===0; });
+  if(ehBase && !DB_fin_cats_ocultas.some(function(o){
+      return finGrupoNormal(o.grupo)===grupo && finCmpCat(o.nome, de)===0; })){
+    DB_fin_cats_ocultas.push({ grupo:grupo, nome:de });
+  }
+
+  // O nome novo tem de existir na lista. Se era um nome oculto voltando à ativa,
+  // basta desocultar; senão entra como categoria criada.
+  DB_fin_cats_ocultas = DB_fin_cats_ocultas.filter(function(o){
+    return !(finGrupoNormal(o.grupo)===grupo && finCmpCat(o.nome, para)===0);
+  });
+  finRegistrarCategoria(grupo, para);
+
+  markDirty();
+  return { de:de, para:para, lancamentos:n, contasFixas:nContas, mesclou:mesclou };
+}
+
+// Quantos lançamentos e quanto dinheiro há sob uma categoria. Alimenta a confirmação:
+// fundir duas categorias mexe no histórico inteiro e o usuário precisa ver o tamanho
+// do que está prestes a juntar.
+function finPesoCategoria(grupo, cat){
+  grupo = finGrupoNormal(grupo);
+  var n = 0, total = 0;
+  DB_financeiro.forEach(function(r){
+    if(finGrupoNormal(r.grupo)!==grupo || finCmpCat(r.categoria, cat)!==0) return;
+    n++;
+    var v = parseValorBR(r.valor); if(!isNaN(v)) total += v;
+  });
+  return { n:n, total:total };
 }
 
 // Adota as categorias que já existem nos lançamentos mas nunca entraram em lista
@@ -8368,16 +8487,19 @@ function finRenderTabelaNatureza(){
   // Lista as categorias que REALMENTE aparecem em lançamentos, não as listas-base.
   // São essas que movimentam dinheiro e, portanto, as únicas cuja natureza muda algum
   // número na tela. Inclui as aposentadas, que seguem nos lançamentos antigos.
+  // Agrupa pela MESMA regra que o resto do financeiro usa (finCmpCat, que ignora caixa
+  // e acento). Agrupar por texto exato mostraria "Analise de terra" e "Análise de terra"
+  // como duas linhas, enquanto os totais e a renomeação já as tratam como uma — e a
+  // confirmação do lápis acusaria o dobro de lançamentos da linha clicada.
   var usadas = [];
   DB_financeiro.forEach(function(r){
     var grupo = r.grupo==='Producao'?'Producao':'Geral';
     var cat = r.categoria || '';
     if(!cat) return;
-    var k = grupo+'|'+cat;
-    var e = usadas.find(function(x){ return x.k===k; });
+    var e = usadas.find(function(x){ return x.grupo===grupo && finCmpCat(x.cat, cat)===0; });
     var n = parseValorBR(r.valor);
-    if(!e){ usadas.push({ k:k, grupo:grupo, cat:cat, total:isNaN(n)?0:n }); }
-    else if(!isNaN(n)) e.total += n;
+    if(!e){ usadas.push({ grupo:grupo, cat:cat, total:isNaN(n)?0:n, n:1 }); }
+    else { e.n++; if(!isNaN(n)) e.total += n; }
   });
   if(!usadas.length){
     box.innerHTML = '<div class="dash-empty">Nenhuma despesa lançada ainda.</div>';
@@ -8389,7 +8511,8 @@ function finRenderTabelaNatureza(){
   _finNatLista = usadas;
 
   box.innerHTML = '<div class="tscroll"><table><thead><tr>'
-    + '<th>Categoria</th><th>Grupo</th><th>Total lançado</th><th>Natureza</th></tr></thead><tbody>'
+    + '<th>Categoria</th><th>Grupo</th><th>Lanç.</th><th>Total lançado</th><th>Natureza</th>'
+    + '<th class="tc">Nome</th></tr></thead><tbody>'
     + usadas.map(function(u, i){
         var nat = finNaturezaDe(u.grupo, u.cat);
         var padrao = FIN_NATUREZA_PADRAO[u.cat] || 'custeio';
@@ -8400,12 +8523,66 @@ function finRenderTabelaNatureza(){
           + (nat!==padrao ? '<div style="font-size:10px;color:var(--tx3)">ajustado por você</div>' : '')
           + '</td>'
           + '<td>'+(u.grupo==='Producao'?'Produção':'Geral')+'</td>'
+          + '<td>'+u.n+'</td>'
           + '<td>'+fmtValorBR(u.total)+'</td>'
           + '<td><select style="font-size:12px;padding:3px 6px" '
             + 'onchange="finMudarNatureza('+i+',this.value)">'
-            + opts + '</select></td></tr>';
+            + opts + '</select></td>'
+          + '<td class="tc"><button class="btn btn-ghost btn-sm" onclick="finPedirRenomearCategoria('+i+')" '
+            + 'title="Renomear esta categoria em todos os lançamentos">&#9998;</button></td></tr>';
       }).join('')
     + '</tbody></table></div>';
+}
+
+// Renomear pela tela. O prompt é deliberadamente simples, mas a CONFIRMAÇÃO não é:
+// renomear mexe no histórico inteiro e, se o nome já existir, funde duas categorias
+// para sempre. O usuário precisa ver quantos lançamentos e quanto dinheiro estão de
+// cada lado antes de dizer sim.
+function finPedirRenomearCategoria(idx){
+  var u = _finNatLista[idx];
+  if(!u) return;
+  var novo = window.prompt('Renomear a categoria "'+u.cat+'" ('
+    + (u.grupo==='Producao'?'Produção':'Geral') + ')\n\n'
+    + 'O nome novo passa a valer em todos os lançamentos.\n'
+    + 'Se já existir uma categoria com esse nome, as duas viram uma só.', u.cat);
+  if(novo === null) return;                       // cancelou
+  novo = String(novo).trim();
+  if(!novo){ toast('Informe um nome.','err'); return; }
+  if(novo === u.cat) return;                      // nada mudou
+
+  var destino = finCategoriasFor(u.grupo).find(function(c){ return finCmpCat(c, novo) === 0; });
+  var vaiMesclar = !!destino && finCmpCat(destino, u.cat) !== 0;
+
+  var origem = finPesoCategoria(u.grupo, u.cat);
+  var msg;
+  if(vaiMesclar){
+    var dest = finPesoCategoria(u.grupo, destino);
+    var natO = finNaturezaDe(u.grupo, u.cat), natD = finNaturezaDe(u.grupo, destino);
+    msg = 'FUNDIR duas categorias:\n\n'
+        + '• "'+u.cat+'": '+origem.n+' lançamento(s), '+fmtValorBR(origem.total)+'\n'
+        + '• "'+destino+'": '+dest.n+' lançamento(s), '+fmtValorBR(dest.total)+'\n\n'
+        + 'Tudo passa a se chamar "'+destino+'" e os valores se somam: '
+        + (origem.n+dest.n)+' lançamento(s), '+fmtValorBR(origem.total+dest.total)+'.\n';
+    // Naturezas diferentes mudam em que gráfico o dinheiro cai. Avisar é obrigatório.
+    if(natO !== natD){
+      msg += '\nATENÇÃO: as duas têm naturezas diferentes ('+finNaturezaLabel(natO)
+           + ' e '+finNaturezaLabel(natD)+'). Tudo passará a ser '+finNaturezaLabel(natD)+'.\n';
+    }
+    msg += '\nNão dá para desfazer separando de novo — os lançamentos ficam com o mesmo nome.';
+  } else {
+    msg = 'Renomear "'+u.cat+'" para "'+novo+'"?\n\n'
+        + origem.n+' lançamento(s) serão atualizados, somando '+fmtValorBR(origem.total)+'.';
+  }
+
+  showConfirm(msg, function(){
+    var r = finRenomearCategoria(u.grupo, u.cat, novo);
+    if(!r){ toast('Nada a renomear.','err'); return; }
+    renderFinDashboard();
+    renderFinanceiro();
+    toast(r.mesclou
+      ? 'Categorias fundidas em "'+r.para+'" — '+r.lancamentos+' lançamento(s) movido(s).'
+      : 'Renomeada para "'+r.para+'" em '+r.lancamentos+' lançamento(s).', 'ok');
+  }, vaiMesclar ? 'Fundir categorias' : 'Renomear categoria');
 }
 
 var _finNatLista = [];
