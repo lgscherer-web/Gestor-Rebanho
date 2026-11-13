@@ -1026,8 +1026,8 @@ tr:hover td{background:#fafaf7}
             <div style="font-size:10px;color:var(--tx3);margin-top:4px">&copy; 2026 IBS Agropecuária. Todos os direitos reservados.</div>
             <div style="font-size:9px;color:var(--tx3);line-height:1.6;margin-top:10px;text-align:justify">Este software é protegido pelas leis de direitos autorais e demais legislações aplicáveis sobre propriedade intelectual. É proibida a reprodução, distribuição, modificação, engenharia reversa ou qualquer outra forma de utilização não autorizada, total ou parcial, deste sistema sem autorização expressa do titular dos direitos.</div>
             <div style="font-size:10px;color:var(--tx3);line-height:1.8;margin-top:10px">
-              Versão: <span id="app-versao">2.54.0</span><br>
-              Data da versão: <span id="app-versao-data">12/11/2026</span><br>
+              Versão: <span id="app-versao">2.55.0</span><br>
+              Data da versão: <span id="app-versao-data">13/11/2026</span><br>
               Licença: Uso restrito ao proprietário.<br>
               Desenvolvido por: IBS Agropecuária<br>
               Autor: Lucas Giuliani Scherer<br>
@@ -2069,6 +2069,7 @@ tr:hover td{background:#fafaf7}
                 <select id="cf-grupo" onchange="cfAtualizarCategorias()">
                   <option value="Geral">Propriedade</option>
                   <option value="Producao">Produção</option>
+                  <option value="Apartamento">Apartamento</option>
                 </select>
               </div>
               <div class="fg"><label>Categoria *</label><select id="cf-categoria"></select></div>
@@ -2114,6 +2115,7 @@ tr:hover td{background:#fafaf7}
                   <select id="fin-grupo" onchange="finAtualizarCategorias()">
                     <option value="Geral">Propriedade</option>
                     <option value="Producao">Produção</option>
+                    <option value="Apartamento">Apartamento</option>
                   </select>
                 </div>
                 <div class="fg"><label>Categoria *</label>
@@ -2154,7 +2156,7 @@ tr:hover td{background:#fafaf7}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px;border-bottom:1px solid var(--bord)">
             <select id="fin-f-tipo" onchange="finAplicarFiltros()" style="max-width:150px"><option value="">Todos os tipos</option><option value="despesa">Despesa</option><option value="receita">Receita</option></select>
-            <select id="fin-f-grupo" onchange="finAplicarFiltros()" style="max-width:160px"><option value="">Os dois grupos</option><option value="Geral">Propriedade</option><option value="Producao">Produção</option></select>
+            <select id="fin-f-grupo" onchange="finAplicarFiltros()" style="max-width:160px"><option value="">Todos os grupos</option><option value="Geral">Propriedade</option><option value="Producao">Produção</option><option value="Apartamento">Apartamento</option></select>
             <select id="fin-f-categoria" onchange="finAplicarFiltros()" style="max-width:200px"><option value="">Todas as categorias</option></select>
           </div>
           <div class="tscroll">
@@ -2176,7 +2178,7 @@ tr:hover td{background:#fafaf7}
           <div id="findash-ano-tabs" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px"></div>
           <div class="tbar" style="border-top:1px solid var(--bord)">
             <span style="font-size:13px;font-weight:600">Grupo</span>
-            <span style="font-size:11px;color:var(--tx3)">Propriedade = manter o lugar de pé; Produção = a pecuária</span>
+            <span style="font-size:11px;color:var(--tx3)">Propriedade = manter o lugar de pé &middot; Produção = a pecuária &middot; Apartamento = imóvel urbano</span>
           </div>
           <div id="findash-grupo-tabs" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px"></div>
         </div>
@@ -2683,6 +2685,10 @@ var finTipoAtual = 'despesa'; // tipo selecionado no formulario unificado: 'desp
 var FIN_CATS_GERAL = ['Salário Eberson','FGTS Eberson','13º Salário+Férias+FGTS','Luz','Segurança','Contador','Ração','Telefone','Internet','ITR','Trator','Piscina','Mão de Obra','Cachorros/Gatos','Manutenção','Seg. do Trabalho','Retorno Lucas','Retorno Carmem','Diversos'];
 var FIN_CATS_PRODUCAO = ['Semente','Adubo + Uréia','Calcário','Herbicida','Sanitário Gado','Sanitário Ovinos','Veterinário','Suplemento/Feno Gado','Suplemento/Feno Ovinos','Mão de Obra','Diesel','Trator','Infraestrutura','Documentação','Ferramentas','Manutenção','Enfardadeira','Sistema PV','Inseminação','Compra de Gado','Frangos/Suínos','Comissões','Financiamentos','Contribuição Mensal','Diversos'];
 
+// Grupo novo, lista enxuta: é um apartamento, não uma fazenda. Qualquer outra entra
+// por "Outra (especificar)" e fica guardada como nos demais grupos.
+var FIN_CATS_APARTAMENTO = ['Condomínio','Internet SM','Luz SM','Salário Vânia'];
+
 // Categorias que saíram da lista a pedido. Elas continuam existindo nos lançamentos
 // antigos — "Sal" tem 7 e "Arrendamento" tem 1 na base atual —, e isso é de propósito:
 // aposentar a categoria não reescreve o passado. O que esta lista faz é impedir que a
@@ -2743,7 +2749,7 @@ var DB_fin_natureza = [];   // [{grupo, categoria, natureza}]
 var DB_fin_cats_ocultas = [];   // [{grupo, nome}]
 
 function finNatChave(grupo, categoria){
-  return (grupo==='Producao'?'Producao':'Geral') + '|' + String(categoria||'');
+  return finGrupoNormal(grupo) + '|' + String(categoria||'');
 }
 function finNaturezaDe(grupo, categoria){
   var k = finNatChave(grupo, categoria);
@@ -2753,7 +2759,7 @@ function finNaturezaDe(grupo, categoria){
 }
 function finSetNatureza(grupo, categoria, natureza){
   if(FIN_NATUREZAS.indexOf(natureza) === -1) return;
-  grupo = (grupo==='Producao'?'Producao':'Geral');
+  grupo = finGrupoNormal(grupo);
   var k = finNatChave(grupo, categoria);
   var ov = DB_fin_natureza.find(function(x){ return finNatChave(x.grupo, x.categoria) === k; });
   if(ov) ov.natureza = natureza;
@@ -3202,7 +3208,15 @@ function parseWB(wb){
     var rows=XLSX.utils.sheet_to_json(shFin,{header:1,defval:'',raw:true});
     for(var i=3;i<rows.length;i++){
       var r=rows[i]; var cat=cl(r[2]); if(!cat) continue;
-      var grp = (cl(r[1])||'').toLowerCase()==='producao' ? 'Producao' : 'Geral';
+      // Casa pelo nome do grupo, sem lista fixa: um grupo novo na planilha precisa
+      // sobreviver à leitura. Antes, qualquer coisa que não fosse "producao" virava
+      // 'Geral' — e um lançamento do Apartamento voltaria para a Propriedade.
+      var grpRaw = (cl(r[1])||'').toLowerCase();
+      var grp = FIN_GRUPO_PADRAO;
+      for(var _g=0;_g<FIN_GRUPOS.length;_g++){
+        if(FIN_GRUPOS[_g].key.toLowerCase() === grpRaw
+          || FIN_GRUPOS[_g].label.toLowerCase() === grpRaw){ grp = FIN_GRUPOS[_g].key; break; }
+      }
       // r[5] ('Registrado em') só existe em arquivos gravados a partir da v1.1.2; nos antigos
       // vem vazio e a ordenação do histórico cai para a ordem de inserção.
       DB_financeiro.push({data:xlsxDateToStr(r[0]),grupo:grp,categoria:cat,valor:cl(r[3]),obs:cl(r[4]),_ts:cl(r[5])||undefined,_cfId:cl(r[6])||undefined});
@@ -3229,7 +3243,7 @@ function parseWB(wb){
     var rows=XLSX.utils.sheet_to_json(shFcat,{header:1,defval:'',raw:true});
     for(var i=3;i<rows.length;i++){
       var r=rows[i]; var nome=cl(r[1]); if(!nome) continue;
-      var gfc = cl(r[0])==='Producao'?'Producao':'Geral';
+      var gfc = finGrupoNormal(cl(r[0]));
       var nat = cl(r[2]).toLowerCase();
       // Coluna "Criada" só existe a partir da versão que trouxe a natureza. Nas
       // planilhas gravadas antes dela, toda linha era categoria criada pelo usuário —
@@ -3249,7 +3263,7 @@ function parseWB(wb){
     for(var i=3;i<rows.length;i++){
       var r=rows[i]; var d=cl(r[0]); if(!d) continue;
       DB_contasfixas.push({
-        descricao:d, grupo:cl(r[1])==='Producao'?'Producao':'Geral', categoria:cl(r[2]),
+        descricao:d, grupo:finGrupoNormal(cl(r[1])), categoria:cl(r[2]),
         diaVenc:parseInt(cl(r[3]))||1, valorEstimado:cl(r[4]),
         ativa: cl(r[5]).toLowerCase()!=='nao',
         cfId: cl(r[6])
@@ -4332,7 +4346,7 @@ function _buildWorkbook(){
   // segura de evoluir o formato, porque não desloca nenhuma coluna existente. Versões antigas
   // do app simplesmente ignoram a coluna extra, e a leitura das demais continua idêntica.
   var finD=[['CONTROLE FINANCEIRO'],['Lancamentos de despesas por categoria (Geral/Producao).'],['Data','Grupo','Categoria','Valor (R$)','Observacao','Registrado em','Conta Fixa (ID)']]
-    .concat(DB_financeiro.map(function(r){return[r.data?exDate(r.data):null,r.grupo==='Producao'?'Producao':'Geral',r.categoria||'',r.valor||'',r.obs||'',r._ts||'',r._cfId||''];}));
+    .concat(DB_financeiro.map(function(r){return[r.data?exDate(r.data):null,finGrupoNormal(r.grupo),r.categoria||'',r.valor||'',r.obs||'',r._ts||'',r._cfId||''];}));
   var wsFin=XLSX.utils.aoa_to_sheet(finD);
   DB_financeiro.forEach(function(r,i){var c=wsFin[XLSX.utils.encode_cell({r:3+i,c:0})];if(c&&r.data)c.z='dd/mm/yyyy';});
   XLSX.utils.book_append_sheet(wb,wsFin,'Financeiro');
@@ -4349,7 +4363,7 @@ function _buildWorkbook(){
   var cfD=[['CONTAS FIXAS MENSAIS'],['Lembrete de contas recorrentes. A baixa e automatica: conta paga = despesa lancada no mes na mesma categoria.'],
            ['Descricao','Grupo','Categoria','Dia Vencimento','Valor Estimado','Ativa','ID']]
     .concat(DB_contasfixas.map(function(r){
-      return[r.descricao||'', r.grupo==='Producao'?'Producao':'Geral', r.categoria||'',
+      return[r.descricao||'', finGrupoNormal(r.grupo), r.categoria||'',
              r.diaVenc||'', r.valorEstimado||'', r.ativa===false?'Nao':'Sim', r.cfId||''];
     }));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cfD),'Contas Fixas');
@@ -4364,18 +4378,18 @@ function _buildWorkbook(){
   var fcatChaves = [];
   var fcatLinhas = [];
   function fcatAdd(grupo, nome){
-    grupo = grupo==='Producao'?'Producao':'Geral';
+    grupo = finGrupoNormal(grupo);
     var k = grupo+'|'+nome;
     if(fcatChaves.indexOf(k)!==-1) return;
     fcatChaves.push(k);
     var criada = DB_fin_cats.some(function(c){
-      return (c.grupo==='Producao'?'Producao':'Geral')===grupo && c.nome===nome;
+      return finGrupoNormal(c.grupo)===grupo && c.nome===nome;
     });
     var ov = DB_fin_natureza.find(function(x){
-      return (x.grupo==='Producao'?'Producao':'Geral')===grupo && x.categoria===nome;
+      return finGrupoNormal(x.grupo)===grupo && x.categoria===nome;
     });
     var oculta = DB_fin_cats_ocultas.some(function(o){
-      return (o.grupo==='Producao'?'Producao':'Geral')===grupo && o.nome===nome;
+      return finGrupoNormal(o.grupo)===grupo && o.nome===nome;
     });
     fcatLinhas.push([ grupo, nome, ov ? ov.natureza : '', criada ? 'Sim' : 'Nao', oculta ? 'Sim' : 'Nao' ]);
   }
@@ -7537,17 +7551,40 @@ function renderContasFixasCad(){
   }).join('');
 }
 
-function finGrupoNormal(g){ return g==='Producao' ? 'Producao' : 'Geral'; }
-
-// ── Nome dos grupos ────────────────────────────────────────────────────────
-// "Geral" não dizia nada: o que está lá é o custo de manter a propriedade de pé,
-// exista gado ou não — luz, contador, ITR, segurança. Virou "Propriedade" na tela.
+// ── Grupos de despesa ──────────────────────────────────────────────────────
+// Eram dois, fixos no código. Virou lista para caber um terceiro sem reescrever
+// cada comparação espalhada pelo app.
 //
-// A CHAVE guardada continua sendo 'Geral'. Ela está em 1.714 lançamentos, nas contas
-// fixas, na coluna Grupo da planilha e nos backups em nuvem; trocar o valor exigiria
-// migrar tudo isso para ganhar o quê — o nome já aparece certo onde se lê. Então a
-// chave é interna e este é o único lugar que decide como ela é escrita.
-function finGrupoLabel(g){ return finGrupoNormal(g)==='Producao' ? 'Produção' : 'Propriedade'; }
+// A CHAVE de "Propriedade" continua sendo 'Geral'. Ela está em 1.714 lançamentos,
+// nas contas fixas, na coluna Grupo da planilha e nos backups em nuvem; trocar o
+// valor exigiria migrar tudo isso para ganhar o quê — o nome já aparece certo onde
+// se lê. Chave é identidade, rótulo é o que se mostra, e este é o único lugar que
+// decide como uma vira a outra.
+var FIN_GRUPOS = [
+  { key:'Geral',       label:'Propriedade' },   // manter o lugar de pé, exista gado ou não
+  { key:'Producao',    label:'Produção'    },   // a pecuária: bovinos e ovinos
+  { key:'Apartamento', label:'Apartamento' }    // imóvel urbano, fora da atividade rural
+];
+var FIN_GRUPO_PADRAO = 'Geral';
+
+function finGrupoNormal(g){
+  for(var i=0;i<FIN_GRUPOS.length;i++) if(FIN_GRUPOS[i].key === g) return g;
+  return FIN_GRUPO_PADRAO;
+}
+function finGrupoLabel(g){
+  g = finGrupoNormal(g);
+  for(var i=0;i<FIN_GRUPOS.length;i++) if(FIN_GRUPOS[i].key === g) return FIN_GRUPOS[i].label;
+  return g;
+}
+// Lista-base de cada grupo. Grupo novo nasce vazio: tudo nele é categoria criada
+// pelo usuário, o que é certo — ninguém sabe de antemão o que vai num apartamento.
+function finCatsBase(grupo){
+  grupo = finGrupoNormal(grupo);
+  if(grupo === 'Producao')    return FIN_CATS_PRODUCAO;
+  if(grupo === 'Geral')       return FIN_CATS_GERAL;
+  if(grupo === 'Apartamento') return FIN_CATS_APARTAMENTO;
+  return [];
+}
 
 // Comparação de texto em português: sem isso "Ávore" vai parar depois de "Zebu" e
 // "ração" não encosta em "Ração". A lista é lida por gente, então ordena como gente lê.
@@ -7559,7 +7596,7 @@ function finCmpCat(a, b){
 // alfabética. Duplicatas por caixa ou acento são descartadas na comparação.
 function finCategoriasFor(grupo){
   grupo = finGrupoNormal(grupo);
-  var base = (grupo==='Producao' ? FIN_CATS_PRODUCAO : FIN_CATS_GERAL).slice();
+  var base = finCatsBase(grupo).slice();
   // Fora as que o usuário renomeou: o nome antigo não existe mais em lançamento nenhum.
   base = base.filter(function(b){
     return !DB_fin_cats_ocultas.some(function(o){
@@ -7662,8 +7699,7 @@ function finRenomearCategoria(grupo, de, para, grupoPara){
     return finGrupoNormal(c.grupo)===grupo && finCmpCat(c.nome, de)===0;
   });
   if(idxCriada !== -1) DB_fin_cats.splice(idxCriada, 1);
-  var ehBase = (grupo==='Producao' ? FIN_CATS_PRODUCAO : FIN_CATS_GERAL)
-    .some(function(b){ return finCmpCat(b, de)===0; });
+  var ehBase = finCatsBase(grupo).some(function(b){ return finCmpCat(b, de)===0; });
   if(ehBase && !DB_fin_cats_ocultas.some(function(o){
       return finGrupoNormal(o.grupo)===grupo && finCmpCat(o.nome, de)===0; })){
     DB_fin_cats_ocultas.push({ grupo:grupo, nome:de });
@@ -8070,7 +8106,10 @@ var MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','
 // Separado de finGrupoFiltro, que é o filtro da LISTA de lançamentos — misturar os
 // dois faria mexer numa tela mudar a outra sem o usuário pedir.
 var finGrupoDash = '';
-function finSetGrupoDash(g){ finGrupoDash = (g==='Geral'||g==='Producao') ? g : ''; renderFinDashboard(); }
+function finSetGrupoDash(g){
+  finGrupoDash = FIN_GRUPOS.some(function(x){ return x.key === g; }) ? g : '';
+  renderFinDashboard();
+}
 
 // ── Estado vazio dos gráficos ──────────────────────────────────────────────
 // Antes, "não há dados" era escrito com canvas.parentElement.innerHTML = '...'.
@@ -8115,9 +8154,9 @@ function renderFinDashboard(){
 
   var gEl = document.getElementById('findash-grupo-tabs');
   if(gEl){
-    gEl.innerHTML = [['','Os dois'],['Geral','Propriedade'],['Producao','Produção']].map(function(p){
-      return '<button class="san-lote-cat'+(finGrupoDash===p[0]?' sel':'')
-        + '" onclick="finSetGrupoDash(\''+p[0]+'\')">'+p[1]+'</button>';
+    gEl.innerHTML = [{key:'',label:'Todos'}].concat(FIN_GRUPOS).map(function(p){
+      return '<button class="san-lote-cat'+(finGrupoDash===p.key?' sel':'')
+        + '" onclick="finSetGrupoDash(\''+p.key+'\')">'+p.label+'</button>';
     }).join('');
   }
 
@@ -8161,15 +8200,21 @@ function renderFinDashboard(){
 // Sem essa regra, "resultado da propriedade" apareceria positivo por causa de uma
 // venda de gado que não tem nada a ver com manter a sede de pé.
 function finResumoAno(ano, grupo){
-  grupo = (grupo === 'Geral' || grupo === 'Producao') ? grupo : '';
+  // '' = todos os grupos. Qualquer valor fora da lista também, para um grupo removido
+  // no futuro não zerar a tela em silêncio.
+  grupo = FIN_GRUPOS.some(function(g){ return g.key === grupo; }) ? grupo : '';
   var r = { vendaProducao:0, aporte:0, aporteLucas:0, aporteCarmem:0, credito:0,
             custeio:0, investimento:0, capitalSaida:0,
-            custeioGeral:0, custeioProducao:0,
+            custeioPorGrupo:{},
             retornoLucas:0, retornoCarmem:0, grupo:grupo };
+  FIN_GRUPOS.forEach(function(g){ r.custeioPorGrupo[g.key] = 0; });
   DB_receitas.forEach(function(x){
     var d = toDate(x.data); if(!d || d.getFullYear()!==ano) return;
     var n = parseValorBR(x.valor); if(isNaN(n)) return;
-    if(x.categoria==='Producao'){ if(grupo !== 'Geral') r.vendaProducao += n; }
+    // A venda é da PRODUÇÃO: só entra na visão dela ou na consolidada. Escrito como
+    // "diferente de Geral", funcionava enquanto havia dois grupos — e passou a somar
+    // venda de gado no Apartamento assim que apareceu um terceiro.
+    if(x.categoria==='Producao'){ if(grupo === '' || grupo === 'Producao') r.vendaProducao += n; }
     else if(grupo !== '') return;   // aporte e crédito não são de um grupo só
     else if(x.categoria==='Investimento Lucas'){ r.aporte += n; r.aporteLucas += n; }
     else if(x.categoria==='Investimento Carmem'){ r.aporte += n; r.aporteCarmem += n; }
@@ -8185,9 +8230,9 @@ function finResumoAno(ano, grupo){
     else if(nat==='capital') r.capitalSaida += n;
     else {
       r.custeio += n;
-      // Guardado aberto também: é o que permite empilhar os dois grupos no gráfico
-      // anual sem ter de somar duas vezes.
-      if(g==='Producao') r.custeioProducao += n; else r.custeioGeral += n;
+      // Guardado aberto por grupo também: é o que permite empilhar os grupos no
+      // gráfico anual sem ter de somar duas vezes.
+      r.custeioPorGrupo[g] = (r.custeioPorGrupo[g] || 0) + n;
     }
     if(x.categoria==='Retorno Lucas')  r.retornoLucas  += n;
     if(x.categoria==='Retorno Carmem') r.retornoCarmem += n;
@@ -8217,10 +8262,13 @@ function finRenderKpis(){
   // Olhando só a PROPRIEDADE não existe resultado para mostrar: ela não fatura nada,
   // e um "resultado" ali seria apenas o custo com sinal trocado, fingindo de prejuízo
   // operacional. O que interessa nessa visão é quanto custa manter o lugar de pé.
-  if(finGrupoDash === 'Geral'){
+  // Grupos que não faturam: só a Produção tem venda atribuível. Mostrar "resultado"
+  // num grupo sem receita seria o custo com sinal trocado, fingindo de prejuízo.
+  if(finGrupoDash && finGrupoDash !== 'Producao'){
     box.innerHTML =
-        card('Custeio da propriedade', fmtValorBR(a.custeio),
-          'manutenção do lugar, independe do gado', 'var(--red)')
+        card('Custeio · '+finGrupoLabel(finGrupoDash), fmtValorBR(a.custeio),
+          finGrupoDash==='Geral' ? 'manutenção do lugar, independe do gado'
+                                 : 'custo de manter o imóvel', 'var(--red)')
       + card('Investimento', fmtValorBR(a.investimento), 'virou patrimônio, não é custo', 'var(--blut)')
       + card('Capital/Financeiro', fmtValorBR(a.capitalSaida),
           'amortização e devolução de aporte', 'var(--purt)')
@@ -8234,7 +8282,9 @@ function finRenderKpis(){
     : 'sem venda registrada no ano';
   var subCusteio = finGrupoDash === 'Producao'
     ? 'custo da pecuária no ano'
-    : 'Produção '+fmtValorBR(a.custeioProducao)+' &middot; Propriedade '+fmtValorBR(a.custeioGeral);
+    : FIN_GRUPOS.filter(function(g){ return (a.custeioPorGrupo[g.key]||0) > 0; })
+        .map(function(g){ return g.label+' '+fmtValorBR(a.custeioPorGrupo[g.key]); })
+        .join(' &middot; ') || 'sem custeio no ano';
 
   box.innerHTML =
       card('Venda de produção', fmtValorBR(a.vendaProducao), 'o que a propriedade faturou', 'var(--grnt)')
@@ -8396,18 +8446,24 @@ function finRenderChartAnual(){
   // cada pedaço diz quanto foi da pecuária e quanto foi de manter o lugar. Era a
   // pergunta que não dava para responder quando tudo era uma barra só.
   var dsCusteio;
+  var CORES_GRUPO = { Producao:'#e65100', Geral:'#8d6e63', Apartamento:'#6a1b9a' };
   if(finGrupoDash === ''){
-    dsCusteio = [
-      { type:'bar', label:'Custeio · Produção',    data:resumos.map(function(r){ return r.custeioProducao; }),
-        backgroundColor:'#e65100cc', borderColor:'#e65100', borderWidth:1, borderRadius:4, order:3, stack:'custeio' },
-      { type:'bar', label:'Custeio · Propriedade', data:resumos.map(function(r){ return r.custeioGeral; }),
-        backgroundColor:'#8d6e63cc', borderColor:'#8d6e63', borderWidth:1, borderRadius:4, order:3, stack:'custeio' }
-    ];
+    // Uma faixa por grupo, empilhadas: a barra inteira é o custo do ano e cada pedaço
+    // diz de onde veio. Grupo sem gasto nenhum em ano nenhum fica fora da legenda.
+    dsCusteio = FIN_GRUPOS.filter(function(g){
+      return resumos.some(function(r){ return (r.custeioPorGrupo[g.key]||0) > 0; });
+    }).map(function(g){
+      var cor = CORES_GRUPO[g.key] || '#607d8b';
+      return { type:'bar', label:'Custeio · '+g.label,
+        data:resumos.map(function(r){ return r.custeioPorGrupo[g.key] || 0; }),
+        backgroundColor:cor+'cc', borderColor:cor, borderWidth:1, borderRadius:4,
+        order:3, stack:'custeio' };
+    });
   } else {
+    var corSel = CORES_GRUPO[finGrupoDash] || '#607d8b';
     dsCusteio = [
       { type:'bar', label:'Custeio · '+finGrupoLabel(finGrupoDash), data:resumos.map(function(r){ return r.custeio; }),
-        backgroundColor:finGrupoDash==='Producao'?'#e65100cc':'#8d6e63cc',
-        borderColor:finGrupoDash==='Producao'?'#e65100':'#8d6e63',
+        backgroundColor:corSel+'cc', borderColor:corSel,
         borderWidth:1, borderRadius:4, order:3, stack:'custeio' }
     ];
   }
@@ -8419,7 +8475,7 @@ function finRenderChartAnual(){
 
   // Na visão da propriedade não há resultado a traçar: ela não fatura, e a linha seria
   // o custeio espelhado — um "prejuízo" que não existe como conceito ali.
-  if(finGrupoDash !== 'Geral'){
+  if(finGrupoDash === '' || finGrupoDash === 'Producao'){
     datasets.push({ type:'line', label:'Resultado operacional', data:resultado,
       borderColor:'#1565c0', backgroundColor:'#1565c0', tension:0.2, pointRadius:4, borderWidth:2, order:1 });
   }
@@ -8602,7 +8658,7 @@ function finRenderTabelaNatureza(){
   // confirmação do lápis acusaria o dobro de lançamentos da linha clicada.
   var usadas = [];
   DB_financeiro.forEach(function(r){
-    var grupo = r.grupo==='Producao'?'Producao':'Geral';
+    var grupo = finGrupoNormal(r.grupo);
     var cat = r.categoria || '';
     if(!cat) return;
     var e = usadas.find(function(x){ return x.grupo===grupo && finCmpCat(x.cat, cat)===0; });
@@ -8632,8 +8688,9 @@ function finRenderTabelaNatureza(){
           + (nat!==padrao ? '<div style="font-size:10px;color:var(--tx3)">ajustado por você</div>' : '')
           + '</td>'
           + '<td><select style="font-size:12px;padding:3px 6px" onchange="finMudarGrupo('+i+',this.value)">'
-            + '<option value="Geral"'+(u.grupo==='Geral'?' selected':'')+'>Propriedade</option>'
-            + '<option value="Producao"'+(u.grupo==='Producao'?' selected':'')+'>Produção</option>'
+            + FIN_GRUPOS.map(function(g){
+                return '<option value="'+g.key+'"'+(u.grupo===g.key?' selected':'')+'>'+g.label+'</option>';
+              }).join('')
             + '</select></td>'
           + '<td>'+u.n+'</td>'
           + '<td>'+fmtValorBR(u.total)+'</td>'
